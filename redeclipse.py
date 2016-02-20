@@ -8,6 +8,8 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 MAXENTATTRS = 100
+VSLOT_SHPARAM = 0
+MAXSTRLEN = 512
 
 
 class EntType(Enum):
@@ -21,12 +23,48 @@ class EntType(Enum):
     ET_LIGHTFX = 7
     ET_SUNLIGHT = 8
     ET_WEAPON = 9
-    ET_UNKNOWN_A = 10
-    ET_UNKNOWN_B = 11
-    ET_UNKNOWN_C = 12
-    ET_UNKNOWN_D = 13
+    ET_TELEPORT = 10
+    ET_ACTOR = 11
+    ET_TRIGGER = 12
+    ET_PUSHER = 13
     ET_AFFINITY = 14
+    ET_CHECKPOINT = 15
+    ET_ROUTE = 16
+    ET_UNUSEDENT = 17
 
+
+class VTYPE(Enum):
+    VSLOT_SHPARAM = 0
+    VSLOT_SCALE = 1
+    VSLOT_ROTATION = 2
+    VSLOT_OFFSET = 3
+    VSLOT_SCROLL = 4
+    VSLOT_LAYER = 5
+    VSLOT_ALPHA = 6
+    VSLOT_COLOR = 7
+    VSLOT_PALETTE = 8
+    VSLOT_COAST = 9
+    VSLOT_NUM = 10
+
+
+class VSlot(object):
+
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+
+class SlotShaderParam(object):
+
+    def __str__(self):
+        return 'name %s, loc %s, val0 %f, val1 %f, val2 %f, val3 %f, palette %d, palindex %d' % (
+            self.name, self.loc,
+            self.val[0],
+            self.val[1],
+            self.val[2],
+            self.val[3],
+            self.palette,
+            self.palindex
+        )
 
 class Entity(object):
 
@@ -74,6 +112,10 @@ class ivec:
         return "(%f, %f, %f)" % (self.x, self.y, self.z)
 
 class MapParser(object):
+
+    R = (1, 2, 0) # row
+    C = (2, 0, 1) # col
+    D = (0, 1, 2) # depth
 
     def parseMap(self, base_path):
         self.base_path = base_path
@@ -128,26 +170,94 @@ class MapParser(object):
             return data[0][0:-1]
         return data[0]
 
-
     def loadvslots(self, numvslots):
-        prev = [-1] * numvslots
+        prev = [-1] * (numvslots / 3 - 1)
         vslots = []
+        print 'numvslots %s' % numvslots
         while numvslots > 0:
+            print 'numvslots %s' % numvslots
             changed = self.read_int()
+            print 'changed %s' % changed
             if changed < 0:
                 for i in range(-changed):
-                    vslots.append(None)
+                    vslots.append(VSlot(None, len(vslots)))
                 numvslots += changed
             else:
-                prev[len(vslots)] = self.read_int()
-                # TODO
-                print 'UNIMPLEMENTED'
-                sys.exit(42)
-                pass
+                prev.append(self.read_int())
+                print 'prev[%d] = %d' % (len(prev)-1, prev[len(prev)-1])
+                self.loadvslot(VSlot(None, len(vslots)), changed)
+                numvslots -= 1
+        print len(vslots)
 
-    R = (1, 2, 0) # row
-    C = (2, 0, 1) # col
-    D = (0, 1, 2) # depth
+    def loadvslot(self, vs, changed):
+        vs.changed = changed
+        print 'C:', changed, ' ',
+        if vs.changed & (1<<VTYPE.VSLOT_SHPARAM.value):
+            print 'A,',
+            flags = self.read_ushort()
+            numparams = flags & 0x7FFF
+            print 'Flags: %d, numparams: %d' % (flags, numparams)
+            for i in range(numparams):
+                ssp = SlotShaderParam()
+                nlen = self.read_ushort()
+                print 'nlen %s, maxstrlen %s' % (nlen, MAXSTRLEN)
+                if nlen >= MAXSTRLEN:
+                    log.error("Cannot handle")
+                    sys.exit()
+
+                name = self.read_str(nlen, null=False)
+                ssp.name = name
+                ssp.loc = -1
+                ssp.val = [
+                    self.read_float(),
+                    self.read_float(),
+                    self.read_float(),
+                    self.read_float(),
+                ]
+                if flags & 0x8000:
+                    ssp.palette = self.read_int()
+                    ssp.palindex = self.read_int()
+                else:
+                    ssp.palette = 0
+                    ssp.palindex = 0
+                print ssp
+        if vs.changed & (1<<VTYPE.VSLOT_SCALE.value):
+            print 'B,',
+            vs.scale = self.read_float()
+        if vs.changed & (1<<VTYPE.VSLOT_ROTATION.value):
+            print 'C,',
+            vs.rotation = self.read_int()
+        if vs.changed & (1<<VTYPE.VSLOT_OFFSET.value):
+            print 'D,',
+            vs.offset_x = self.read_int()
+            vs.offset_y = self.read_int()
+        if vs.changed & (1<<VTYPE.VSLOT_SCROLL.value):
+            print 'E,',
+            vs.scroll_x = self.read_int()
+            vs.scroll_y = self.read_int()
+        if vs.changed & (1<<VTYPE.VSLOT_LAYER.value):
+            print 'F,',
+            vs.layer = self.read_int()
+        if vs.changed & (1<<VTYPE.VSLOT_ALPHA.value):
+            print 'G,',
+            vs.alphafront = self.read_float()
+            vs.alphaback = self.read_float()
+
+        if vs.changed & (1<<VTYPE.VSLOT_COLOR.value):
+            print 'H,',
+            vs.colorscale = [
+                self.read_float(),
+                self.read_float(),
+                self.read_float()
+            ]
+        if vs.changed & (1<<VTYPE.VSLOT_PALETTE.value):
+            print 'I,',
+            vs.palette = self.read_int()
+            vs.palindex = self.read_int()
+        if vs.changed & (1<<VTYPE.VSLOT_COAST.value):
+            print 'J,',
+            vs.coastscale = self.read_float()
+        print '\n',
 
     def loadchildren(self, co, size):
         c = cube()
@@ -170,7 +280,6 @@ class MapParser(object):
         self.ents = []
         for i in range(int(numents)):
             (x, y, z, etype, a, b, c) = self.read_custom('fffcccc', sizeof_entbase)
-            print (x, y, z, etype, a, b, c)
             e = Entity(x, y, z, EntType(ord(etype)))
             # This says reserved but we've seen values in it so...
             e.reserved = [ord(q) for q in (a, b, c)]
@@ -182,7 +291,6 @@ class MapParser(object):
 
             link_count = self.read_int()
             links = []
-            print link_count
             for j in range(link_count):
                 links.append(self.read_int())
             e.links = links
@@ -238,10 +346,9 @@ class MapParser(object):
         for i in range(nummru):
             texmru.append(self.read_ushort())
 
-        # TODO: enttity handling
         self.loadents(meta['numents'])
+        log.info("Loaded %s entities", len(self.ents))
 
-        # small and blank hjave zero ents
         self.loadvslots(meta['numvslots'])
 
         # arggghhh
