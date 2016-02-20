@@ -2,9 +2,46 @@ import sys
 import gzip
 import binascii # noqa
 import struct
+from enum import Enum
 import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
+
+MAXENTATTRS = 100
+
+
+class EntType(Enum):
+    ET_EMPTY = 0
+    ET_LIGHT = 1
+    ET_MAPMODEL = 2
+    ET_PLAYERSTART = 3
+    ET_ENVMAP = 4
+    ET_PARTICLES = 5
+    ET_SOUND = 6
+    ET_LIGHTFX = 7
+    ET_SUNLIGHT = 8
+    ET_WEAPON = 9
+    ET_UNKNOWN_A = 10
+    ET_UNKNOWN_B = 11
+    ET_UNKNOWN_C = 12
+    ET_UNKNOWN_D = 13
+    ET_AFFINITY = 14
+
+
+class Entity(object):
+
+    def __init__(self, x, y, z, type):
+        self.o = ivec(x, y, z)
+        self.type = type
+        self.attrs = []
+        self.links = []
+
+    def __str__(self):
+        return '[Ent %s %s [Attr: %s] [Links: %s]]' % (
+            self.o, self.type.name,
+            ','.join(map(str, self.attrs)),
+            ','.join(map(str, self.links))
+        )
 
 class Map(object):
 
@@ -33,6 +70,9 @@ class ivec:
             z + ((i&4)>>2) * s
         )
 
+    def __str__(self):
+        return "(%f, %f, %f)" % (self.x, self.y, self.z)
+
 class MapParser(object):
 
     def parseMap(self, base_path):
@@ -43,6 +83,14 @@ class MapParser(object):
 
     def read_int(self):
         return self.read_ints(1)[0]
+
+    def read_custom(self, pattern, width):
+        data = struct.unpack(
+            pattern,
+            self.bytes[self.index:self.index + width]
+        )
+        self.index += width
+        return data
 
     def read_ints(self, count):
         width = 4 * count
@@ -113,10 +161,32 @@ class MapParser(object):
         return c
 
     def loadc(self, c, co, size):
-        haschildren = False
+        # haschildren = False
         octsav = self.read_ushort()
         print hex(octsav)
 
+    def loadents(self, numents):
+        sizeof_entbase = 16
+        self.ents = []
+        for i in range(int(numents)):
+            (x, y, z, etype, a, b, c) = self.read_custom('fffcccc', sizeof_entbase)
+            print (x, y, z, etype, a, b, c)
+            e = Entity(x, y, z, EntType(ord(etype)))
+            # This says reserved but we've seen values in it so...
+            e.reserved = [ord(q) for q in (a, b, c)]
+            numattr = self.read_int()
+            attrs = []
+            for j in range(numattr):
+                attrs.append(self.read_int())
+            e.attrs = attrs
+
+            link_count = self.read_int()
+            links = []
+            print link_count
+            for j in range(link_count):
+                links.append(self.read_int())
+            e.links = links
+            self.ents.append(e)
 
     def read(self):
         with gzip.open(self.mpz, 'rb') as handle:
@@ -139,6 +209,7 @@ class MapParser(object):
         # char[4], null=True
         meta['gameident'] = self.read_str(3)
         meta['numvars'] = self.read_int()
+        import pprint; pprint.pprint(meta)
 
         map_vars = {}
         for i in range(meta['numvars']):
@@ -168,6 +239,8 @@ class MapParser(object):
             texmru.append(self.read_ushort())
 
         # TODO: enttity handling
+        self.loadents(meta['numents'])
+
         # small and blank hjave zero ents
         self.loadvslots(meta['numvslots'])
 
