@@ -653,15 +653,26 @@ class MapParser(object):
                         if vis & 1:
                             verts[k].setxyz(v[order+1].mul(size).add(vo))
                             k += 1
-
                         verts[k].setxyz(v[order+2].mul(size).add(vo))
                         k += 1
-
                         if vis & 2:
                             verts[k].setxyz(v[(order+3)&3].mul(size).add(vo))
                             k += 1
 
-
+                    # TODO
+                    if layerverts == 4:
+                        if hasxyz and (vertmask & 0x01):
+                            pass
+                        if hasuv and (vertmask & 0x02):
+                            pass
+                    if hasnorm and (vertmask & 0x08):
+                        pass
+                    if hasxyz or hasuv or hasnorm:
+                        for k in range(layerverts):
+                            pass
+                    if surf.numverts & OctLayers.LAYER_DUP:
+                        for k in range(layerverts):
+                            pass
             sys.exit()
 
         if haschildren:
