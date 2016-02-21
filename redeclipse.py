@@ -3,7 +3,7 @@ import gzip
 import binascii # noqa
 import struct
 from enum import Enum
-from vec import ivec2, ivec3, vec2, vec3
+from vec import ivec2, ivec3, vec2, vec3, cross
 import copy
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -621,17 +621,45 @@ class MapParser(object):
                     hasnorm = (vertmask & 0x80) != 0
                     if hasxyz:
                         e1 = copy.deepcopy(v[1])
-                        print e1
                         e2 = copy.deepcopy(v[2])
                         e3 = copy.deepcopy(v[3])
                         n = cross(
                             e1.sub(v[0]),
                             e2.sub(v[0])
                         )
-                        # if(n.iszero()) n.cross(e2, (e3 = v[3]).sub(v[0]));
-                        # bias = -n.dot(ivec(v[0]).mul(size).add(vo));
+                        print e1
+                        print e2
+                        print e3
+                        print n
+                        if n.iszero():
+                            n = cross(e2, e3.sub(v[0]))
+                        bias = -n.dot(
+                            v[0].mul(size).add(vo)
+                        )
+                        print "Bias: %d" % bias
                     else:
-                        pass
+                        vis = 3
+                        if layerverts < 4:
+                            if vertmask & 0x02:
+                                vis = 2
+                            else:
+                                vis = 1
+                        order = 0
+                        if vertmask & 0x01:
+                            order = 1
+                        k = 0
+                        verts[k].setxyz(v[order].mul(size).add(vo))
+                        k += 1
+                        if vis & 1:
+                            verts[k].setxyz(v[order+1].mul(size).add(vo))
+                            k += 1
+
+                        verts[k].setxyz(v[order+2].mul(size).add(vo))
+                        k += 1
+
+                        if vis & 2:
+                            verts[k].setxyz(v[(order+3)&3].mul(size).add(vo))
+                            k += 1
 
 
             sys.exit()
@@ -727,7 +755,6 @@ class MapParser(object):
             meta['worldsize']>>1,
             failed
         )
-
 
         m = Map(magic, version, meta, map_vars)
         return m
