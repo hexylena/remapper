@@ -2,7 +2,7 @@ import sys
 import gzip
 import binascii # noqa
 import struct
-from enum import Enum
+from enums import EntType, Faces, VTYPE, OCT, OctLayers, TextNum
 from vec import ivec2, ivec3, vec2, vec3, cross
 import copy
 import logging
@@ -27,62 +27,6 @@ def dimcoord(orient):
 def opposite(orient):
     return orient ^ 1
 
-class EntType(Enum):
-    ET_EMPTY = 0
-    ET_LIGHT = 1
-    ET_MAPMODEL = 2
-    ET_PLAYERSTART = 3
-    ET_ENVMAP = 4
-    ET_PARTICLES = 5
-    ET_SOUND = 6
-    ET_LIGHTFX = 7
-    ET_SUNLIGHT = 8
-    ET_WEAPON = 9
-    ET_TELEPORT = 10
-    ET_ACTOR = 11
-    ET_TRIGGER = 12
-    ET_PUSHER = 13
-    ET_AFFINITY = 14
-    ET_CHECKPOINT = 15
-    ET_ROUTE = 16
-    ET_UNUSEDENT = 17
-
-
-class Faces(Enum):
-    F_EMPTY = 0
-    F_SOLID = 0x80808080
-
-class VTYPE(Enum):
-    VSLOT_SHPARAM = 0
-    VSLOT_SCALE = 1
-    VSLOT_ROTATION = 2
-    VSLOT_OFFSET = 3
-    VSLOT_SCROLL = 4
-    VSLOT_LAYER = 5
-    VSLOT_ALPHA = 6
-    VSLOT_COLOR = 7
-    VSLOT_PALETTE = 8
-    VSLOT_COAST = 9
-    VSLOT_NUM = 10
-
-
-class OCT(Enum):
-    OCTSAV_CHILDREN = 0
-    OCTSAV_EMPTY = 1
-    OCTSAV_SOLID = 2
-    OCTSAV_NORMAL = 3
-    OCTSAV_LODCUBE = 4
-
-class OctLayers(Enum):
-    LAYER_TOP = (1<<5)
-    LAYER_BOTTOM = (1<<6)
-    LAYER_DUP = (1<<7)
-    LAYER_BLEND = LAYER_TOP | LAYER_BOTTOM
-    MAXFACEVERTS = 15
-
-class TextNum(Enum):
-    DEFAULT_SKY = 0
-    DEFAULT_GEOM = 1
 
 class VSlot(object):
 
@@ -110,6 +54,7 @@ class VSlot(object):
         self.glowcolor = None
         self.coastscale = 1
 
+
 class SurfaceInfo:
     def __init__(self, lmid0, lmid1, verts, numverts):
         self.lmid = [lmid0, lmid1]
@@ -127,6 +72,7 @@ class SurfaceInfo:
             self.lmid[0], self.lmid[1], self.verts, self.numverts
         )
 
+
 class vertinfo:
     def __init__(self, x, y, z, u, v, norm):
         self.x = x
@@ -135,6 +81,20 @@ class vertinfo:
         self.u = u
         self.v = v
         self.norm = norm
+
+    def setxyz(self, t):
+        self.x = t.x
+        self.y = t.y
+        self.z = t.z
+
+    def setxyz2(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def __str__(self):
+        return 'Vertinfo (%d, %d, %d) (u=%d v=%d n=%d)' % (self.x, self.y, self.z, self.u, self.v, self.norm)
+
 
 class SlotShaderParam(object):
 
@@ -174,6 +134,7 @@ class Map(object):
         self.meta = meta
         self.map_vars = map_vars
 
+
 class cubext:
     def __init__(self, old=None, maxverts=0):
         if old:
@@ -186,6 +147,8 @@ class cubext:
             self.tjoints = -1
         self.surfaceinfo = []
         self.maxverts = maxverts
+        self.verts = []
+
 
 class cubeedge:
     def __init__(self, next, offset, size, index, flags):
@@ -607,11 +570,14 @@ class MapParser(object):
                         continue
                     surf.verts = offset
                     offset += numverts
+                    verts = [
+                        vertinfo(0,0,0,0,0,0)
+                    ] * 20
                     v = []
                     n = None
                     vo = co.mask(0xFFF).shl(3)
                     layerverts = surf.numverts & OctLayers.MAXFACEVERTS.value
-                    dim = dimension(1)
+                    dim = dimension(i)
                     vc = self.C[dim]
                     vr = self.R[dim]
                     bias = 0
@@ -660,20 +626,116 @@ class MapParser(object):
                             k += 1
 
                     # TODO
+                    print 'layerverts %d' % layerverts
                     if layerverts == 4:
+                        print 'hasxyz %s hasuv %s' % (hasxyz, hasuv)
                         if hasxyz and (vertmask & 0x01):
-                            pass
+                            c1 = self.read_ushort()
+                            r1 = self.read_ushort()
+                            c2 = self.read_ushort()
+                            r2 = self.read_ushort()
+                            print 'c1 ... %d, %d, %d, %d' % (c1, r1, c2, r2)
+                            xyz = [0] * 3
+                            print 'vc = %d, vr = %d, dim = %d' % (vc, vr, dim)
+
+                            xyz[vc] = c1
+                            xyz[vr] = r1
+                            if n.gg(dim):
+                                xyz[dim] =  -(bias + n.gg(vc)*xyz[vc] + n.gg(vr)*xyz[vr]) / n.gg(dim)
+                            else:
+                                xyz[dim] = vo[dim]
+
+                            verts[0].setxyz2(*xyz)
+                            print verts[0]
+
+                            xyz[vc] = c1
+                            xyz[vr] = r2
+                            if n.gg(dim):
+                                xyz[dim] =  -(bias + n.gg(vc)*xyz[vc] + n.gg(vr)*xyz[vr]) / n.gg(dim)
+                            else:
+                                xyz[dim] = vo[dim]
+
+                            verts[1].setxyz2(*xyz)
+                            print verts[1]
+
+                            xyz[vc] = c2
+                            xyz[vr] = r2
+                            if n.gg(dim):
+                                xyz[dim] =  -(bias + n.gg(vc)*xyz[vc] + n.gg(vr)*xyz[vr]) / n.gg(dim)
+                            else:
+                                xyz[dim] = vo[dim]
+
+                            verts[2].setxyz2(*xyz)
+                            print verts[2]
+
+                            xyz[vc] = c2
+                            xyz[vr] = r1
+                            if n.gg(dim):
+                                xyz[dim] =  -(bias + n.gg(vc)*xyz[vc] + n.gg(vr)*xyz[vr]) / n.gg(dim)
+                            else:
+                                xyz[dim] = vo[dim]
+
+                            verts[3].setxyz2(*xyz)
+                            print verts[3]
+                            hasxyz = False
                         if hasuv and (vertmask & 0x02):
-                            pass
+                            uvorder = (vertmask&0x30)>>4
+                            v0 = verts[uvorder]
+                            v1 = verts[(uvorder + 1) & 0x3]
+                            v2 = verts[(uvorder + 2) & 0x3]
+                            v3 = verts[(uvorder + 3) & 0x3]
+                            v0.u = self.read_ushort()
+                            v0.v = self.read_ushort()
+                            v2.u = self.read_ushort()
+                            v2.v = self.read_ushort()
+                            v1.u = v0.u
+                            v1.v = v2.v
+                            v3.u = v2.u
+                            v3.v = v0.v
+                            if surf.numverts & OctLayers.LAYER_DUP.value:
+                                v0 = verts[4 + uvorder]
+                                v1 = verts[4 + ((uvorder + 1) & 0x3)]
+                                v2 = verts[4 + ((uvorder + 2) & 0x3)]
+                                v3 = verts[4 + ((uvorder + 3) & 0x3)]
+                                v0.u = self.read_ushort()
+                                v0.v = self.read_ushort()
+                                v2.u = self.read_ushort()
+                                v2.v = self.read_ushort()
+                                v1.u = v0.u
+                                v1.v = v2.v
+                                v3.u = v2.u
+                                v3.v = v0.v
+                                hasuv = False
                     if hasnorm and (vertmask & 0x08):
-                        pass
+                        norm = self.read_ushort()
+                        for k in range(layerverts):
+                            verts[k].norm = norm
                     if hasxyz or hasuv or hasnorm:
                         for k in range(layerverts):
-                            pass
-                    if surf.numverts & OctLayers.LAYER_DUP:
+                            v = verts[k]
+                            if hasxyz:
+                                xyz = [0] * 3
+                                xyz[vc] = self.read_ushort()
+                                xyz[vr] = self.read_ushort()
+                                if n.gg(dim):
+                                    xyz[dim] =  -(bias + n.gg(vc)*xyz[vc] + n.gg(vr)*xyz[vr]) / n.gg(dim)
+                                else:
+                                    xyz[dim] = vo[dim]
+                            if hasuv:
+                                v.u = self.read_ushort()
+                                v.v = self.read_ushort()
+                            if hasnorm:
+                                v.norm = self.read_ushort()
+                    if surf.numverts & OctLayers.LAYER_DUP.value:
                         for k in range(layerverts):
-                            pass
-            sys.exit()
+                            v = verts[k + layerverts]
+                            t = verts[k]
+                            v.setxyz(t)
+                            if hasuv:
+                                v.u = self.read_ushort()
+                                v.v = self.read_ushort()
+                            v.norm = t.norm
+            # sys.exit()
 
         if haschildren:
             c.children = self.loadchildren(co, size>>1, failed)

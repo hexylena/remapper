@@ -88,6 +88,14 @@ class ivec3:
             self.z + b.z
         )
 
+    def gg(self, idx):
+        if idx == 0:
+            return self.x
+        elif idx == 1:
+            return self.y
+        elif idx == 2:
+            return self.z
+
     def dot(self, o):
         return self.x*o.x + self.y*o.y + self.z*o.z
 
