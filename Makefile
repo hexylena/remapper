@@ -1,2 +1,2 @@
-small.mp: small.mpz
-	cat small.mpz | gzip -d > small.mp
+simple.mp: simple.mpz
+	cat simple.mpz | gzip -d > simple.mp
