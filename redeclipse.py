@@ -163,17 +163,26 @@ class cubeedge:
 
 class cube:
     def __init__(self):
+        # points to 8 cube structures which are its children, or NULL. -Z first, then -Y, -X
         self.children = [None] * 8
+        # extended info for the cube
         self.ext = None # extended info
+        # edges of the cube, each uchar is 2 4bit values denoting the range.
         self.edges = [128] * 12 # 12
+        # 4 edges of each dimension together representing 2 perpendicular faces
         self.faces = [] # 3
+        # one for each face. same order as orient.
         self.texture = [TextNum.DEFAULT_GEOM] * 6
+        # empty-space material
+        self.material = None
+        # merged faces of the cube
         self.merged = 0
+        # mask of which children have escaped merges
         self.escaped = 0
+        # visibility info for faces
         self.visible = 0
 
-    @classmethod
-    def newcubes(cls, face, mat):
+    def newcubes(self, face, mat):
         c = [cube()] * 8
         for x in c:
             x.children = None
@@ -187,7 +196,8 @@ class cube:
             x.mat = mat
         global ALLOCNODES
         ALLOCNODES += 1
-        return c
+        self.children = c
+        return self.children
 
     def setfaces(self, face):
         #octa.h L256
@@ -349,30 +359,28 @@ class cube:
                     self.edges[8+2+0] >>4
                 )
             ]
-        return v
 
     @classmethod
     def validatec(cls, cube, size, depth=0):
         if depth > 0:
             return
 
-        print(((' ' * depth) + 'validatec,', size))
+        print((' ' * depth) + 'validatec,', size)
 
         for i in range(8):
-            print(((' ' * depth) + "c[%s]=%s" % (i, '(nil)' if not cube[i].children else id(cube[i]),)))
             if cube[i].children:
-                print(((' ' * depth) + '\tkid'))
+                print((' ' * depth) + '\tkid')
                 if size <= 1:
                     cls.solidfaces(cube[i])
                     cls.discardchildren(cube[i], True)
                 else:
                     cls.validatec(cube[i].children, size >> 1, depth + 1)
             elif size > 0x1000:
-                print(((' ' * depth) + '\tlarge'))
+                print((' ' * depth) + '\tlarge')
                 cls.subdividecube(cube[i], True, False)
                 cls.validatec(cube[i].children, size>>1, depth + 1)
             else:
-                print(((' ' * depth) + '\telse'))
+                print((' ' * depth) + '\telse')
                 for j in range(3):
                     f = cube[i].faces[j].value
                     e0 = f & 0x0F0F0F0F
@@ -452,11 +460,11 @@ class MapParser(object):
         prev = [-1] * numvslots
         vslots = []
         print("Sizeof int 4")
-        print(("numvslots %s" % numvslots))
+        print("numvslots %s" % numvslots)
         while numvslots > 0:
-            print(("numvslots %s" % numvslots))
+            print("numvslots %s" % numvslots)
             changed = self.read_int()
-            print(("changed %s" % changed))
+            print("changed %s" % changed)
             if changed < 0:
                 for i in range(-changed):
                     vslots.append(VSlot(None, len(vslots)))
@@ -467,9 +475,9 @@ class MapParser(object):
                 numvslots -= 1
 
 
-        print(("Vslots: %s" % len(vslots)))
+        print("Vslots: %s" % len(vslots))
         for idx, v in enumerate(vslots):
-            print(("\t[%s] %s %s" % (idx, prev[idx], int(0 <= idx < numvslots))))
+            print("\t[%s] %s %s" % (idx, prev[idx], int(0 <= idx < numvslots)))
             if 0 <= idx < numvslots:
                 vslots[prev[idx]]._next = vslots[idx]
 
@@ -534,16 +542,17 @@ class MapParser(object):
 
     def loadchildren(self, co, size, failed):
         print(('lc %s %s' % (size, 1 if failed else 0)))
-        c = cube.newcubes(0, 0)
+        c = cube()
+        c.newcubes(0, 0)
         for i in range(8):
             print(("\t, %d %d %d" % (i, size, 1 if failed else 0)))
             failed, c_x = self.loadc(
-                c[i],
+                c.children[i],
                 ivec3.ivec5(i, co.x, co.y, co.z, size),
                 size,
                 failed
             )
-            c[i] = c_x
+            c.children[i] = c_x
             print(('\tlc %s %s' % (i, 1 if failed else 0)))
 
             if failed:
@@ -551,14 +560,13 @@ class MapParser(object):
         return c
 
     def loadc(self, c, co, size, failed):
+        """Loads a single cube? Or rather, based on C, processes it into a cube object?"""
         # haschildren = False
         octsav = self.read_char()
         haschildren = False
-        print(('octsav', octsav, '&7', octsav & 0x7))
+        print('octsav', octsav, '&7', octsav & 0x7)
         if octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
             c.children = self.loadchildren(co, size>>1, failed)
-            for x in range(8):
-                print(('lc.c[%s]=%s' % (x, id(c.children[x]))))
             return False, c
         elif octsav & 0x7 == OCT.OCTSAV_EMPTY.value:
             c.setfaces(Faces.F_EMPTY)
