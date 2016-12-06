@@ -1,7 +1,9 @@
-# Redeclipse/saurbraten/cube2 map library
+# Redeclipse map library
 
-Nothing useful or polished here yet. I'm trying to reverse engineer + document
-the redeclipse mapping format, thus allowing for automated generation of maps.
+Library to read in Red Eclipse maps. It isn't polished, but currently will read
+in very, very simple maps.
+
+The end goal is to allow for automated generation of maps.
 
 # License
 
