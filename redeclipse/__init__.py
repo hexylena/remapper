@@ -1,9 +1,9 @@
 import sys
 import gzip
 import struct
-from enums import EntType, Faces, VTYPE, OCT, OctLayers
-from objects import VSlot, SlotShaderParam, cube, SurfaceInfo, vertinfo, dimension, Entity, Map
-from vec import ivec3, cross
+from redeclipse.enums import EntType, Faces, VTYPE, OCT, OctLayers
+from redeclipse.objects import VSlot, SlotShaderParam, cube, SurfaceInfo, vertinfo, dimension, Entity, Map
+from redeclipse.vec import ivec3, cross
 import copy
 import logging
 logging.basicConfig(level=logging.INFO)
