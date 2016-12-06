@@ -555,6 +555,3 @@ class MapParser(object):
         m = Map(magic, version, meta, map_vars)
         return m
 
-
-mp = MapParser()
-m = mp.parseMap(sys.argv[1])
