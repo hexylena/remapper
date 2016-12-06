@@ -799,7 +799,12 @@ class MapParser(object):
         sizeof_entbase = 16
         self.ents = []
         for i in range(int(numents)):
+            print('sizeof(entbase) =', sizeof_entbase)
             (x, y, z, etype, a, b, c) = self.read_custom('fffcccc', sizeof_entbase)
+            print('e.o = (%0.6f %0.6f %0.6f); e.type = %s' % (x, y, z, ord(etype)))
+            print(a, b, c)
+
+
             e = Entity(x, y, z, EntType(ord(etype)))
             # This says reserved but we've seen values in it so...
             e.reserved = [ord(q) for q in (a, b, c)]
@@ -825,13 +830,13 @@ class MapParser(object):
             raise Exception("Not a mapz file")
 
 
-        print(('Loading map:', self.mpz))
-        print(('Header Magic:', magic))
+        print('Loading map:', self.mpz)
+        print('Header Magic:', magic)
         print('Header Version:')
 
         version = self.read_int()
         headersize = self.read_int()  # noqa
-        print(('Header Size:', headersize))
+        print('Header Size:', headersize)
 
         meta_keys = ('worldsize', 'numents', 'numpvs',
                      'lightmaps', 'blendmap', 'numvslots',
@@ -846,8 +851,8 @@ class MapParser(object):
         meta['gameident'] = self.read_str(3)
         meta['numvars'] = self.read_int()
 
-        print(('Header Worldsize:', meta['worldsize']))
-        print(('Header Worldsize:', meta['worldsize']))
+        print('Header Worldsize:', meta['worldsize'])
+        print('Header Worldsize:', meta['worldsize'])
 
 
         map_vars = {}
@@ -876,13 +881,13 @@ class MapParser(object):
 
         texmru = []
         nummru = self.read_ushort()
-        print(('Nummru', nummru))
+        print('Nummru', nummru)
         for i in range(nummru):
             texmru.append(self.read_ushort())
 
         # Entities
+        print('Header.numents', meta['numents'])
         self.loadents(meta['numents'])
-        print(('Header.numents', meta['numents']))
         log.info("Loaded %s entities", len(self.ents))
 
         # Textures?
@@ -899,6 +904,25 @@ class MapParser(object):
         )
 
         cube.validatec(worldroot, meta['worldsize'] >> 1)
+
+        worldscale = 0
+        while 1<<worldscale < meta['worldsize']:
+            worldscale += 1
+        print("Worldscale %s" % worldscale)
+
+        print("failed: %s" % (1 if failed else 0))
+        if not failed:
+            # Not sure this even works, but no need to implement since
+            # we're fine to dump unlit maps.
+            print('Lightmaps: %s' % meta['lightmaps'])
+            # TODO
+
+        # Entities
+        print(self.bytes[self.index:])
+        # self.loadents(meta['numents'])
+        # for i in range(meta['numents']):
+            # pass
+
 
         m = Map(magic, version, meta, map_vars)
         return m
