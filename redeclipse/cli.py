@@ -1,5 +1,7 @@
 from redeclipse import MapParser
 import sys
 
-mp = MapParser()
-m = mp.parseMap(sys.argv[1])
+def main():
+    mp = MapParser()
+    m = mp.parseMap(sys.argv[1])
+    m.write(sys.argv[1] + '.out')

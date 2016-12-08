@@ -108,6 +108,7 @@ class Entity:
         self.type = type
         self.attrs = []
         self.links = []
+        self.reserved = []
 
     def __str__(self):
         return '[Ent %s %s [Attr: %s] [Links: %s]]' % (
@@ -116,14 +117,13 @@ class Entity:
             ','.join(map(str, self.links))
         )
 
+    def serialization_format(self):
+        return 'fffcccc' + ('i' * len(self.attrs)) + ('i' * len(self.links))
 
-class Map:
-
-    def __init__(self, magic, version, meta, map_vars):
-        self.magic = magic
-        self.version = version
-        self.meta = meta
-        self.map_vars = map_vars
+    def serialize(self):
+        return [self.o.x, self.o.y, self.o.z, str.encode(str(self.type.value))] + \
+            [str.encode(str(x)) for x in self.reserved] + \
+            self.attrs + self.links
 
 
 class cubext:
@@ -173,7 +173,6 @@ class cube:
 
     @classmethod
     def newcubes(cls, face, mat):
-        print('newcubes')
         c = [
             cube(), cube(),
             cube(), cube(),
@@ -350,22 +349,18 @@ class cube:
 
     @classmethod
     def validatec(cls, cube_arr, size, depth=0):
-        print((' ' * depth) + 'validatec,', size)
 
         for i in range(8):
             if cube_arr[i].children:
-                print((' ' * depth) + '\tkid')
                 if size <= 1:
                     cls.solidfaces(cube.children[i])
                     cls.discardchildren(cube.children[i], True)
                 else:
                     cls.validatec(cube_arr[i].children, size >> 1, depth + 1)
             elif size > 0x1000:
-                print((' ' * depth) + '\tlarge')
                 cls.subdividecube(cube_arr[i], True, False)
                 cls.validatec(cube_arr[i].children, size>>1, depth + 1)
             else:
-                print((' ' * depth) + '\telse')
                 for j in range(3):
                     f = cube_arr[i].faces[j].value
                     e0 = f & 0x0F0F0F0F

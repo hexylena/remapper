@@ -1,8 +1,9 @@
 import sys
 import gzip
 import struct
+from collections import OrderedDict
 from redeclipse.enums import EntType, Faces, VTYPE, OCT, OctLayers
-from redeclipse.objects import VSlot, SlotShaderParam, cube, SurfaceInfo, vertinfo, dimension, Entity, Map
+from redeclipse.objects import VSlot, SlotShaderParam, cube, SurfaceInfo, vertinfo, dimension, Entity
 from redeclipse.vec import ivec3, cross
 import copy
 import logging
@@ -10,6 +11,88 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 MAXSTRLEN = 512
+
+
+class Map:
+
+    def __init__(self, magic, version, headersize, meta, map_vars, texmru, ents, vslots, worldroot):
+        self.magic = magic
+        self.version = version
+        self.headersize = headersize
+        self.meta = meta
+        self.map_vars = map_vars
+        self.texmru = texmru
+        self.ents = ents
+        self.vslots = vslots
+        self.world = worldroot
+
+    def write(self, path):
+        handle = open(path, 'wb')
+        handle.write(self.magic)
+        # Write the version
+        self.write_int(handle, self.version)
+        # Write the header size (Surely some way to calc from self.meta?)
+        self.write_int(handle, self.headersize)
+        # Write the header block
+        for key in self.meta:
+            if key == 'gameident':
+                self.write_str(handle, self.meta[key])
+            else:
+                self.write_int(handle, self.meta[key])
+
+        # Write the map vars
+        for key in self.map_vars:
+            var_name = key
+            value = self.map_vars[key]
+            var_type = type(self.map_vars[key]).__name__
+
+            self.write_int(handle, len(var_name))
+            self.write_str(handle, var_name)
+
+            if var_type == 'int':
+                self.write_int(handle, 0)
+                self.write_int(handle, value)
+            elif var_type == 'float':
+                self.write_int(handle, 1)
+                self.write_float(handle, value)
+            elif var_type in ('bytes', 'str'):
+                self.write_int(handle, 2)
+                self.write_int(handle, len(value))
+                self.write_str(handle, value)
+            else:
+                raise Exception("Can't handle " + var_type)
+
+        # Texmru
+        self.write_ushort(handle, len(self.texmru))
+        for value in self.texmru:
+            self.write_ushort(handle, value)
+
+        # Entities
+        for ent in self.ents:
+            print(ent.serialization_format(), ent.serialize())
+            self.write_custom(
+                handle, ent.serialization_format()[0:4], ent.serialize()[0:4])
+
+    def write_custom(self, handle, fmt, data):
+        print(fmt, data)
+        handle.write(struct.pack(fmt, *data))
+
+    def write_int(self, handle, value):
+        handle.write(struct.pack('i', value))
+
+    def write_ushort(self, handle, value):
+        handle.write(struct.pack('H', value))
+
+    def write_float(self, handle, value):
+        handle.write(struct.pack('f', value))
+
+    def write_str(self, handle, value, null=True):
+        strlen = len(value)
+        if null:
+            strlen += 1
+
+        fmt = '%ds' % strlen
+        handle.write(struct.pack(fmt, value))
 
 
 class MapParser(object):
@@ -80,12 +163,12 @@ class MapParser(object):
     def loadvslots(self, numvslots):
         prev = [-1] * numvslots
         vslots = []
-        print("Sizeof int 4")
-        print("numvslots %s" % numvslots)
+        log.debug("Sizeof int 4")
+        log.debug("numvslots %s" % numvslots)
         while numvslots > 0:
-            print("numvslots %s" % numvslots)
+            log.debug("numvslots %s" % numvslots)
             changed = self.read_int()
-            print("changed %s" % changed)
+            log.debug("changed %s" % changed)
             if changed < 0:
                 for i in range(-changed):
                     vslots.append(VSlot(None, len(vslots)))
@@ -96,15 +179,15 @@ class MapParser(object):
                 numvslots -= 1
 
 
-        print("Vslots: %s" % len(vslots))
+        log.debug("Vslots: %s" % len(vslots))
         for idx, v in enumerate(vslots):
-            print("\t[%s] %s %s" % (idx, prev[idx], int(0 <= idx < numvslots)))
+            log.debug("\t[%s] %s %s" % (idx, prev[idx], int(0 <= idx < numvslots)))
             if 0 <= idx < numvslots:
                 vslots[prev[idx]]._next = vslots[idx]
 
         self.vslots = vslots
-        # print(list(enumerate(vslots)))
-        # print(list(enumerate(prev)))
+        # log.debug(list(enumerate(vslots)))
+        # log.debug(list(enumerate(prev)))
 
     def loadvslot(self, vs, changed):
         vs.changed = changed
@@ -162,10 +245,10 @@ class MapParser(object):
             vs.coastscale = self.read_float()
 
     def loadchildren(self, co, size, failed):
-        print(('lc %s %s' % (size, 1 if failed else 0)))
+        log.debug(('lc %s %s' % (size, 1 if failed else 0)))
         cube_arr = cube.newcubes(0, 0)
         for i in range(8):
-            print(("\t, %d %d %d" % (i, size, 1 if failed else 0)))
+            log.debug(("\t, %d %d %d" % (i, size, 1 if failed else 0)))
             failed, c_x = self.loadc(
                 cube_arr[i],
                 ivec3.ivec5(i, co.x, co.y, co.z, size),
@@ -173,7 +256,7 @@ class MapParser(object):
                 failed
             )
             cube_arr[i] = c_x
-            print(('\tlc %s %s' % (i, 1 if failed else 0)))
+            log.debug(('\tlc %s %s' % (i, 1 if failed else 0)))
 
             if failed:
                 break
@@ -184,7 +267,7 @@ class MapParser(object):
         # haschildren = False
         octsav = self.read_char()
         haschildren = False
-        print('octsav', octsav, '&7', octsav & 0x7)
+        log.debug('octsav', octsav, '&7', octsav & 0x7)
         if octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
             c.children = self.loadchildren(co, size>>1, failed)
             return False, c
@@ -202,9 +285,9 @@ class MapParser(object):
 
         c.texture = [self.read_ushort() for i in range(6)]
         for idx, i in enumerate(c.texture):
-            print(('c.tex[%d] = %d' % (idx, i)))
+            log.debug(('c.tex[%d] = %d' % (idx, i)))
 
-        print(('octsav %d &40 %d &80 %d &20 %d' % (
+        log.debug(('octsav %d &40 %d &80 %d &20 %d' % (
             octsav, octsav & 0x40, octsav & 0x80, octsav & 0x20
         )))
         if octsav & 0x40:
@@ -214,13 +297,13 @@ class MapParser(object):
         if octsav & 0x20:
             surfmask = self.read_char()
             totalverts = self.read_char()
-            print(('sfm %d, tv %d' % (surfmask, totalverts)))
+            log.debug(('sfm %d, tv %d' % (surfmask, totalverts)))
             c.newcubeext(totalverts, False)
             c.ext.surfaces = []
             c.ext.verts = 0
             offset = 0
             for i in range(6):
-                print(('loadc 0x20 %d, %d' % (i, surfmask & (1 << i))))
+                log.debug(('loadc 0x20 %d, %d' % (i, surfmask & (1 << i))))
 
                 if not surfmask & (1<<i):
                     c.ext.surfaces.append(None)
@@ -234,12 +317,12 @@ class MapParser(object):
                         )
                     )
 
-                    # print(i, c.ext.surfaces)
+                    # log.debug(i, c.ext.surfaces)
                     surf = c.ext.surfaces[i]
                     vertmask = surf.verts
-                    print(surf)
+                    log.debug(surf)
                     numverts = surf.totalverts()
-                    print(('Vertmask %d numverts %d' % (vertmask, numverts)))
+                    log.debug(('Vertmask %d numverts %d' % (vertmask, numverts)))
                     if not numverts:
                         surf.verts = 0
                         continue
@@ -268,16 +351,16 @@ class MapParser(object):
                             e1.sub(v[0]),
                             e2.sub(v[0])
                         )
-                        print(e1)
-                        print(e2)
-                        print(e3)
-                        print(n)
+                        log.debug(e1)
+                        log.debug(e2)
+                        log.debug(e3)
+                        log.debug(n)
                         if n.iszero():
                             n = cross(e2, e3.sub(v[0]))
                         bias = -n.dot(
                             v[0].mul(size).add(vo)
                         )
-                        print(("Bias: %d" % bias))
+                        log.debug(("Bias: %d" % bias))
                     else:
                         vis = 3
                         if layerverts < 4:
@@ -301,17 +384,17 @@ class MapParser(object):
                             k += 1
 
                     # TODO
-                    print(('layerverts %d' % layerverts))
+                    log.debug(('layerverts %d' % layerverts))
                     if layerverts == 4:
-                        print(('hasxyz %s hasuv %s' % (hasxyz, hasuv)))
+                        log.debug(('hasxyz %s hasuv %s' % (hasxyz, hasuv)))
                         if hasxyz and (vertmask & 0x01):
                             c1 = self.read_ushort()
                             r1 = self.read_ushort()
                             c2 = self.read_ushort()
                             r2 = self.read_ushort()
-                            print(('c1 ... %d, %d, %d, %d' % (c1, r1, c2, r2)))
+                            log.debug(('c1 ... %d, %d, %d, %d' % (c1, r1, c2, r2)))
                             xyz = [0] * 3
-                            print(('vc = %d, vr = %d, dim = %d' % (vc, vr, dim)))
+                            log.debug(('vc = %d, vr = %d, dim = %d' % (vc, vr, dim)))
 
                             xyz[vc] = c1
                             xyz[vr] = r1
@@ -321,7 +404,7 @@ class MapParser(object):
                                 xyz[dim] = vo[dim]
 
                             verts[0].setxyz2(*xyz)
-                            print((verts[0]))
+                            log.debug((verts[0]))
 
                             xyz[vc] = c1
                             xyz[vr] = r2
@@ -331,7 +414,7 @@ class MapParser(object):
                                 xyz[dim] = vo[dim]
 
                             verts[1].setxyz2(*xyz)
-                            print((verts[1]))
+                            log.debug((verts[1]))
 
                             xyz[vc] = c2
                             xyz[vr] = r2
@@ -341,7 +424,7 @@ class MapParser(object):
                                 xyz[dim] = vo[dim]
 
                             verts[2].setxyz2(*xyz)
-                            print((verts[2]))
+                            log.debug((verts[2]))
 
                             xyz[vc] = c2
                             xyz[vr] = r1
@@ -351,7 +434,7 @@ class MapParser(object):
                                 xyz[dim] = vo[dim]
 
                             verts[3].setxyz2(*xyz)
-                            print((verts[3]))
+                            log.debug((verts[3]))
                             hasxyz = False
                         if hasuv and (vertmask & 0x02):
                             uvorder = (vertmask&0x30)>>4
@@ -412,7 +495,7 @@ class MapParser(object):
                             v.norm = t.norm
             # sys.exit()
 
-        print(('haskids %s' % (1 if failed else 0,)))
+        log.debug(('haskids %s' % (1 if failed else 0,)))
         if haschildren:
             c.children = self.loadchildren(co, size>>1, failed)
         else:
@@ -422,17 +505,20 @@ class MapParser(object):
 
     def loadents(self, numents):
         sizeof_entbase = 16
-        self.ents = []
+        ents = []
         for i in range(int(numents)):
-            print('sizeof(entbase) =', sizeof_entbase)
+            log.debug('sizeof(entbase) =', sizeof_entbase)
             (x, y, z, etype, a, b, c) = self.read_custom('fffcccc', sizeof_entbase)
-            print('e.o = (%0.6f %0.6f %0.6f); e.type = %s' % (x, y, z, ord(etype)))
-            print(a, b, c)
-
+            log.debug('e.o = (%0.6f %0.6f %0.6f); e.type = %s' % (x, y, z, ord(etype)))
 
             e = Entity(x, y, z, EntType(ord(etype)))
             # This says reserved but we've seen values in it so...
-            e.reserved = [ord(q) for q in (a, b, c)]
+            e.reserved = [
+                ord(a),
+                ord(b),
+                ord(c)
+            ]
+
             numattr = self.read_int()
             attrs = []
             for j in range(numattr):
@@ -444,7 +530,8 @@ class MapParser(object):
             for j in range(link_count):
                 links.append(self.read_int())
             e.links = links
-            self.ents.append(e)
+            ents.append(e)
+        return ents
 
     def read(self):
         with gzip.open(self.mpz) as handle:
@@ -455,21 +542,21 @@ class MapParser(object):
             raise Exception("Not a mapz file")
 
 
-        print('Loading map:', self.mpz)
-        print('Header Magic:', magic)
-        print('Header Version:')
+        log.debug('Loading map:', self.mpz)
+        log.debug('Header Magic:', magic)
+        log.debug('Header Version:')
 
         version = self.read_int()
-        print('Version:', version)
+        log.debug('Version:', version)
         headersize = self.read_int()
-        print('Header Size:', headersize)
+        log.debug('Header Size:', headersize)
 
         meta_keys = ('worldsize', 'numents', 'numpvs',
                      'lightmaps', 'blendmap', 'numvslots',
                      'gamever', 'revision')
         #'gameident', 'numvars')
         meta_data = self.read_ints(len(meta_keys))
-        meta = {}
+        meta = OrderedDict()
         for (k, v) in zip(meta_keys, meta_data):
             meta[k] = v
 
@@ -479,16 +566,16 @@ class MapParser(object):
         meta['numvars'] = self.read_int()
         log.debug(meta)
 
-        print('Header Worldsize:', meta['worldsize'])
-        print('Header Worldsize:', meta['worldsize'])
+        log.debug('Header Worldsize:', meta['worldsize'])
+        log.debug('Header Worldsize:', meta['worldsize'])
 
 
-        map_vars = {}
+        map_vars = OrderedDict()
         for i in range(meta['numvars']):
             # +1 for null term string
             var_name_len = self.read_int()
             var_name = self.read_str(var_name_len)
-            # print(self.index, var_name)
+            # log.debug(self.index, var_name)
             var_type = self.read_int()
 
             # String
@@ -500,31 +587,31 @@ class MapParser(object):
             elif var_type == 0:
                 var_val = self.read_int()
             else:
-                log.error("Don't know how to handle map prop type %s", var_type)
-                sys.exit()
+                # Cannot recover
+                raise Exception("Don't know how to handle map prop type %s", var_type)
 
             map_vars[var_name] = var_val
 
-        print('Clearing world..')
+        log.info('Clearing world..')
 
         texmru = []
         nummru = self.read_ushort()
-        print('Nummru', nummru)
+        log.debug('Nummru', nummru)
         for i in range(nummru):
             texmru.append(self.read_ushort())
 
         # Entities
-        print('Header.numents', meta['numents'])
-        self.loadents(meta['numents'])
-        log.info("Loaded %s entities", len(self.ents))
+        log.debug('Header.numents', meta['numents'])
+        ents = self.loadents(meta['numents'])
+        log.info("Loaded %s entities", len(ents))
 
         # Textures?
-        self.loadvslots(meta['numvslots'])
+        vslots = self.loadvslots(meta['numvslots'])
         log.info("Loaded %s vslots", len(self.vslots))
 
         # arggghhh
         failed = False
-        print("Loadchildren")
+        log.debug("Loadchildren")
         worldroot = self.loadchildren(
             ivec3(0,0,0),
             meta['worldsize']>>1,
@@ -536,22 +623,15 @@ class MapParser(object):
         worldscale = 0
         while 1<<worldscale < meta['worldsize']:
             worldscale += 1
-        print("Worldscale %s" % worldscale)
+        log.debug("Worldscale %s" % worldscale)
 
-        print("failed: %s" % (1 if failed else 0))
+        log.debug("failed: %s" % (1 if failed else 0))
         if not failed:
             # Not sure this even works, but no need to implement since
             # we're fine to dump unlit maps.
-            print('Lightmaps: %s' % meta['lightmaps'])
+            log.debug('Lightmaps: %s' % meta['lightmaps'])
             # TODO
 
-        # Entities
-        print(self.bytes[self.index:])
-        # self.loadents(meta['numents'])
-        # for i in range(meta['numents']):
-            # pass
-
-
-        m = Map(magic, version, meta, map_vars)
+        m = Map(magic, version, headersize, meta, map_vars, texmru, ents, vslots,
+                worldroot)
         return m
-
