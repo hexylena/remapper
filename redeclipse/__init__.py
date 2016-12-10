@@ -28,13 +28,14 @@ class Map:
         self.world = worldroot
 
     def write(self, path):
-        handle = open(path, 'wb')
+        handle = gzip.open(path, 'wb')
         handle.write(self.magic)
         # Write the version
         self.write_int(handle, self.version)
         # Write the header size (Surely some way to calc from self.meta?)
         self.write_int(handle, self.headersize)
         # Write the header block
+        self.meta['numents'] = len(self.ents)
         for key in self.meta:
             if key == 'gameident':
                 self.write_str(handle, self.meta[key])
