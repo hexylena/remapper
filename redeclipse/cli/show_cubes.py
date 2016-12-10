@@ -5,7 +5,7 @@ import argparse
 
 def simplify(d):
     d['faces'] = d['faces'][0]
-    if d['faces'] == 'F_EMPTY' and d['ext'] is None:
+    if d['octsav'] == 1:
         return ['Empty']
 
     if len(set(d['edges'])) == 1:
