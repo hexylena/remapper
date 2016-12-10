@@ -3,7 +3,8 @@ import gzip
 import struct
 from collections import OrderedDict
 from redeclipse.enums import EntType, Faces, VTYPE, OCT, OctLayers, TextNum
-from redeclipse.objects import VSlot, SlotShaderParam, cube, SurfaceInfo, vertinfo, dimension, Entity
+from redeclipse.objects import VSlot, SlotShaderParam, cube, SurfaceInfo, vertinfo, dimension
+from redeclipse.entities import Entity
 from redeclipse.vec import ivec3, cross
 import copy
 import logging
@@ -82,11 +83,17 @@ class Map:
     def write_custom(self, handle, fmt, data):
         handle.write(struct.pack(fmt, *data))
 
+    def write_char(self, handle, char):
+        handle.write(struct.pack('B', char))
+
     def write_int_as_chr(self, handle, data):
         handle.write(struct.pack('c', str.encode(chr(data))))
 
     def write_int(self, handle, value):
-        handle.write(struct.pack('i', value))
+        if isinstance(value, int):
+            handle.write(struct.pack('i', value))
+        else:
+            handle.write(struct.pack('i', value.value))
 
     def write_ushort(self, handle, value):
         handle.write(struct.pack('H', value))
@@ -107,6 +114,7 @@ class Map:
 
         for ent in ents:
             # (x, y, z, etype, a, b, c) = self.read_custom('fffcccc', sizeof_entbase)
+            print(ent.serialize())
             self.write_custom(
                 handle,
                 'fffcccc',
@@ -154,7 +162,7 @@ class Map:
             pass # Nothing to write, simply that cube is solid
         elif cube.octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
             for e in cube.edges:
-                self.write_custom('B', [e])
+                self.write_custom(handle, 'B', [e])
         elif cube.octsav & 0x7 == OCT.OCTSAV_LODCUBE.value:
             # Nothing to do, this just set cube.children, which we know
             # from other sources.
@@ -185,15 +193,15 @@ class Map:
                     pass
                 else:
                     surfinfo = cube.ext.surfaces[i]
-                    self.write_int_as_chr(handle, surfinfo.lmid[0])
-                    self.write_int_as_chr(handle, surfinfo.lmid[1])
-                    self.write_int_as_chr(handle, surfinfo.verts)
-                    self.write_int_as_chr(handle, surfinfo.numverts)
+                    self.write_char(handle, surfinfo.lmid[0])
+                    self.write_char(handle, surfinfo.lmid[1])
+                    self.write_char(handle, surfinfo.verts)
+                    self.write_char(handle, surfinfo.numverts)
 
                     if surfinfo.verts == 0:
                         continue
                     else:
-                        raise NotImplementedError()
+                        raise NotImplementedError("Gross out")
 
 
 class MapParser(object):
@@ -347,7 +355,7 @@ class MapParser(object):
 
     def loadchildren(self, co, size, failed):
         log.debug(('lc %s %s' % (size, 1 if failed else 0)))
-        cube_arr = cube.newcubes(0, 0)
+        cube_arr = cube.newcubes(Faces.F_EMPTY, 0)
         for i in range(8):
             log.debug(("\t, %d %d %d" % (i, size, 1 if failed else 0)))
             failed, c_x = self.loadc(
@@ -377,7 +385,7 @@ class MapParser(object):
         elif octsav & 0x7 == OCT.OCTSAV_SOLID.value:
             c.setfaces(Faces.F_SOLID)
         elif octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
-            c.edges = self.read_custom('B', 12)
+            c.edges = self.read_custom('BBBBBBBBBBBB', 12)
         elif octsav & 0x7 == OCT.OCTSAV_LODCUBE.value:
             c.haschildren = True
         else:
@@ -431,6 +439,8 @@ class MapParser(object):
                         surf.verts = 0
                         continue
 
+                    raise NotImplementedError("Gross in")
+
         log.debug(('haskids %s' % (1 if failed else 0,)))
         if c.haschildren:
             c.children = self.loadchildren(co, size>>1, failed)
@@ -447,9 +457,8 @@ class MapParser(object):
             (x, y, z, etype, a, b, c) = self.read_custom('fffcccc', sizeof_entbase)
             log.debug('e.o = (%0.6f %0.6f %0.6f); e.type = %s' % (x, y, z, ord(etype)))
 
-            e = Entity(x, y, z, EntType(ord(etype)))
             # This says reserved but we've seen values in it so...
-            e.reserved = [
+            reserved = [
                 ord(a),
                 ord(b),
                 ord(c)
@@ -459,13 +468,13 @@ class MapParser(object):
             attrs = []
             for j in range(numattr):
                 attrs.append(self.read_int())
-            e.attrs = attrs
 
             link_count = self.read_int()
             links = []
             for j in range(link_count):
                 links.append(self.read_int())
-            e.links = links
+
+            e = Entity(x, y, z, EntType(ord(etype)), attrs, links, reserved)
             ents.append(e)
         return ents
 
@@ -528,7 +537,7 @@ class MapParser(object):
 
             map_vars[var_name] = var_val
 
-        log.info('Clearing world..')
+        log.debug('Clearing world..')
 
         texmru = []
         nummru = self.read_ushort()
@@ -539,11 +548,11 @@ class MapParser(object):
         # Entities
         log.debug('Header.numents', meta['numents'])
         ents = self.loadents(meta['numents'])
-        log.info("Loaded %s entities", len(ents))
+        log.debug("Loaded %s entities", len(ents))
 
         # Textures?
         vslots, chg = self.loadvslots(meta['numvslots'])
-        log.info("Loaded %s vslots", len(vslots))
+        log.debug("Loaded %s vslots", len(vslots))
 
         # arggghhh
         failed = False

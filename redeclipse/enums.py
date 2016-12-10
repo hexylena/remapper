@@ -59,3 +59,15 @@ class OctLayers(Enum):
 class TextNum(Enum):
     DEFAULT_SKY = 0
     DEFAULT_GEOM = 1
+
+class WeaponType(Enum):
+    SWORD = 2
+    SHOTGUN = 3
+    SMG = 4
+    FLAMER = 5
+    PLASMA = 6
+    ZAPPER = 7
+    RIFLE = 8
+    GRENADE = 9
+    MINE = 10
+    ROCKET = 11

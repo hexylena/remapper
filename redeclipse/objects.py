@@ -1,4 +1,4 @@
-from redeclipse.enums import Faces, TextNum, OctLayers
+from redeclipse.enums import Faces, TextNum, OctLayers, WeaponType, EntType
 from redeclipse.vec import ivec2, ivec3, vec2, vec3
 MAXENTATTRS = 100
 VSLOT_SHPARAM = 0
@@ -101,29 +101,9 @@ class SlotShaderParam:
         )
 
 
-class Entity:
-
-    def __init__(self, x, y, z, type):
-        self.o = ivec3(x, y, z)
-        self.type = type
-        self.attrs = []
-        self.links = []
-        self.reserved = []
-
-    def __str__(self):
-        return '[Ent %s %s [Attr: %s] [Links: %s]]' % (
-            self.o, self.type.name,
-            ','.join(map(str, self.attrs)),
-            ','.join(map(str, self.links))
-        )
-
-    def serialize(self):
-        return [self.o.x, self.o.y, self.o.z, str.encode(chr(self.type.value))] + \
-            [str.encode(chr(x)) for x in self.reserved]
-
-
 class cubext:
     def __init__(self, old=None, maxverts=0):
+        self.old = old
         if old:
             self.va = old.va
             self.ents = old.ents
@@ -135,6 +115,17 @@ class cubext:
         self.surfaceinfo = []
         self.maxverts = maxverts
         self.verts = []
+
+    def to_dict(self):
+        return {
+            'old': self.old,
+            'va': self.va,
+            'ents': self.ents,
+            'tjoints': self.tjoints,
+            'surfaceinfo': self.surfaceinfo,
+            'maxverts': self.maxverts,
+            'verts': self.verts,
+        }
 
 
 class cubeedge:
@@ -166,6 +157,18 @@ class cube:
         self.escaped = 0
         # visibility info for faces
         self.visible = 0
+
+    def to_dict(self):
+        return {
+            'children': [{} if x is None else x.to_dict() for x in self.children] if self.children else [],
+            'ext': self.ext.to_dict() if self.ext else None,
+            'edges': self.edges,
+            'faces': [f.name for f in self.faces],
+            'texture': [t if isinstance(t, int) else t.value for t in self.texture],
+            'material': self.material,
+            'escaped': self.escaped,
+            'visible': self.visible
+        }
 
     @classmethod
     def newcubes(cls, face, mat):
@@ -358,7 +361,9 @@ class cube:
                 cls.validatec(cube_arr[i].children, size>>1, depth + 1)
             else:
                 for j in range(3):
-                    f = cube_arr[i].faces[j].value
+                    f = cube_arr[i].faces[j]
+                    if not isinstance(f, int):
+                        f = f.value
                     e0 = f & 0x0F0F0F0F
                     e1 = (f>>4) & 0x0F0F0F0F
                     if (e0 == e1 or ((e1+0x07070707)|(e1-e0))&0xF0F0F0F0):
