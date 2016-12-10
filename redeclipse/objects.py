@@ -1,10 +1,11 @@
-from redeclipse.enums import Faces, TextNum, OctLayers, WeaponType, EntType
+from redeclipse.enums import Faces, TextNum, OctLayers
 from redeclipse.vec import ivec2, ivec3, vec2, vec3
 MAXENTATTRS = 100
 VSLOT_SHPARAM = 0
 DEFAULT_ALPHA_FRONT = 0.5
 DEFAULT_ALPHA_BACK = 0.0
 ALLOCNODES = 0
+CUBE_ID = 0
 
 
 def dimension(orient):
@@ -84,6 +85,13 @@ class SurfaceInfo:
             self.lmid[0], self.lmid[1], self.verts, self.numverts
         )
 
+    def to_dict(self):
+        return {
+            'lmid': self.lmid,
+            'verts': self.verts,
+            'numverts': self.numverts,
+        }
+
 
 class vertinfo:
     def __init__(self, x, y, z, u, v, norm):
@@ -124,29 +132,36 @@ class SlotShaderParam:
 
 class cubext:
     def __init__(self, old=None, maxverts=0):
-        self.old = old
         if old:
-            self.va = old.va
-            self.ents = old.ents
-            self.tjoints = old.tjoints
+            self.va = old['va']
+            self.ents = old['ents']
+            self.tjoints = old['tjoints']
         else:
             self.va = None
             self.ents = None
             self.tjoints = -1
+        self.surfaces = []
+        self.verts = 0
         self.surfaceinfo = []
         self.maxverts = maxverts
-        self.verts = []
 
     def to_dict(self):
         return {
-            'old': self.old,
             'va': self.va,
             'ents': self.ents,
             'tjoints': self.tjoints,
             'surfaceinfo': self.surfaceinfo,
             'maxverts': self.maxverts,
             'verts': self.verts,
+            'surfaces': [x.to_dict() for x in self.surfaces],
         }
+
+    @classmethod
+    def from_dict(cls, d):
+        ce = cubext(None, maxverts=d['maxverts'])
+        ce.surfaceinfo = d['surfaceinfo']
+        ce.verts = d['verts']
+        return ce
 
 
 class cubeedge:
@@ -179,29 +194,64 @@ class cube:
         # visibility info for faces
         self.visible = 0
 
-    def to_dict(self):
-        return {
-            'children': [{} if x is None else x.to_dict() for x in self.children] if self.children else [],
+        self.surfmask = 0
+        self.totalverts = 0
+
+        # Secret internal ID to make my life less painful
+        global CUBE_ID
+        self.cube_id = CUBE_ID
+        CUBE_ID += 1
+
+    def to_dict(self, children=True):
+        d = {
+            '_id': self.cube_id,
             'ext': self.ext.to_dict() if self.ext else None,
             'edges': self.edges,
             'faces': [f.name for f in self.faces],
             'texture': [t if isinstance(t, int) else t.value for t in self.texture],
             'material': self.material,
             'escaped': self.escaped,
-            'visible': self.visible
+            'visible': self.visible,
+            'octsav': self.octsav,
         }
 
+        if children:
+            d['children'] = [{} if x is None else x.to_dict() for x in self.children] if self.children else []
+
+        if hasattr(self, 'surfmask'):
+            d['surfmask'] = self.surfmask
+
+        if hasattr(self, 'totalverts'):
+            d['totalverts'] = self.totalverts
+
+        return d
+
+    def set_empty(self):
+        self.setfaces(Faces.F_EMPTY)
+
+    def set_solid(self):
+        self.setfaces(Faces.F_SOLID)
+
     @classmethod
-    def newcubes(cls, face, mat):
+    def newcube(cls, face=Faces.F_EMPTY, mat=0):
+        c = cube()
+        c.setfaces(face)
+        c.mat = mat
+        return c
+
+    @classmethod
+    def newcubes(cls, face=Faces.F_EMPTY, mat=0):
         c = [
-            cube(), cube(),
-            cube(), cube(),
-            cube(), cube(),
-            cube(), cube(),
+            cube.newcube(face=face, mat=mat),
+            cube.newcube(face=face, mat=mat),
+            cube.newcube(face=face, mat=mat),
+            cube.newcube(face=face, mat=mat),
+
+            cube.newcube(face=face, mat=mat),
+            cube.newcube(face=face, mat=mat),
+            cube.newcube(face=face, mat=mat),
+            cube.newcube(face=face, mat=mat),
         ]
-        for i in range(8):
-            c[i].setfaces(face)
-            c[i].mat = mat
         global ALLOCNODES
         ALLOCNODES += 1
         return c

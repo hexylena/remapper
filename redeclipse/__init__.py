@@ -12,6 +12,11 @@ log = logging.getLogger(__name__)
 
 MAXSTRLEN = 512
 
+def tb(str_or_bytes):
+    if isinstance(str_or_bytes, str):
+        return str.encode(str_or_bytes)
+    else:
+        return str_or_bytes
 
 class Map:
 
@@ -38,7 +43,7 @@ class Map:
         self.meta['numents'] = len(self.ents)
         for key in self.meta:
             if key == 'gameident':
-                self.write_str(handle, str.encode(self.meta[key]))
+                self.write_str(handle, tb(self.meta[key]))
             else:
                 self.write_int(handle, self.meta[key])
 
@@ -182,7 +187,7 @@ class Map:
             self.write_int_as_chr(handle, c.surfmask)
             self.write_int_as_chr(handle, c.totalverts)
             for i in range(6):
-                log.debug(('loadc 0x20 %d, %d' % (i, c.surfmask & (1 << i))))
+                log.debug(('>loadc 0x20 %d, %d' % (i, c.surfmask & (1 << i))))
 
                 if not c.surfmask & (1<<i):
                     pass
@@ -441,9 +446,11 @@ class MapParser(object):
         )))
 
         if octsav & 0x40:
-            self.write_ushort(handle, cube.material)
+            pass
+            # self.write_ushort(handle, cube.material)
         if octsav & 0x80:
-            self.write_int_as_chr(cube.merged)
+            pass
+            # self.write_int_as_chr(cube.merged)
         if octsav & 0x20:
             surfmask = self.read_char()
             c.surfmask = surfmask
@@ -451,11 +458,9 @@ class MapParser(object):
             c.totalverts = totalverts
             log.debug(('sfm %d, tv %d' % (surfmask, totalverts)))
             c.newcubeext(totalverts, False)
-            c.ext.surfaces = []
-            c.ext.verts = 0
-            offset = 0
+            # offset = 0
             for i in range(6):
-                log.debug(('loadc 0x20 %d, %d' % (i, surfmask & (1 << i))))
+                log.debug(('<loadc 0x20 %d, %d' % (i, surfmask & (1 << i))))
 
                 if not surfmask & (1<<i):
                     c.ext.surfaces.append(None)
