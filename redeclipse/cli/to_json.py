@@ -1,26 +1,14 @@
-from redeclipse import MapParser
+#!/usr/bin/env python
+from redeclipse.cli import parse
 import json
-import sys
-
-
-def to_dict(map_path):
-    mp = MapParser()
-    m = mp.parseMap(map_path)
-
-    data = {
-        'magic': bytes.decode(m.magic),
-        'version': m.version,
-        'headersize': m.headersize,
-        'meta': [(key, bytes.decode(value) if isinstance(value, bytes) else value) for (key, value) in m.meta.items()],
-        'map_vars': [(bytes.decode(key), bytes.decode(value) if isinstance(value, bytes) else value) for (key, value) in m.map_vars.items()],
-        'texmru': m.texmru,
-        'entities': [ent.to_dict() for ent in m.ents],
-        'world': [x.to_dict() for x in m.world],
-        'vslots': [x.to_dict() for x in m.vslots],
-        'chg': m.chg,
-    }
-    return data
+import argparse
 
 
 if __name__ == '__main__':
-    print(json.dumps(to_dict(sys.argv[1])))
+    parser = argparse.ArgumentParser(description='Dump map as JSON file')
+    parser.add_argument('input', help='Input .mpz file')
+    args = parser.parse_args()
+
+    mymap = parse(args.input)
+
+    print(json.dumps(mymap.to_dict()))

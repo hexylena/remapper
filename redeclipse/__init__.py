@@ -2,11 +2,10 @@ import sys
 import gzip
 import struct
 from collections import OrderedDict
-from redeclipse.enums import EntType, Faces, VTYPE, OCT, OctLayers, TextNum
-from redeclipse.objects import VSlot, SlotShaderParam, cube, SurfaceInfo, vertinfo, dimension
+from redeclipse.enums import EntType, Faces, VTYPE, OCT, TextNum
+from redeclipse.objects import VSlot, SlotShaderParam, cube, SurfaceInfo
 from redeclipse.entities import Entity
-from redeclipse.vec import ivec3, cross
-import copy
+from redeclipse.vec import ivec3
 import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -79,7 +78,6 @@ class Map:
         # World
         self.write_world(handle, self.world)
 
-
     def write_custom(self, handle, fmt, data):
         handle.write(struct.pack(fmt, *data))
 
@@ -110,8 +108,6 @@ class Map:
         handle.write(struct.pack(fmt, value))
 
     def write_ents(self, handle, ents):
-        sizeof_entbase = 16
-
         for ent in ents:
             # (x, y, z, etype, a, b, c) = self.read_custom('fffcccc', sizeof_entbase)
             self.write_custom(
@@ -141,57 +137,57 @@ class Map:
 
     def write_world(self, handle, world):
         # world is cube_arr len=8
-        for cube in world:
-            self.write_cube(handle, cube)
+        for c in world:
+            self.write_cube(handle, c)
 
     def write_children(self, handle, cube_arr):
-        for cube in cube_arr:
-            self.write_cube(handle, cube)
+        for c in cube_arr:
+            self.write_cube(handle, c)
 
-    def write_cube(self, handle, cube):
+    def write_cube(self, handle, c):
         """Inverse of loadc"""
-        self.write_int_as_chr(handle, cube.octsav)
-        log.debug(('> octsav', cube.octsav, '&7', cube.octsav & 0x7))
+        self.write_int_as_chr(handle, c.octsav)
+        log.debug(('> octsav', c.octsav, '&7', c.octsav & 0x7))
 
-        if cube.octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
-            self.write_children(handle, cube.children)
-        elif cube.octsav & 0x7 == OCT.OCTSAV_EMPTY.value:
+        if c.octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
+            self.write_children(handle, c.children)
+        elif c.octsav & 0x7 == OCT.OCTSAV_EMPTY.value:
             pass # Nothing to write
-        elif cube.octsav & 0x7 == OCT.OCTSAV_SOLID.value:
-            pass # Nothing to write, simply that cube is solid
-        elif cube.octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
-            for e in cube.edges:
+        elif c.octsav & 0x7 == OCT.OCTSAV_SOLID.value:
+            pass # Nothing to write, simply that c is solid
+        elif c.octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
+            for e in c.edges:
                 self.write_custom(handle, 'B', [e])
-        elif cube.octsav & 0x7 == OCT.OCTSAV_LODCUBE.value:
-            # Nothing to do, this just set cube.children, which we know
+        elif c.octsav & 0x7 == OCT.OCTSAV_LODc.value:
+            # Nothing to do, this just set c.children, which we know
             # from other sources.
             pass
         else:
             sys.exit(42)
             return
 
-        for t in cube.texture:
+        for t in c.texture:
             if isinstance(t, TextNum):
                 pass
             else:
                 self.write_ushort(handle, t)
 
-        if cube.octsav & 0x40:
-            self.write_ushort(handle, cube.material)
-        if cube.octsav & 0x80:
-            self.write_int_as_chr(handle, cube.merged)
-        if cube.octsav & 0x20:
+        if c.octsav & 0x40:
+            self.write_ushort(handle, c.material)
+        if c.octsav & 0x80:
+            self.write_int_as_chr(handle, c.merged)
+        if c.octsav & 0x20:
             # surfmask = self.read_char()
             # totalverts = self.read_char()
-            self.write_int_as_chr(handle, cube.surfmask)
-            self.write_int_as_chr(handle, cube.totalverts)
+            self.write_int_as_chr(handle, c.surfmask)
+            self.write_int_as_chr(handle, c.totalverts)
             for i in range(6):
-                log.debug(('loadc 0x20 %d, %d' % (i, cube.surfmask & (1 << i))))
+                log.debug(('loadc 0x20 %d, %d' % (i, c.surfmask & (1 << i))))
 
-                if not cube.surfmask & (1<<i):
+                if not c.surfmask & (1<<i):
                     pass
                 else:
-                    surfinfo = cube.ext.surfaces[i]
+                    surfinfo = c.ext.surfaces[i]
                     self.write_char(handle, surfinfo.lmid[0])
                     self.write_char(handle, surfinfo.lmid[1])
                     self.write_char(handle, surfinfo.verts)
@@ -202,6 +198,51 @@ class Map:
                     else:
                         raise NotImplementedError("Gross out")
 
+    def to_dict(self):
+        return {
+            'magic': bytes.decode(self.magic),
+            'version': self.version,
+            'headersize': self.headersize,
+            'meta': [(key, bytes.decode(value) if isinstance(value, bytes) else value) for (key, value) in self.meta.items()],
+            'map_vars': [(bytes.decode(key), bytes.decode(value) if isinstance(value, bytes) else value) for (key, value) in self.map_vars.items()],
+            'texmru': self.texmru,
+            'entities': [ent.to_dict() for ent in self.ents],
+            'world': [x.to_dict() for x in self.world],
+            'vslots': [x.to_dict() for x in self.vslots],
+            'chg': self.chg,
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        # TODO
+        meta = OrderedDict()
+        for (key, value) in data['meta']:
+            meta[key] = value
+
+        map_vars = OrderedDict()
+        for (key, value) in data['map_vars']:
+            if isinstance(value, str):
+                map_vars[str.encode(key)] = str.encode(value)
+            else:
+                map_vars[str.encode(key)] = value
+
+        # TODO
+        world = {}
+
+        m = Map(
+            magic=str.encode(data['magic']),
+            version=data['version'],
+            headersize=data['headersize'],
+            meta=meta,
+            map_vars=map_vars,
+            texmru=data['texmru'],
+            ents=[Entity.from_dict(x) for x in data['entities']],
+            vslots=[VSlot.from_dict(x) for x in data['vslots']],
+            chg=data['chg'],
+            worldroot=world,
+        )
+
+        return m
 
 class MapParser(object):
 
