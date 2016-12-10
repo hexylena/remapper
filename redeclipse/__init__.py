@@ -18,6 +18,7 @@ def tb(str_or_bytes):
     else:
         return str_or_bytes
 
+
 class Map:
 
     def __init__(self, magic, version, headersize, meta, map_vars, texmru, ents, vslots, chg, worldroot):
@@ -212,8 +213,8 @@ class Map:
             'map_vars': [(bytes.decode(key), bytes.decode(value) if isinstance(value, bytes) else value) for (key, value) in self.map_vars.items()],
             'texmru': self.texmru,
             'entities': [ent.to_dict() for ent in self.ents],
-            'world': [x.to_dict() for x in self.world],
-            'vslots': [x.to_dict() for x in self.vslots],
+            'world': (x.to_dict() for x in self.world),
+            'vslots': (x.to_dict() for x in self.vslots),
             'chg': self.chg,
         }
 
@@ -248,6 +249,7 @@ class Map:
         )
 
         return m
+
 
 class MapParser(object):
 
@@ -596,6 +598,7 @@ class MapParser(object):
         log.debug("Loaded %s vslots", len(vslots))
 
         # arggghhh
+        worldroot = []
         failed = False
         log.debug("Loadchildren")
         worldroot = self.loadchildren(
