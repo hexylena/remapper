@@ -37,13 +37,13 @@ if __name__ == '__main__':
     # c = cube.newtexcube()
     mymap.world[0] = cube.newcube()
     mymap.world[0].children = [
-        cube.newcube(),
+        cube.newtexcube(),
         cube.newcube(),
         cube.newcube(),
         cube.newcube(),
 
         cube.newcube(),
-        cube.newtexcube(),
+        cube.newcube(),
         cube.newcube(),
         cube.newcube(),
     ]
