@@ -39,7 +39,7 @@ class Map:
         self.meta['numents'] = len(self.ents)
         for key in self.meta:
             if key == 'gameident':
-                self.write_str(handle, self.meta[key])
+                self.write_str(handle, str.encode(self.meta[key]))
             else:
                 self.write_int(handle, self.meta[key])
 
@@ -114,7 +114,6 @@ class Map:
 
         for ent in ents:
             # (x, y, z, etype, a, b, c) = self.read_custom('fffcccc', sizeof_entbase)
-            print(ent.serialize())
             self.write_custom(
                 handle,
                 'fffcccc',

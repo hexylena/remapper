@@ -45,6 +45,27 @@ class VSlot:
         self.glowcolor = None
         self.coastscale = 1
 
+    def to_dict(self):
+        d = {}
+        proplist = ('a', 'b', 'slot', 'index', 'changed', 'params',
+                    'linked', 'scale', 'rotation', 'offset', 'scroll',
+                    'layer', 'palette', 'palindex', 'alphafront',
+                    'alphaback', 'colorscale', 'glowcolor', 'coastscale')
+        for prop in proplist:
+            d[prop] = getattr(self, prop)
+
+            if prop in ('offset', 'scroll', 'colorscale') and d[prop]:
+                d[prop] = d[prop].to_dict()
+
+        d['_order'] = proplist
+        return d
+
+    @classmethod
+    def from_dict(cls, d):
+        v = VSlot(d['a'], d['b'])
+        for prop in d['_order']:
+            setattr(v, prop, d[prop])
+        return v
 
 class SurfaceInfo:
     def __init__(self, lmid0, lmid1, verts, numverts):

@@ -10,6 +10,9 @@ class ivec2:
     def Y(self):
         return int(self.y)
 
+    def to_dict(self):
+        return [self.X(), self.Y()]
+
 
 class vec2:
     """Float version of ivec2"""
@@ -20,8 +23,12 @@ class vec2:
 
     def X(self):
         return float(self.x)
+
     def Y(self):
         return float(self.y)
+
+    def to_dict(self):
+        return [self.X(), self.Y()]
 
 
 class vec3:
@@ -36,6 +43,9 @@ class vec3:
         return float(self.y)
     def Z(self):
         return float(self.z)
+
+    def to_dict(self):
+        return [self.X(), self.Y(), self.Z()]
 
 
 class ivec3:
@@ -104,6 +114,9 @@ class ivec3:
 
     def __str__(self):
         return "(%d, %d, %d)" % (self.x, self.y, self.z)
+
+    def to_dict(self):
+        return [self.X(), self.Y(), self.Z()]
 
 
 def cross(a, b):

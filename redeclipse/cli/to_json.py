@@ -12,7 +12,7 @@ def to_dict(map_path):
         'version': m.version,
         'headersize': m.headersize,
         'meta': [(key, bytes.decode(value) if isinstance(value, bytes) else value) for (key, value) in m.meta.items()],
-        'mapvars': [(bytes.decode(key), bytes.decode(value) if isinstance(value, bytes) else value) for (key, value) in m.map_vars.items()],
+        'map_vars': [(bytes.decode(key), bytes.decode(value) if isinstance(value, bytes) else value) for (key, value) in m.map_vars.items()],
         'texmru': m.texmru,
         'entities': [ent.to_dict() for ent in m.ents],
         'world': [x.to_dict() for x in m.world],

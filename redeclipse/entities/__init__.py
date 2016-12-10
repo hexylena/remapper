@@ -49,4 +49,20 @@ class Entity:
         if self.type == EntType.ET_WEAPON:
             data['attr']['type'] = data['attr']['type'].name
 
+        data['attr']['_order'] = self.attr_annotations
+
         return data
+
+    @classmethod
+    def from_dict(cls, d):
+        attrs = [d['attr'][x] if isinstance(d['attr'][x], int) else WeaponType[d['attr'][x]] for x in d['attr']['_order']]
+        e = Entity(
+            x=d['position'][0],
+            y=d['position'][1],
+            z=d['position'][2],
+            type=EntType[d['type']],
+            attrs=attrs,
+            links=d['links'],
+            reserved=d['reserved']
+        )
+        return e
