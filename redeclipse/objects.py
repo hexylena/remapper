@@ -253,7 +253,10 @@ class cube:
         c.visible = 0
         c.edges = [128] * 12
         c.children = []
-        c.texture = [tex, tex, tex, tex, tex, tex]
+        if isinstance(tex, int):
+            c.texture = [tex, tex, tex, tex, tex, tex]
+        else:
+            c.texture = tex
         c.ext = cubext()
         c.ext.verts = 0
         c.ext.surfaces = [

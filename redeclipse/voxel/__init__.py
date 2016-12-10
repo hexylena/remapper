@@ -5,6 +5,7 @@ So we work in a voxel world, and then convert this to an octree with the small
 resolution cube that makes sense, and then let RE optimise the map when need be.
 """
 from redeclipse.objects import cube
+from redeclipse.enums import OCT
 
 
 class VoxelWorld:
@@ -23,7 +24,7 @@ class VoxelWorld:
         else:
             return None
 
-    def to_octree(self,  x_bounds=None, y_bounds=None, z_bounds=None):
+    def to_octree(self,  x_bounds=None, y_bounds=None, z_bounds=None, layers=False):
         if x_bounds is None:
             x_bounds = (
                 0, self.size
@@ -85,11 +86,16 @@ class VoxelWorld:
             )
             # new cube * 8
         ]
-        if all([x is None for x in current_level_cubes]):
-            return None
-        elif x_bounds[0] == 0 and x_bounds[1] == self.size:
+
+        # Worldroot is an array not a cube
+        if x_bounds[0] == 0 and x_bounds[1] == self.size:
             return [cube.newcube() if x is None else x for x in current_level_cubes]
+        elif all([x is None for x in current_level_cubes]):
+            # If they're all empty, return
+            return None
         else:
+            # Some of them are non-empty, replace the others with empty cubes.
             c = cube.newcube()
             c.children = [cube.newcube() if x is None else x for x in current_level_cubes]
+            c.octsav = OCT.OCTSAV_CHILDREN.value
             return c
