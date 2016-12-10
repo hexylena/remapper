@@ -117,13 +117,9 @@ class Entity:
             ','.join(map(str, self.links))
         )
 
-    def serialization_format(self):
-        return 'fffcccc' + ('i' * len(self.attrs)) + ('i' * len(self.links))
-
     def serialize(self):
-        return [self.o.x, self.o.y, self.o.z, str.encode(str(self.type.value))] + \
-            [str.encode(str(x)) for x in self.reserved] + \
-            self.attrs + self.links
+        return [self.o.x, self.o.y, self.o.z, str.encode(chr(self.type.value))] + \
+            [str.encode(chr(x)) for x in self.reserved]
 
 
 class cubext:

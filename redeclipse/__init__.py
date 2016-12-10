@@ -2,7 +2,7 @@ import sys
 import gzip
 import struct
 from collections import OrderedDict
-from redeclipse.enums import EntType, Faces, VTYPE, OCT, OctLayers
+from redeclipse.enums import EntType, Faces, VTYPE, OCT, OctLayers, TextNum
 from redeclipse.objects import VSlot, SlotShaderParam, cube, SurfaceInfo, vertinfo, dimension, Entity
 from redeclipse.vec import ivec3, cross
 import copy
@@ -15,7 +15,7 @@ MAXSTRLEN = 512
 
 class Map:
 
-    def __init__(self, magic, version, headersize, meta, map_vars, texmru, ents, vslots, worldroot):
+    def __init__(self, magic, version, headersize, meta, map_vars, texmru, ents, vslots, chg, worldroot):
         self.magic = magic
         self.version = version
         self.headersize = headersize
@@ -24,6 +24,7 @@ class Map:
         self.texmru = texmru
         self.ents = ents
         self.vslots = vslots
+        self.chg = chg
         self.world = worldroot
 
     def write(self, path):
@@ -68,14 +69,20 @@ class Map:
             self.write_ushort(handle, value)
 
         # Entities
-        for ent in self.ents:
-            print(ent.serialization_format(), ent.serialize())
-            self.write_custom(
-                handle, ent.serialization_format()[0:4], ent.serialize()[0:4])
+        self.write_ents(handle, self.ents)
+
+        # Textures
+        self.write_vslots(handle, self.vslots, self.chg)
+
+        # World
+        self.write_world(handle, self.world)
+
 
     def write_custom(self, handle, fmt, data):
-        print(fmt, data)
         handle.write(struct.pack(fmt, *data))
+
+    def write_int_as_chr(self, handle, data):
+        handle.write(struct.pack('c', str.encode(chr(data))))
 
     def write_int(self, handle, value):
         handle.write(struct.pack('i', value))
@@ -93,6 +100,99 @@ class Map:
 
         fmt = '%ds' % strlen
         handle.write(struct.pack(fmt, value))
+
+    def write_ents(self, handle, ents):
+        sizeof_entbase = 16
+
+        for ent in ents:
+            # (x, y, z, etype, a, b, c) = self.read_custom('fffcccc', sizeof_entbase)
+            self.write_custom(
+                handle,
+                'fffcccc',
+                ent.serialize()
+            )
+
+            self.write_int(handle, len(ent.attrs))
+            for at in ent.attrs:
+                self.write_int(handle, at)
+
+            self.write_int(handle, len(ent.links))
+            for ln in ent.links:
+                self.write_int(handle, ln)
+
+    def write_vslots(self, handle, vslots, chg):
+        for num in chg:
+            self.write_int(handle, num)
+            if num < 0:
+                pass
+            else:
+                raise NotImplementedError()
+
+    def write_vslot(self, vs, changed):
+        pass
+
+    def write_world(self, handle, world):
+        # world is cube_arr len=8
+        for cube in world:
+            self.write_cube(handle, cube)
+
+    def write_children(self, handle, cube_arr):
+        for cube in cube_arr:
+            self.write_cube(handle, cube)
+
+    def write_cube(self, handle, cube):
+        """Inverse of loadc"""
+        self.write_int_as_chr(handle, cube.octsav)
+        log.debug(('> octsav', cube.octsav, '&7', cube.octsav & 0x7))
+
+        if cube.octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
+            self.write_children(handle, cube.children)
+        elif cube.octsav & 0x7 == OCT.OCTSAV_EMPTY.value:
+            pass # Nothing to write
+        elif cube.octsav & 0x7 == OCT.OCTSAV_SOLID.value:
+            pass # Nothing to write, simply that cube is solid
+        elif cube.octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
+            for e in cube.edges:
+                self.write_custom('B', [e])
+        elif cube.octsav & 0x7 == OCT.OCTSAV_LODCUBE.value:
+            # Nothing to do, this just set cube.children, which we know
+            # from other sources.
+            pass
+        else:
+            sys.exit(42)
+            return
+
+        for t in cube.texture:
+            if isinstance(t, TextNum):
+                pass
+            else:
+                self.write_ushort(handle, t)
+
+        if cube.octsav & 0x40:
+            self.write_ushort(handle, cube.material)
+        if cube.octsav & 0x80:
+            self.write_int_as_chr(handle, cube.merged)
+        if cube.octsav & 0x20:
+            # surfmask = self.read_char()
+            # totalverts = self.read_char()
+            self.write_int_as_chr(handle, cube.surfmask)
+            self.write_int_as_chr(handle, cube.totalverts)
+            for i in range(6):
+                log.debug(('loadc 0x20 %d, %d' % (i, cube.surfmask & (1 << i))))
+
+                if not cube.surfmask & (1<<i):
+                    pass
+                else:
+                    surfinfo = cube.ext.surfaces[i]
+                    self.write_int_as_chr(handle, surfinfo.lmid[0])
+                    self.write_int_as_chr(handle, surfinfo.lmid[1])
+                    self.write_int_as_chr(handle, surfinfo.verts)
+                    self.write_int_as_chr(handle, surfinfo.numverts)
+
+                    if surfinfo.verts == 0:
+                        continue
+                    else:
+                        raise NotImplementedError()
 
 
 class MapParser(object):
@@ -163,11 +263,13 @@ class MapParser(object):
     def loadvslots(self, numvslots):
         prev = [-1] * numvslots
         vslots = []
+        chg = []
         log.debug("Sizeof int 4")
         log.debug("numvslots %s" % numvslots)
         while numvslots > 0:
             log.debug("numvslots %s" % numvslots)
             changed = self.read_int()
+            chg.append(changed)
             log.debug("changed %s" % changed)
             if changed < 0:
                 for i in range(-changed):
@@ -185,9 +287,7 @@ class MapParser(object):
             if 0 <= idx < numvslots:
                 vslots[prev[idx]]._next = vslots[idx]
 
-        self.vslots = vslots
-        # log.debug(list(enumerate(vslots)))
-        # log.debug(list(enumerate(prev)))
+        return vslots, chg
 
     def loadvslot(self, vs, changed):
         vs.changed = changed
@@ -264,10 +364,10 @@ class MapParser(object):
 
     def loadc(self, c, co, size, failed):
         """Loads a single cube? Or rather, based on C, processes it into a cube object?"""
-        # haschildren = False
         octsav = self.read_char()
-        haschildren = False
-        log.debug('octsav', octsav, '&7', octsav & 0x7)
+        c.octsav = octsav
+        log.debug(('< octsav', octsav, '&7', octsav & 0x7))
+        c.haschildren = False
         if octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
             c.children = self.loadchildren(co, size>>1, failed)
             return False, c
@@ -278,7 +378,7 @@ class MapParser(object):
         elif octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
             c.edges = self.read_custom('B', 12)
         elif octsav & 0x7 == OCT.OCTSAV_LODCUBE.value:
-            haschildren = True
+            c.haschildren = True
         else:
             failed = True
             return failed, c
@@ -290,13 +390,16 @@ class MapParser(object):
         log.debug(('octsav %d &40 %d &80 %d &20 %d' % (
             octsav, octsav & 0x40, octsav & 0x80, octsav & 0x20
         )))
+
         if octsav & 0x40:
-            c.material = self.read_ushort()
+            self.write_ushort(handle, cube.material)
         if octsav & 0x80:
-            c.merged = self.read_char()
+            self.write_int_as_chr(cube.merged)
         if octsav & 0x20:
             surfmask = self.read_char()
+            c.surfmask = surfmask
             totalverts = self.read_char()
+            c.totalverts = totalverts
             log.debug(('sfm %d, tv %d' % (surfmask, totalverts)))
             c.newcubeext(totalverts, False)
             c.ext.surfaces = []
@@ -326,177 +429,9 @@ class MapParser(object):
                     if not numverts:
                         surf.verts = 0
                         continue
-                    surf.verts = offset
-                    offset += numverts
-                    verts = [
-                        vertinfo(0,0,0,0,0,0)
-                    ] * 20
-                    v = []
-                    n = None
-                    vo = co.mask(0xFFF).shl(3)
-                    layerverts = surf.numverts & OctLayers.MAXFACEVERTS.value
-                    dim = dimension(i)
-                    vc = self.C[dim]
-                    vr = self.R[dim]
-                    bias = 0
-                    v = c.genfaceverts(i)
-                    hasxyz = (vertmask & 0x04) != 0
-                    hasuv = (vertmask &0x40) != 0
-                    hasnorm = (vertmask & 0x80) != 0
-                    if hasxyz:
-                        e1 = copy.deepcopy(v[1])
-                        e2 = copy.deepcopy(v[2])
-                        e3 = copy.deepcopy(v[3])
-                        n = cross(
-                            e1.sub(v[0]),
-                            e2.sub(v[0])
-                        )
-                        log.debug(e1)
-                        log.debug(e2)
-                        log.debug(e3)
-                        log.debug(n)
-                        if n.iszero():
-                            n = cross(e2, e3.sub(v[0]))
-                        bias = -n.dot(
-                            v[0].mul(size).add(vo)
-                        )
-                        log.debug(("Bias: %d" % bias))
-                    else:
-                        vis = 3
-                        if layerverts < 4:
-                            if vertmask & 0x02:
-                                vis = 2
-                            else:
-                                vis = 1
-                        order = 0
-                        if vertmask & 0x01:
-                            order = 1
-                        k = 0
-                        verts[k].setxyz(v[order].mul(size).add(vo))
-                        k += 1
-                        if vis & 1:
-                            verts[k].setxyz(v[order+1].mul(size).add(vo))
-                            k += 1
-                        verts[k].setxyz(v[order+2].mul(size).add(vo))
-                        k += 1
-                        if vis & 2:
-                            verts[k].setxyz(v[(order+3)&3].mul(size).add(vo))
-                            k += 1
-
-                    # TODO
-                    log.debug(('layerverts %d' % layerverts))
-                    if layerverts == 4:
-                        log.debug(('hasxyz %s hasuv %s' % (hasxyz, hasuv)))
-                        if hasxyz and (vertmask & 0x01):
-                            c1 = self.read_ushort()
-                            r1 = self.read_ushort()
-                            c2 = self.read_ushort()
-                            r2 = self.read_ushort()
-                            log.debug(('c1 ... %d, %d, %d, %d' % (c1, r1, c2, r2)))
-                            xyz = [0] * 3
-                            log.debug(('vc = %d, vr = %d, dim = %d' % (vc, vr, dim)))
-
-                            xyz[vc] = c1
-                            xyz[vr] = r1
-                            if n.gg(dim):
-                                xyz[dim] =  -(bias + n.gg(vc)*xyz[vc] + n.gg(vr)*xyz[vr]) / n.gg(dim)
-                            else:
-                                xyz[dim] = vo[dim]
-
-                            verts[0].setxyz2(*xyz)
-                            log.debug((verts[0]))
-
-                            xyz[vc] = c1
-                            xyz[vr] = r2
-                            if n.gg(dim):
-                                xyz[dim] =  -(bias + n.gg(vc)*xyz[vc] + n.gg(vr)*xyz[vr]) / n.gg(dim)
-                            else:
-                                xyz[dim] = vo[dim]
-
-                            verts[1].setxyz2(*xyz)
-                            log.debug((verts[1]))
-
-                            xyz[vc] = c2
-                            xyz[vr] = r2
-                            if n.gg(dim):
-                                xyz[dim] =  -(bias + n.gg(vc)*xyz[vc] + n.gg(vr)*xyz[vr]) / n.gg(dim)
-                            else:
-                                xyz[dim] = vo[dim]
-
-                            verts[2].setxyz2(*xyz)
-                            log.debug((verts[2]))
-
-                            xyz[vc] = c2
-                            xyz[vr] = r1
-                            if n.gg(dim):
-                                xyz[dim] =  -(bias + n.gg(vc)*xyz[vc] + n.gg(vr)*xyz[vr]) / n.gg(dim)
-                            else:
-                                xyz[dim] = vo[dim]
-
-                            verts[3].setxyz2(*xyz)
-                            log.debug((verts[3]))
-                            hasxyz = False
-                        if hasuv and (vertmask & 0x02):
-                            uvorder = (vertmask&0x30)>>4
-                            v0 = verts[uvorder]
-                            v1 = verts[(uvorder + 1) & 0x3]
-                            v2 = verts[(uvorder + 2) & 0x3]
-                            v3 = verts[(uvorder + 3) & 0x3]
-                            v0.u = self.read_ushort()
-                            v0.v = self.read_ushort()
-                            v2.u = self.read_ushort()
-                            v2.v = self.read_ushort()
-                            v1.u = v0.u
-                            v1.v = v2.v
-                            v3.u = v2.u
-                            v3.v = v0.v
-                            if surf.numverts & OctLayers.LAYER_DUP.value:
-                                v0 = verts[4 + uvorder]
-                                v1 = verts[4 + ((uvorder + 1) & 0x3)]
-                                v2 = verts[4 + ((uvorder + 2) & 0x3)]
-                                v3 = verts[4 + ((uvorder + 3) & 0x3)]
-                                v0.u = self.read_ushort()
-                                v0.v = self.read_ushort()
-                                v2.u = self.read_ushort()
-                                v2.v = self.read_ushort()
-                                v1.u = v0.u
-                                v1.v = v2.v
-                                v3.u = v2.u
-                                v3.v = v0.v
-                                hasuv = False
-                    if hasnorm and (vertmask & 0x08):
-                        norm = self.read_ushort()
-                        for k in range(layerverts):
-                            verts[k].norm = norm
-                    if hasxyz or hasuv or hasnorm:
-                        for k in range(layerverts):
-                            v = verts[k]
-                            if hasxyz:
-                                xyz = [0] * 3
-                                xyz[vc] = self.read_ushort()
-                                xyz[vr] = self.read_ushort()
-                                if n.gg(dim):
-                                    xyz[dim] =  -(bias + n.gg(vc)*xyz[vc] + n.gg(vr)*xyz[vr]) / n.gg(dim)
-                                else:
-                                    xyz[dim] = vo[dim]
-                            if hasuv:
-                                v.u = self.read_ushort()
-                                v.v = self.read_ushort()
-                            if hasnorm:
-                                v.norm = self.read_ushort()
-                    if surf.numverts & OctLayers.LAYER_DUP.value:
-                        for k in range(layerverts):
-                            v = verts[k + layerverts]
-                            t = verts[k]
-                            v.setxyz(t)
-                            if hasuv:
-                                v.u = self.read_ushort()
-                                v.v = self.read_ushort()
-                            v.norm = t.norm
-            # sys.exit()
 
         log.debug(('haskids %s' % (1 if failed else 0,)))
-        if haschildren:
+        if c.haschildren:
             c.children = self.loadchildren(co, size>>1, failed)
         else:
             c.children = None
@@ -606,8 +541,8 @@ class MapParser(object):
         log.info("Loaded %s entities", len(ents))
 
         # Textures?
-        vslots = self.loadvslots(meta['numvslots'])
-        log.info("Loaded %s vslots", len(self.vslots))
+        vslots, chg = self.loadvslots(meta['numvslots'])
+        log.info("Loaded %s vslots", len(vslots))
 
         # arggghhh
         failed = False
@@ -632,6 +567,6 @@ class MapParser(object):
             log.debug('Lightmaps: %s' % meta['lightmaps'])
             # TODO
 
-        m = Map(magic, version, headersize, meta, map_vars, texmru, ents, vslots,
+        m = Map(magic, version, headersize, meta, map_vars, texmru, ents, vslots, chg,
                 worldroot)
         return m
