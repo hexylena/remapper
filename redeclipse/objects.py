@@ -196,6 +196,7 @@ class cube:
 
         self.surfmask = 0
         self.totalverts = 0
+        self.octsav = 1
 
         # Secret internal ID to make my life less painful
         global CUBE_ID
@@ -237,6 +238,35 @@ class cube:
         c = cube()
         c.setfaces(face)
         c.mat = mat
+        return c
+
+    @classmethod
+    def newtexcube(cls, tex=2):
+        c = cube.newcube()
+        return cube.texturize(c, tex=tex)
+
+    @classmethod
+    def texturize(cls, c, tex=2):
+        c.material = None
+        c.escaped = 0
+        c.set_solid()
+        c.visible = 0
+        c.edges = [128] * 12
+        c.children = []
+        c.texture = [tex, tex, tex, tex, tex, tex]
+        c.ext = cubext()
+        c.ext.verts = 0
+        c.ext.surfaces = [
+            SurfaceInfo(2, 0, 0, 32),
+            SurfaceInfo(2, 0, 0, 32),
+            SurfaceInfo(2, 0, 0, 32),
+            SurfaceInfo(2, 0, 0, 32),
+            SurfaceInfo(2, 0, 0, 32),
+            SurfaceInfo(2, 0, 0, 32),
+        ]
+        c.octsav = 34
+        c.surfmask = 63
+        c.totalverts = 0
         return c
 
     @classmethod
