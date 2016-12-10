@@ -12,7 +12,10 @@ setup(
     packages=["redeclipse"],
     entry_points={
         'console_scripts': [
-                'redeclipse_iso = redeclipse.cli:main',
+                'redeclipse_iso = redeclipse.cli.iso:main',
+                'redeclipse_tojson = redeclipse.cli.to_json:main',
+                'redeclipse_addtrees = redeclipse.cli.add_trees:main',
+                'redeclipse_cfg = redeclipse.cli.cfg_gen:main',
             ]
         },
     classifiers=[
