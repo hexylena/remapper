@@ -33,9 +33,6 @@ class Map:
         self.world = worldroot
 
     def write(self, path):
-        if path == '-':
-            path = sys.stdout
-
         handle = gzip.open(path, 'wb')
         handle.write(self.magic)
         # Write the version
@@ -253,10 +250,6 @@ class Map:
         return m
 
 class MapParser(object):
-
-    R = (1, 2, 0) # row
-    C = (2, 0, 1) # col
-    D = (0, 1, 2) # depth
 
     def parseMap(self, base_path):
         """Load the specified map"""
@@ -527,9 +520,6 @@ class MapParser(object):
         return ents
 
     def read(self):
-        if self.mpz == '-':
-            self.mpz = sys.stdin
-
         with gzip.open(self.mpz) as handle:
             self.bytes = handle.read()
 
