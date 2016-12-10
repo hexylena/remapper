@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-from redeclipse.cli import parse
 import json
 import argparse
+from redeclipse.cli import parse
 
 
 if __name__ == '__main__':
