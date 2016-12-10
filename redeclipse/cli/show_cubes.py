@@ -5,6 +5,9 @@ import argparse
 
 def simplify(d):
     d['faces'] = d['faces'][0]
+    if d['faces'] == 'F_EMPTY' and d['ext'] is None:
+        return ['Empty']
+
     if len(set(d['edges'])) == 1:
         d['edges'] = '%s * %s' % (len(d['edges']), d['edges'][0])
 
