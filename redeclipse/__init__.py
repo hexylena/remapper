@@ -37,7 +37,7 @@ class Map:
     def write(self, path):
         log.info('WRITING')
         handle = gzip.open(path, 'wb')
-        handle.write(self.magic)
+        self.write_str(handle, tb(self.magic))
         # Write the version
         self.write_int(handle, self.version)
         # Write the header size (Surely some way to calc from self.meta?)
@@ -74,7 +74,7 @@ class Map:
 
         # Texmru
         self.write_ushort(handle, len(self.texmru))  # nummru
-        # log.debug("texmru: %s", len(self.texmru))
+        log.debug("Nummru %s", len(self.texmru))
         for value in self.texmru:
             self.write_ushort(handle, value)
 
@@ -96,7 +96,7 @@ class Map:
         handle.write(struct.pack('B', char))
 
     def write_int_as_chr(self, handle, data):
-        log.debug('wichr %s', data)
+        log.debug('wchr %s', data)
         handle.write(struct.pack('c', str.encode(chr(data))))
 
     def write_int(self, handle, value):
@@ -158,30 +158,32 @@ class Map:
             self.write_cube(handle, c)
 
     def write_children(self, handle, cube_arr):
-        for c in cube_arr:
+        log.debug('lc')
+        for i, c in enumerate(cube_arr):
+            log.debug('\t %d', i)
             self.write_cube(handle, c)
 
     def write_cube(self, handle, c):
         """Inverse of loadc"""
 
         self.write_int_as_chr(handle, c.octsav)
-        # log.debug('> octsav %s &7 %s', c.octsav, c.octsav & 0x7)
+        log.debug('> octsav %s &7 %s', c.octsav, c.octsav & 0x7)
 
         if c.octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
-            # log.debug('>> kids')
+            log.debug('>> kids')
             self.write_children(handle, c.children)
         elif c.octsav & 0x7 == OCT.OCTSAV_EMPTY.value:
-            # log.debug('>> empty')
+            log.debug('>> empty')
             pass # Nothing to write
         elif c.octsav & 0x7 == OCT.OCTSAV_SOLID.value:
-            # log.debug('>> solid')
+            log.debug('>> solid')
             pass # Nothing to write, simply that c is solid
         elif c.octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
-            # log.debug('>> normal')
+            log.debug('>> normal')
             for e in c.edges:
                 self.write_custom(handle, 'B', [e])
         elif c.octsav & 0x7 == OCT.OCTSAV_LODCUBE.value:
-            # log.debug('>> lodcube')
+            log.debug('>> lodcube')
             # Nothing to do, this just set c.children, which we know
             # from other sources.
             pass
@@ -189,11 +191,17 @@ class Map:
             sys.exit(42)
             return
 
-        for t in c.texture:
+        for i, t in enumerate(c.texture):
             if isinstance(t, TextNum):
                 self.write_ushort(handle, t.value)
+                log.debug('c.tex[%d] = %d', i, t.value)
             else:
                 self.write_ushort(handle, t)
+                log.debug('c.tex[%d] = %d', i, t)
+
+        log.debug('octsav %d &40 %d &80 %d &20 %d',
+            c.octsav, c.octsav & 0x40, c.octsav & 0x80, c.octsav & 0x20
+        )
 
         if c.octsav & 0x40:
             self.write_ushort(handle, c.material)
@@ -202,8 +210,10 @@ class Map:
         if c.octsav & 0x20:
             self.write_int_as_chr(handle, c.surfmask)
             self.write_int_as_chr(handle, c.totalverts)
+            log.debug('sfm %d, tv %d', c.surfmask, c.totalverts)
+
             for i in range(6):
-                # log.debug(('>loadc 0x20 %d, %d' % (i, c.surfmask & (1 << i))))
+                log.debug(('>loadc 0x20 %d, %d' % (i, c.surfmask & (1 << i))))
 
                 if not c.surfmask & (1<<i):
                     pass
@@ -213,6 +223,9 @@ class Map:
                     self.write_char(handle, surfinfo.lmid[1])
                     self.write_char(handle, surfinfo.verts)
                     self.write_char(handle, surfinfo.numverts)
+
+                    log.debug("%s", surfinfo)
+                    log.debug('Vertmask %d numverts %d', surfinfo.verts, 0)
 
                     if surfinfo.verts == 0:
                         continue
@@ -270,13 +283,6 @@ class Map:
 
 class MapParser(object):
 
-    def parseMap(self, base_path):
-        """Load the specified map"""
-        self.base_path = base_path
-        self.mpz = base_path
-        self.index = 0
-        return self.read()
-
     def _read_custom(self, pattern, width):
         val = struct.unpack(pattern, self.bytes[self.index:self.index + width])
         self.index += width
@@ -289,7 +295,7 @@ class MapParser(object):
 
     def read_char(self):
         val = self._read_custom('B', 1)[0]
-        log.debug('wc %s', val)
+        log.debug('wchr %s', val)
         return val
 
     def read_custom(self, pattern, width):
@@ -330,7 +336,7 @@ class MapParser(object):
             log.debug("numvslots %s", numvslots)
             changed = self.read_int()
             chg.append(changed)
-            log.debug("changed %s", changed)
+            # log.debug("changed %s", changed)
             if changed < 0:
                 for i in range(-changed):
                     vslots.append(VSlot(None, len(vslots)))
@@ -341,9 +347,9 @@ class MapParser(object):
                 numvslots -= 1
 
 
-        log.debug("Vslots: %s", len(vslots))
+        # log.debug("Vslots: %s", len(vslots))
         for idx, v in enumerate(vslots):
-            log.debug("\t[%s] %s %s", idx, prev[idx], int(0 <= idx < numvslots))
+            # log.debug("\t[%s] %s %s", idx, prev[idx], int(0 <= idx < numvslots))
             if 0 <= idx < numvslots:
                 vslots[prev[idx]]._next = vslots[idx]
 
@@ -405,10 +411,10 @@ class MapParser(object):
             vs.coastscale = self.read_float()
 
     def loadchildren(self, co, size, failed):
-        log.debug('lc %s %s', size, 1 if failed else 0)
+        log.debug('lc')
         cube_arr = cube.newcubes(Faces.F_EMPTY, 0)
         for i in range(8):
-            log.debug("\t, %d %d %d", i, size, 1 if failed else 0)
+            log.debug('\t %d', i)
             failed, c_x = self.loadc(
                 cube_arr[i],
                 ivec3.ivec5(i, co.x, co.y, co.z, size),
@@ -416,7 +422,6 @@ class MapParser(object):
                 failed
             )
             cube_arr[i] = c_x
-            log.debug('\tlc %s %s', i, 1 if failed else 0)
 
             if failed:
                 break
@@ -426,26 +431,35 @@ class MapParser(object):
         """Loads a single cube? Or rather, based on C, processes it into a cube object?"""
         octsav = self.read_char()
         c.octsav = octsav
-        log.debug('< octsav %s &7 %s', octsav, octsav & 0x7)
+        log.debug('> octsav %s &7 %s', octsav, octsav & 0x7)
         c.haschildren = False
         if octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
+            log.debug('>> kids')
             c.children = self.loadchildren(co, size>>1, failed)
             return False, c
         elif octsav & 0x7 == OCT.OCTSAV_EMPTY.value:
+            log.debug('>> empty')
             c.setfaces(Faces.F_EMPTY)
         elif octsav & 0x7 == OCT.OCTSAV_SOLID.value:
+            log.debug('>> solid')
             c.setfaces(Faces.F_SOLID)
         elif octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
+            log.debug('>> normal')
             c.edges = self.read_custom('BBBBBBBBBBBB', 12)
         elif octsav & 0x7 == OCT.OCTSAV_LODCUBE.value:
+            log.debug('>> lodcube')
             c.haschildren = True
         else:
             failed = True
             return failed, c
 
-        c.texture = [self.read_ushort() for i in range(6)]
-        for idx, i in enumerate(c.texture):
-            log.debug('c.tex[%d] = %d', idx, i)
+        c.texture = []
+        for i in range(6):
+            c.texture.append(self.read_ushort())
+            log.debug('c.tex[%d] = %d', i, c.texture[-1])
+        # c.texture = [self.read_ushort() for i in range(6)]
+        # for idx, i in enumerate(c.texture):
+            # log.debug('c.tex[%d] = %d', idx, i)
 
         log.debug('octsav %d &40 %d &80 %d &20 %d',
             octsav, octsav & 0x40, octsav & 0x80, octsav & 0x20
@@ -464,7 +478,7 @@ class MapParser(object):
             c.newcubeext(totalverts, False)
             # offset = 0
             for i in range(6):
-                log.debug('<loadc 0x20 %d, %d', i, surfmask & (1 << i))
+                log.debug('>loadc 0x20 %d, %d', i, surfmask & (1 << i))
 
                 if not surfmask & (1<<i):
                     c.ext.surfaces.append(None)
@@ -478,7 +492,6 @@ class MapParser(object):
                         )
                     )
 
-                    # log.debug(i, c.ext.surfaces)
                     surf = c.ext.surfaces[i]
                     vertmask = surf.verts
                     log.debug(surf)
@@ -490,7 +503,6 @@ class MapParser(object):
 
                     raise NotImplementedError("Gross in")
 
-        log.debug('haskids %s', 1 if failed else 0,)
         if c.haschildren:
             c.children = self.loadchildren(co, size>>1, failed)
         else:
@@ -527,8 +539,12 @@ class MapParser(object):
             ents.append(e)
         return ents
 
-    def read(self):
-        with gzip.open(self.mpz) as handle:
+    def read(self, base_path):
+        """Load the specified map"""
+        self.base_path = base_path
+        self.index = 0
+
+        with gzip.open(base_path) as handle:
             self.bytes = handle.read()
 
         magic = self.read_str(4, null=False)
@@ -536,7 +552,7 @@ class MapParser(object):
             raise Exception("Not a mapz file")
 
 
-        log.debug('Loading map: %s', self.mpz)
+        log.debug('Loading map: %s', base_path)
         log.debug('Header Magic: %s', magic)
         version = self.read_int()
         log.debug('Version: %s', version)
@@ -565,7 +581,6 @@ class MapParser(object):
             # +1 for null term string
             var_name_len = self.read_int()
             var_name = self.read_str(var_name_len)
-            # log.debug(self.index, var_name)
             var_type = self.read_int()
 
             # String
@@ -581,8 +596,6 @@ class MapParser(object):
                 raise Exception("Don't know how to handle map prop type %s", var_type)
 
             map_vars[var_name] = var_val
-
-        log.debug('Clearing world..')
 
         texmru = []
         nummru = self.read_ushort()
