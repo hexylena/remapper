@@ -74,7 +74,7 @@ class Map:
 
         # Texmru
         self.write_ushort(handle, len(self.texmru))  # nummru
-        log.debug("texmru: %s", len(self.texmru))
+        # log.debug("texmru: %s", len(self.texmru))
         for value in self.texmru:
             self.write_ushort(handle, value)
 
@@ -88,7 +88,7 @@ class Map:
         self.write_world(handle, self.world)
 
     def write_custom(self, handle, fmt, data):
-        log.debug('wc %s %s', fmt, data)
+        log.debug('wcc %s %s', fmt, data)
         handle.write(struct.pack(fmt, *data))
 
     def write_char(self, handle, char):
@@ -165,23 +165,23 @@ class Map:
         """Inverse of loadc"""
 
         self.write_int_as_chr(handle, c.octsav)
-        log.debug('> octsav %s &7 %s', c.octsav, c.octsav & 0x7)
+        # log.debug('> octsav %s &7 %s', c.octsav, c.octsav & 0x7)
 
         if c.octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
-            log.debug('>> kids')
+            # log.debug('>> kids')
             self.write_children(handle, c.children)
         elif c.octsav & 0x7 == OCT.OCTSAV_EMPTY.value:
-            log.debug('>> empty')
+            # log.debug('>> empty')
             pass # Nothing to write
         elif c.octsav & 0x7 == OCT.OCTSAV_SOLID.value:
-            log.debug('>> solid')
+            # log.debug('>> solid')
             pass # Nothing to write, simply that c is solid
         elif c.octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
-            log.debug('>> normal')
+            # log.debug('>> normal')
             for e in c.edges:
                 self.write_custom(handle, 'B', [e])
         elif c.octsav & 0x7 == OCT.OCTSAV_LODCUBE.value:
-            log.debug('>> lodcube')
+            # log.debug('>> lodcube')
             # Nothing to do, this just set c.children, which we know
             # from other sources.
             pass
@@ -200,12 +200,10 @@ class Map:
         if c.octsav & 0x80:
             self.write_int_as_chr(handle, c.merged)
         if c.octsav & 0x20:
-            # surfmask = self.read_char()
-            # totalverts = self.read_char()
             self.write_int_as_chr(handle, c.surfmask)
             self.write_int_as_chr(handle, c.totalverts)
             for i in range(6):
-                log.debug(('>loadc 0x20 %d, %d' % (i, c.surfmask & (1 << i))))
+                # log.debug(('>loadc 0x20 %d, %d' % (i, c.surfmask & (1 << i))))
 
                 if not c.surfmask & (1<<i):
                     pass
@@ -279,46 +277,35 @@ class MapParser(object):
         self.index = 0
         return self.read()
 
+    def _read_custom(self, pattern, width):
+        val = struct.unpack(pattern, self.bytes[self.index:self.index + width])
+        self.index += width
+        return val
+
     def read_int(self):
-        return self.read_ints(1)[0]
+        val = self._read_custom('i', 4)[0]
+        log.debug('wi %s', val)
+        return val
 
     def read_char(self):
-        return self.read_custom('B', 1)[0]
+        val = self._read_custom('B', 1)[0]
+        log.debug('wc %s', val)
+        return val
 
     def read_custom(self, pattern, width):
-        log.debug('INDEX %s RC %s', self.index, width)
-        data = struct.unpack(
-            pattern,
-            self.bytes[self.index:self.index + width]
-        )
-        self.index += width
-        return data
-
-    def read_ints(self, count):
-        width = 4 * count
-        log.debug('INDEX %s RC %s', self.index, width)
-        data = struct.unpack(
-            'i' * count,
-            self.bytes[self.index:self.index + width]
-        )
-        self.index += width
-        return data
+        val = self._read_custom(pattern, width)
+        log.debug('wcc %s %s', pattern, val)
+        return val
 
     def read_float(self):
-        data = struct.unpack(
-            'f',
-            self.bytes[self.index:self.index + 4]
-        )
-        self.index += 4
-        return data[0]
+        val = self._read_custom('f', 4)[0]
+        log.debug('wf %s', val)
+        return val
 
     def read_ushort(self):
-        data = struct.unpack(
-            'H',
-            self.bytes[self.index:self.index + 2]
-        )
-        self.index += 2
-        return data[0]
+        val = self._read_custom('H', 2)[0]
+        log.debug('wu %s', val)
+        return val
 
     def read_str(self, strlen, null=True):
         if null:
@@ -328,7 +315,9 @@ class MapParser(object):
         data = struct.unpack(fmt, self.bytes[self.index:self.index + strlen])
         self.index += strlen
         if null:
+            log.debug('ws %s', data[0][0:-1])
             return data[0][0:-1]
+        log.debug('ws %s', data[0])
         return data[0]
 
     def loadvslots(self, numvslots):
@@ -558,10 +547,9 @@ class MapParser(object):
                      'lightmaps', 'blendmap', 'numvslots',
                      'gamever', 'revision')
         #'gameident', 'numvars')
-        meta_data = self.read_ints(len(meta_keys))
         meta = OrderedDict()
-        for (k, v) in zip(meta_keys, meta_data):
-            meta[k] = v
+        for k in meta_keys:
+            meta[k] = self.read_int()
 
         # char[4], null=True
         log.debug(meta)
