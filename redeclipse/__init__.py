@@ -37,7 +37,7 @@ class Map:
     def write(self, path):
         log.info('WRITING')
         handle = gzip.open(path, 'wb')
-        self.write_str(handle, tb(self.magic))
+        self.write_str(handle, tb(self.magic), null=False)
         # Write the version
         self.write_int(handle, self.version)
         # Write the header size (Surely some way to calc from self.meta?)
@@ -85,7 +85,7 @@ class Map:
         self.write_vslots(handle, self.vslots, self.chg)
 
         # World
-        self.write_world(handle, self.world)
+        self.write_children(handle, self.world)
 
     def write_custom(self, handle, fmt, data):
         log.debug('wcc %s %s', fmt, data)
@@ -152,38 +152,33 @@ class Map:
     def write_vslot(self, vs, changed):
         pass
 
-    def write_world(self, handle, world):
-        # world is cube_arr len=8
-        for c in world:
-            self.write_cube(handle, c)
-
-    def write_children(self, handle, cube_arr):
-        log.debug('lc')
+    def write_children(self, handle, cube_arr, indent=0):
+        log.debug('\t' * indent + 'lc')
         for i, c in enumerate(cube_arr):
-            log.debug('\t %d', i)
-            self.write_cube(handle, c)
+            log.debug(('\t' * indent) + '(%d)', i)
+            self.writec(handle, c, indent=indent)
 
-    def write_cube(self, handle, c):
+    def writec(self, handle, c, indent=0):
         """Inverse of loadc"""
 
         self.write_int_as_chr(handle, c.octsav)
-        log.debug('> octsav %s &7 %s', c.octsav, c.octsav & 0x7)
+        log.debug(('\t' * indent) + 'loadc> octsav %s &7 %s', c.octsav, c.octsav & 0x7)
 
         if c.octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
-            log.debug('>> kids')
-            self.write_children(handle, c.children)
+            log.debug(('\t' * indent) + '>> kids')
+            self.write_children(handle, c.children, indent=indent+1)
         elif c.octsav & 0x7 == OCT.OCTSAV_EMPTY.value:
-            log.debug('>> empty')
+            log.debug(('\t' * indent) + '>> empty')
             pass # Nothing to write
         elif c.octsav & 0x7 == OCT.OCTSAV_SOLID.value:
-            log.debug('>> solid')
+            log.debug(('\t' * indent) + '>> solid')
             pass # Nothing to write, simply that c is solid
         elif c.octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
-            log.debug('>> normal')
+            log.debug(('\t' * indent) + '>> normal')
             for e in c.edges:
                 self.write_custom(handle, 'B', [e])
         elif c.octsav & 0x7 == OCT.OCTSAV_LODCUBE.value:
-            log.debug('>> lodcube')
+            log.debug(('\t' * indent) + '>> lodcube')
             # Nothing to do, this just set c.children, which we know
             # from other sources.
             pass
@@ -194,12 +189,12 @@ class Map:
         for i, t in enumerate(c.texture):
             if isinstance(t, TextNum):
                 self.write_ushort(handle, t.value)
-                log.debug('c.tex[%d] = %d', i, t.value)
+                log.debug(('\t' * indent) + 'c.tex[%d] = %d', i, t.value)
             else:
                 self.write_ushort(handle, t)
-                log.debug('c.tex[%d] = %d', i, t)
+                log.debug(('\t' * indent) + 'c.tex[%d] = %d', i, t)
 
-        log.debug('octsav %d &40 %d &80 %d &20 %d',
+        log.debug(('\t' * indent) + 'octsav %d &40 %d &80 %d &20 %d',
             c.octsav, c.octsav & 0x40, c.octsav & 0x80, c.octsav & 0x20
         )
 
@@ -210,10 +205,10 @@ class Map:
         if c.octsav & 0x20:
             self.write_int_as_chr(handle, c.surfmask)
             self.write_int_as_chr(handle, c.totalverts)
-            log.debug('sfm %d, tv %d', c.surfmask, c.totalverts)
+            log.debug(('\t' * indent) + 'sfm %d, tv %d', c.surfmask, c.totalverts)
 
             for i in range(6):
-                log.debug(('>loadc 0x20 %d, %d' % (i, c.surfmask & (1 << i))))
+                log.debug(('\t' * indent) + '>loadc 0x20 %d, %d' % (i, c.surfmask & (1 << i)))
 
                 if not c.surfmask & (1<<i):
                     pass
@@ -224,8 +219,8 @@ class Map:
                     self.write_char(handle, surfinfo.verts)
                     self.write_char(handle, surfinfo.numverts)
 
-                    log.debug("%s", surfinfo)
-                    log.debug('Vertmask %d numverts %d', surfinfo.verts, 0)
+                    log.debug(('\t' * indent) + "%s", surfinfo)
+                    log.debug(('\t' * indent) + 'Vertmask %d numverts %d', surfinfo.verts, 0)
 
                     if surfinfo.verts == 0:
                         continue
@@ -410,16 +405,17 @@ class MapParser(object):
         if vs.changed & (1<<VTYPE.VSLOT_COAST.value):
             vs.coastscale = self.read_float()
 
-    def loadchildren(self, co, size, failed):
-        log.debug('lc')
+    def loadchildren(self, co, size, failed, indent=0):
+        log.debug('\t' * indent + 'lc')
         cube_arr = cube.newcubes(Faces.F_EMPTY, 0)
         for i in range(8):
-            log.debug('\t %d', i)
+            log.debug(('\t' * indent) + '(%d)', i)
             failed, c_x = self.loadc(
                 cube_arr[i],
                 ivec3.ivec5(i, co.x, co.y, co.z, size),
                 size,
-                failed
+                failed,
+                indent=indent
             )
             cube_arr[i] = c_x
 
@@ -427,27 +423,27 @@ class MapParser(object):
                 break
         return cube_arr
 
-    def loadc(self, c, co, size, failed):
+    def loadc(self, c, co, size, failed, indent=0):
         """Loads a single cube? Or rather, based on C, processes it into a cube object?"""
         octsav = self.read_char()
         c.octsav = octsav
-        log.debug('> octsav %s &7 %s', octsav, octsav & 0x7)
+        log.debug(('\t' * indent) + 'loadc> octsav %s &7 %s', octsav, octsav & 0x7)
         c.haschildren = False
         if octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
-            log.debug('>> kids')
-            c.children = self.loadchildren(co, size>>1, failed)
+            log.debug(('\t' * indent) + '>> kids')
+            c.children = self.loadchildren(co, size>>1, failed, indent=indent+1)
             return False, c
         elif octsav & 0x7 == OCT.OCTSAV_EMPTY.value:
-            log.debug('>> empty')
+            log.debug(('\t' * indent) + '>> empty')
             c.setfaces(Faces.F_EMPTY)
         elif octsav & 0x7 == OCT.OCTSAV_SOLID.value:
-            log.debug('>> solid')
+            log.debug(('\t' * indent) + '>> solid')
             c.setfaces(Faces.F_SOLID)
         elif octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
-            log.debug('>> normal')
+            log.debug(('\t' * indent) + '>> normal')
             c.edges = self.read_custom('BBBBBBBBBBBB', 12)
         elif octsav & 0x7 == OCT.OCTSAV_LODCUBE.value:
-            log.debug('>> lodcube')
+            log.debug(('\t' * indent) + '>> lodcube')
             c.haschildren = True
         else:
             failed = True
@@ -456,12 +452,12 @@ class MapParser(object):
         c.texture = []
         for i in range(6):
             c.texture.append(self.read_ushort())
-            log.debug('c.tex[%d] = %d', i, c.texture[-1])
+            log.debug(('\t' * indent) + 'c.tex[%d] = %d', i, c.texture[-1])
         # c.texture = [self.read_ushort() for i in range(6)]
         # for idx, i in enumerate(c.texture):
             # log.debug('c.tex[%d] = %d', idx, i)
 
-        log.debug('octsav %d &40 %d &80 %d &20 %d',
+        log.debug(('\t' * indent) + 'octsav %d &40 %d &80 %d &20 %d',
             octsav, octsav & 0x40, octsav & 0x80, octsav & 0x20
         )
 
@@ -474,11 +470,11 @@ class MapParser(object):
             c.surfmask = surfmask
             totalverts = self.read_char()
             c.totalverts = totalverts
-            log.debug('sfm %d, tv %d', surfmask, totalverts)
+            log.debug(('\t' * indent) + 'sfm %d, tv %d', surfmask, totalverts)
             c.newcubeext(totalverts, False)
             # offset = 0
             for i in range(6):
-                log.debug('>loadc 0x20 %d, %d', i, surfmask & (1 << i))
+                log.debug(('\t' * indent) + '>loadc 0x20 %d, %d', i, surfmask & (1 << i))
 
                 if not surfmask & (1<<i):
                     c.ext.surfaces.append(None)
@@ -494,9 +490,9 @@ class MapParser(object):
 
                     surf = c.ext.surfaces[i]
                     vertmask = surf.verts
-                    log.debug(surf)
+                    log.debug("%s%s" % (('\t' * indent), surf))
                     numverts = surf.totalverts()
-                    log.debug('Vertmask %d numverts %d', vertmask, numverts)
+                    log.debug(('\t' * indent) + 'Vertmask %d numverts %d', vertmask, numverts)
                     if not numverts:
                         surf.verts = 0
                         continue
