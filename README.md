@@ -14,21 +14,21 @@ The textures in this map were built from [havenlau's rounded pixel texture pack]
 
 A couple of scripts are shipped with this library:
 
-Script      | Purpose
------------ | ----
-`redeclipse_iso`   | Reads and writes a map, completely unchanged. They *should* be bit-for-bit identical.
+Script                 | Purpose
+-----------            | ----
+`redeclipse_iso`       | Reads and writes a map, completely unchanged. They *should* be bit-for-bit identical.
 `redeclipse_to_json`   | Converts map to a JSON representation which can be operated on by other tools.
 `redeclipse_from_json` | Deserializes map back into binary representation (WIP).
 `redeclipse_add_trees` | Randomly add trees entities at z=512, across x, y in (0, 1024). Used mostly during my testing.
-`redeclipse_cfg` | Given a directory, build a config file to allow using those textures.
-`redeclipse_voxel_1` | The "tutorial" script which demos adding a line of cubes at across a map diagonally.
-`redeclipse_voxel_2` | First real "test" map with automated landscape, trees, "houses".
+`redeclipse_cfg_gen`   | Given a directory, build a config file to allow using those textures.
+`redeclipse_voxel_1`   | The "tutorial" script which demos adding a line of cubes at across a map diagonally.
+`redeclipse_voxel_2`   | First real "test" map with automated landscape, trees, "houses".
 
 ## Examples
 
 ```console
-$ re_voxel_2 ./empty.mpz ~/.redeclipse/maps/minecraft.mpz
-$ re_cfg my-texture-directory/ > ~/.redeclipse/maps/minecraft.cfg
+$ redeclipse_voxel_2 ./test/empty.mpz ~/.redeclipse/maps/minecraft.mpz
+$ redeclipse_cfg_gen my-texture-directory/ > ~/.redeclipse/maps/minecraft.cfg
 ```
 
 # License
