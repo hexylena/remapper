@@ -5,10 +5,9 @@ from collections import OrderedDict
 from redeclipse.enums import EntType, Faces, VTYPE, OCT, TextNum
 from redeclipse.objects import VSlot, SlotShaderParam, cube, SurfaceInfo
 from redeclipse.entities import Entity
-from redeclipse.vec import ivec3
 import simplejson as json
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 MAXSTRLEN = 512
@@ -74,7 +73,6 @@ class Map:
 
         # Texmru
         self.write_ushort(handle, len(self.texmru))  # nummru
-        log.debug("Nummru %s", len(self.texmru))
         for value in self.texmru:
             self.write_ushort(handle, value)
 
@@ -85,38 +83,30 @@ class Map:
         self.write_vslots(handle, self.vslots, self.chg)
 
         # World
-        self.write_children(handle, self.world)
+        self.savechildren(handle, self.world)
 
     def write_custom(self, handle, fmt, data):
-        log.debug('wcc %s %s', fmt, data)
         handle.write(struct.pack(fmt, *data))
 
     def write_char(self, handle, char):
-        log.debug('wchr %s', char)
         handle.write(struct.pack('B', char))
 
     def write_int_as_chr(self, handle, data):
-        log.debug('wchr %s', data)
         handle.write(struct.pack('c', str.encode(chr(data))))
 
     def write_int(self, handle, value):
         if isinstance(value, int):
-            log.debug('wi %s', value)
             handle.write(struct.pack('i', value))
         else:
-            log.debug('wi %s', value.value)
             handle.write(struct.pack('i', value.value))
 
     def write_ushort(self, handle, value):
-        log.debug('wu %s', value)
         handle.write(struct.pack('H', value))
 
     def write_float(self, handle, value):
-        log.debug('wf %s', value)
         handle.write(struct.pack('f', value))
 
     def write_str(self, handle, value, null=True):
-        log.debug('ws %s', value)
         strlen = len(value)
         if null:
             strlen += 1
@@ -152,33 +142,24 @@ class Map:
     def write_vslot(self, vs, changed):
         pass
 
-    def write_children(self, handle, cube_arr, indent=0):
-        log.debug('\t' * indent + 'lc')
+    def savechildren(self, handle, cube_arr, indent=0):
         for i, c in enumerate(cube_arr):
-            log.debug(('\t' * indent) + '(%d)', i)
-            self.writec(handle, c, indent=indent)
+            self.savec(handle, c, indent=indent)
 
-    def writec(self, handle, c, indent=0):
+    def savec(self, handle, c, indent=0):
         """Inverse of loadc"""
 
         self.write_int_as_chr(handle, c.octsav)
-        log.debug(('\t' * indent) + 'loadc> octsav %s &7 %s', c.octsav, c.octsav & 0x7)
-
         if c.octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
-            log.debug(('\t' * indent) + '>> kids')
-            self.write_children(handle, c.children, indent=indent+1)
+            self.savechildren(handle, c.children, indent=indent+1)
+            return
         elif c.octsav & 0x7 == OCT.OCTSAV_EMPTY.value:
-            log.debug(('\t' * indent) + '>> empty')
             pass # Nothing to write
         elif c.octsav & 0x7 == OCT.OCTSAV_SOLID.value:
-            log.debug(('\t' * indent) + '>> solid')
             pass # Nothing to write, simply that c is solid
         elif c.octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
-            log.debug(('\t' * indent) + '>> normal')
-            for e in c.edges:
-                self.write_custom(handle, 'B', [e])
+            self.write_custom(handle, 'BBBBBBBBBBBB', c.edges)
         elif c.octsav & 0x7 == OCT.OCTSAV_LODCUBE.value:
-            log.debug(('\t' * indent) + '>> lodcube')
             # Nothing to do, this just set c.children, which we know
             # from other sources.
             pass
@@ -189,14 +170,8 @@ class Map:
         for i, t in enumerate(c.texture):
             if isinstance(t, TextNum):
                 self.write_ushort(handle, t.value)
-                log.debug(('\t' * indent) + 'c.tex[%d] = %d', i, t.value)
             else:
                 self.write_ushort(handle, t)
-                log.debug(('\t' * indent) + 'c.tex[%d] = %d', i, t)
-
-        log.debug(('\t' * indent) + 'octsav %d &40 %d &80 %d &20 %d',
-            c.octsav, c.octsav & 0x40, c.octsav & 0x80, c.octsav & 0x20
-        )
 
         if c.octsav & 0x40:
             self.write_ushort(handle, c.material)
@@ -205,22 +180,17 @@ class Map:
         if c.octsav & 0x20:
             self.write_int_as_chr(handle, c.surfmask)
             self.write_int_as_chr(handle, c.totalverts)
-            log.debug(('\t' * indent) + 'sfm %d, tv %d', c.surfmask, c.totalverts)
 
             for i in range(6):
-                log.debug(('\t' * indent) + '>loadc 0x20 %d, %d' % (i, c.surfmask & (1 << i)))
-
                 if not c.surfmask & (1<<i):
                     pass
                 else:
                     surfinfo = c.ext.surfaces[i]
+
                     self.write_char(handle, surfinfo.lmid[0])
                     self.write_char(handle, surfinfo.lmid[1])
                     self.write_char(handle, surfinfo.verts)
                     self.write_char(handle, surfinfo.numverts)
-
-                    log.debug(('\t' * indent) + "%s", surfinfo)
-                    log.debug(('\t' * indent) + 'Vertmask %d numverts %d', surfinfo.verts, 0)
 
                     if surfinfo.verts == 0:
                         continue
@@ -285,27 +255,22 @@ class MapParser(object):
 
     def read_int(self):
         val = self._read_custom('i', 4)[0]
-        log.debug('wi %s', val)
         return val
 
     def read_char(self):
         val = self._read_custom('B', 1)[0]
-        log.debug('wchr %s', val)
         return val
 
     def read_custom(self, pattern, width):
         val = self._read_custom(pattern, width)
-        log.debug('wcc %s %s', pattern, val)
         return val
 
     def read_float(self):
         val = self._read_custom('f', 4)[0]
-        log.debug('wf %s', val)
         return val
 
     def read_ushort(self):
         val = self._read_custom('H', 2)[0]
-        log.debug('wu %s', val)
         return val
 
     def read_str(self, strlen, null=True):
@@ -316,22 +281,16 @@ class MapParser(object):
         data = struct.unpack(fmt, self.bytes[self.index:self.index + strlen])
         self.index += strlen
         if null:
-            log.debug('ws %s', data[0][0:-1])
             return data[0][0:-1]
-        log.debug('ws %s', data[0])
         return data[0]
 
     def loadvslots(self, numvslots):
         prev = [-1] * numvslots
         vslots = []
         chg = []
-        log.debug("Sizeof int 4")
-        log.debug("numvslots %s", numvslots)
         while numvslots > 0:
-            log.debug("numvslots %s", numvslots)
             changed = self.read_int()
             chg.append(changed)
-            # log.debug("changed %s", changed)
             if changed < 0:
                 for i in range(-changed):
                     vslots.append(VSlot(None, len(vslots)))
@@ -342,9 +301,7 @@ class MapParser(object):
                 numvslots -= 1
 
 
-        # log.debug("Vslots: %s", len(vslots))
         for idx, v in enumerate(vslots):
-            # log.debug("\t[%s] %s %s", idx, prev[idx], int(0 <= idx < numvslots))
             if 0 <= idx < numvslots:
                 vslots[prev[idx]]._next = vslots[idx]
 
@@ -405,14 +362,11 @@ class MapParser(object):
         if vs.changed & (1<<VTYPE.VSLOT_COAST.value):
             vs.coastscale = self.read_float()
 
-    def loadchildren(self, co, size, failed, indent=0):
-        log.debug('\t' * indent + 'lc')
+    def loadchildren(self, size, failed, indent=0):
         cube_arr = cube.newcubes(Faces.F_EMPTY, 0)
         for i in range(8):
-            log.debug(('\t' * indent) + '(%d)', i)
             failed, c_x = self.loadc(
-                cube_arr[i],
-                ivec3.ivec5(i, co.x, co.y, co.z, size),
+                cube_arr[i], # c
                 size,
                 failed,
                 indent=indent
@@ -423,27 +377,21 @@ class MapParser(object):
                 break
         return cube_arr
 
-    def loadc(self, c, co, size, failed, indent=0):
+    def loadc(self, c, size, failed, indent=0):
         """Loads a single cube? Or rather, based on C, processes it into a cube object?"""
         octsav = self.read_char()
         c.octsav = octsav
-        log.debug(('\t' * indent) + 'loadc> octsav %s &7 %s', octsav, octsav & 0x7)
         c.haschildren = False
         if octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
-            log.debug(('\t' * indent) + '>> kids')
-            c.children = self.loadchildren(co, size>>1, failed, indent=indent+1)
+            c.children = self.loadchildren(size>>1, failed, indent=indent+1)
             return False, c
         elif octsav & 0x7 == OCT.OCTSAV_EMPTY.value:
-            log.debug(('\t' * indent) + '>> empty')
             c.setfaces(Faces.F_EMPTY)
         elif octsav & 0x7 == OCT.OCTSAV_SOLID.value:
-            log.debug(('\t' * indent) + '>> solid')
             c.setfaces(Faces.F_SOLID)
         elif octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
-            log.debug(('\t' * indent) + '>> normal')
             c.edges = self.read_custom('BBBBBBBBBBBB', 12)
         elif octsav & 0x7 == OCT.OCTSAV_LODCUBE.value:
-            log.debug(('\t' * indent) + '>> lodcube')
             c.haschildren = True
         else:
             failed = True
@@ -452,14 +400,6 @@ class MapParser(object):
         c.texture = []
         for i in range(6):
             c.texture.append(self.read_ushort())
-            log.debug(('\t' * indent) + 'c.tex[%d] = %d', i, c.texture[-1])
-        # c.texture = [self.read_ushort() for i in range(6)]
-        # for idx, i in enumerate(c.texture):
-            # log.debug('c.tex[%d] = %d', idx, i)
-
-        log.debug(('\t' * indent) + 'octsav %d &40 %d &80 %d &20 %d',
-            octsav, octsav & 0x40, octsav & 0x80, octsav & 0x20
-        )
 
         if octsav & 0x40:
             c.material = self.read_ushort()
@@ -470,12 +410,9 @@ class MapParser(object):
             c.surfmask = surfmask
             totalverts = self.read_char()
             c.totalverts = totalverts
-            log.debug(('\t' * indent) + 'sfm %d, tv %d', surfmask, totalverts)
             c.newcubeext(totalverts, False)
             # offset = 0
             for i in range(6):
-                log.debug(('\t' * indent) + '>loadc 0x20 %d, %d', i, surfmask & (1 << i))
-
                 if not surfmask & (1<<i):
                     c.ext.surfaces.append(None)
                 else:
@@ -490,19 +427,12 @@ class MapParser(object):
 
                     surf = c.ext.surfaces[i]
                     vertmask = surf.verts
-                    log.debug("%s%s" % (('\t' * indent), surf))
                     numverts = surf.totalverts()
-                    log.debug(('\t' * indent) + 'Vertmask %d numverts %d', vertmask, numverts)
                     if not numverts:
                         surf.verts = 0
                         continue
 
                     raise NotImplementedError("Gross in")
-
-        if c.haschildren:
-            c.children = self.loadchildren(co, size>>1, failed)
-        else:
-            c.children = None
 
         return failed, c
 
@@ -510,9 +440,7 @@ class MapParser(object):
         sizeof_entbase = 16
         ents = []
         for i in range(int(numents)):
-            log.debug('sizeof(entbase) =', sizeof_entbase)
             (x, y, z, etype, a, b, c) = self.read_custom('fffcccc', sizeof_entbase)
-            log.debug('e.o = (%0.6f %0.6f %0.6f); e.type = %s', x, y, z, ord(etype))
 
             # This says reserved but we've seen values in it so...
             reserved = [
@@ -564,11 +492,9 @@ class MapParser(object):
             meta[k] = self.read_int()
 
         # char[4], null=True
-        log.debug(meta)
         meta['gameident'] = self.read_str(3)
         meta['numvars'] = self.read_int()
         log.debug(meta)
-
         log.debug('Header Worldsize: %s', meta['worldsize'])
 
 
@@ -613,7 +539,6 @@ class MapParser(object):
         failed = False
         log.debug("Loadchildren")
         worldroot = self.loadchildren(
-            ivec3(0,0,0),
             meta['worldsize']>>1,
             failed
         )
@@ -623,13 +548,13 @@ class MapParser(object):
         worldscale = 0
         while 1<<worldscale < meta['worldsize']:
             worldscale += 1
-        log.debug("Worldscale %s" % worldscale)
+        # log.debug("Worldscale %s" % worldscale)
 
-        log.debug("failed: %s" % (1 if failed else 0))
-        if not failed:
-            # Not sure this even works, but no need to implement since
-            # we're fine to dump unlit maps.
-            log.debug('Lightmaps: %s' % meta['lightmaps'])
+        # log.debug("failed: %s" % (1 if failed else 0))
+        # if not failed:
+            # # Not sure this even works, but no need to implement since
+            # # we're fine to dump unlit maps.
+            # log.debug('Lightmaps: %s' % meta['lightmaps'])
             # TODO
 
         m = Map(magic, version, headersize, meta, map_vars, texmru, ents, vslots, chg,
