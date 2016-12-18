@@ -144,6 +144,8 @@ class Map:
 
     def savechildren(self, handle, cube_arr, indent=0):
         for i, c in enumerate(cube_arr):
+            if indent < 4:
+                log.info('%s %s', indent, i)
             self.savec(handle, c, indent=indent)
 
     def savec(self, handle, c, indent=0):
