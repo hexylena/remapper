@@ -13,9 +13,12 @@ setup(
     entry_points={
         'console_scripts': [
                 'redeclipse_iso = redeclipse.cli.iso:main',
-                'redeclipse_tojson = redeclipse.cli.to_json:main',
+                'redeclipse_to_json = redeclipse.cli.to_json:main',
+                'redeclipse_from_json = redeclipse.cli.from_json:main',
                 'redeclipse_addtrees = redeclipse.cli.add_trees:main',
                 'redeclipse_cfg = redeclipse.cli.cfg_gen:main',
+                'redeclipse_voxel_1 = redeclipse.cli.voxel_1:main',
+                'redeclipse_voxel_2 = redeclipse.cli.voxel_2:main',
             ]
         },
     classifiers=[
