@@ -450,6 +450,7 @@ class MapParser(object):
             return failed, c
 
         c.texture = []
+        log.debug('qqqq')
         for i in range(6):
             c.texture.append(self.read_ushort())
             log.debug(('\t' * indent) + 'c.tex[%d] = %d', i, c.texture[-1])
