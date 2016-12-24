@@ -3,7 +3,7 @@ import os
 import glob
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Generate CFG file from directory of images')
     parser.add_argument('input', help='Directory containing PNG files')
     args = parser.parse_args()
@@ -47,3 +47,6 @@ mapsound "sounds/ambience/blowwind" 80
 mapsound "sounds/ambience/cavedrip" 100
 mapsound "sounds/ambience/creek" 80
     """)
+
+if __name__ == '__main__':
+    main()

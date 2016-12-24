@@ -5,7 +5,7 @@ import argparse
 from redeclipse.cli import parse
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Dump map as JSON file')
     parser.add_argument('input', help='Input .mpz file')
     parser.add_argument('--section', help='Section name, e.g. "entities"')
@@ -18,3 +18,6 @@ if __name__ == '__main__':
 
     else:
         print(json.dumps(mymap.to_dict(), iterable_as_array=True))
+
+if __name__ == '__main__':
+    main()

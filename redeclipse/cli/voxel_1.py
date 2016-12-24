@@ -7,7 +7,7 @@ import argparse
 import simplejson as json
 # import random
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Add trees to map')
     parser.add_argument('input', help='Input .mpz file')
     parser.add_argument('output', help='Output .mpz file')
@@ -27,3 +27,6 @@ if __name__ == '__main__':
     # print(json.dumps(mymap.to_dict()['world'], iterable_as_array=True))
 
     mymap.write(args.output)
+
+if __name__ == '__main__':
+    main()

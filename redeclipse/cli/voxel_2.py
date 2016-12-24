@@ -2,7 +2,6 @@
 from redeclipse.voxel import VoxelWorld
 from redeclipse.cli import parse
 from redeclipse.objects import cube
-from redeclipse.cli.show_cubes import show_cubes
 import argparse
 import sys # noqa
 import random # noqa
@@ -18,7 +17,7 @@ octaves = 1
 noise_scaling = 32
 # import random
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Add trees to map')
     parser.add_argument('input', help='Input .mpz file')
     parser.add_argument('output', help='Output .mpz file')
@@ -80,3 +79,6 @@ if __name__ == '__main__':
     mymap.world = v.to_octree()
     mymap.world[0].octsav = 0
     mymap.write(args.output)
+
+if __name__ == '__main__':
+    main()
