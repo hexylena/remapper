@@ -247,16 +247,12 @@ class cube:
 
     @classmethod
     def texturize(cls, c, tex=2):
-        c.material = None
-        c.escaped = 0
         c.set_solid()
-        c.visible = 0
-        c.edges = [128] * 12
-        c.children = []
         if isinstance(tex, int):
             c.texture = [tex, tex, tex, tex, tex, tex]
         else:
             c.texture = tex
+
         c.ext = cubext()
         c.ext.verts = 0
         c.ext.surfaces = [
@@ -267,9 +263,8 @@ class cube:
             SurfaceInfo(2, 0, 0, 32),
             SurfaceInfo(2, 0, 0, 32),
         ]
-        c.octsav = 34
+        c.octsav = 35
         c.surfmask = 63
-        c.totalverts = 0
         return c
 
     @classmethod
