@@ -23,6 +23,7 @@ Script                 | Purpose
 `redeclipse_cfg_gen`   | Given a directory, build a config file to allow using those textures.
 `redeclipse_voxel_1`   | The "tutorial" script which demos adding a line of cubes at across a map diagonally.
 `redeclipse_voxel_2`   | First real "test" map with automated landscape, trees, "houses".
+`redeclipse_voxel_3`   | Some experiments with pre-fab rooms. WIP.
 
 ## Examples
 

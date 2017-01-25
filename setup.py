@@ -19,6 +19,7 @@ setup(
                 'redeclipse_cfg = redeclipse.cli.cfg_gen:main',
                 'redeclipse_voxel_1 = redeclipse.cli.voxel_1:main',
                 'redeclipse_voxel_2 = redeclipse.cli.voxel_2:main',
+                'redeclipse_voxel_3 = redeclipse.cli.voxel_3:main',
             ]
         },
     classifiers=[
