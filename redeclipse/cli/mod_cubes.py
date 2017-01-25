@@ -50,7 +50,7 @@ def show_cubes(m, indent=0):
         if c.children:
             show_cubes(c.children, indent=indent + 1)
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Add trees to map')
     parser.add_argument('input', help='Input .mpz file')
     parser.add_argument('output', help='Output .mpz file')
@@ -60,3 +60,6 @@ if __name__ == '__main__':
     show_cubes(mymap.world)
 
     mymap.write(args.output)
+
+if __name__ == '__main__':
+    main()

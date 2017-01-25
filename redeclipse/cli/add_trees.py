@@ -22,7 +22,7 @@ def add_trees(m, num=20):
     return m
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Add trees to map')
     parser.add_argument('input', help='Input .mpz file')
     parser.add_argument('output', help='Output .mpz file')
@@ -34,3 +34,6 @@ if __name__ == '__main__':
     newmap = add_trees(mymap)
 
     newmap.write(args.output)
+
+if __name__ == '__main__':
+    main()
