@@ -13,6 +13,12 @@ class Entity:
                 'type', 'flags', 'modes', 'muts', 'id'
             ]
             assert len(self.attrs) == len(self.attr_annotations)
+        elif self.type == EntType.ET_PLAYERSTART:
+            self.attrs[0] = WeaponType(self.attrs[0])
+            self.attr_annotations = [
+                'team', 'yaw', 'pitch', 'modes', 'muts', 'id'
+            ]
+            assert len(self.attrs) == len(self.attr_annotations)
         elif self.type == EntType.ET_MAPMODEL:
             self.attr_annotations = [
                 'type', 'yaw', 'pitch', 'roll', 'blend', 'scale', 'flags',
@@ -66,3 +72,18 @@ class Entity:
             reserved=d['reserved']
         )
         return e
+
+
+class PlayerSpawn(Entity):
+
+    def __init__(self, x=0, y=0, z=0, team=0, yaw=0, pitch=0, modes=0, muts=0, id=0, links=None, reserved=None):
+        self.o = ivec3(x, y, z)
+        self.type = EntType.ET_PLAYERSTART
+        self.attr_annotations = [
+            'team', 'yaw', 'pitch', 'modes', 'muts', 'id'
+        ]
+        self.attrs = [
+            team, yaw, pitch, modes, muts, id
+        ]
+        self.links = [] if links is None else links
+        self.reserved = [0, 0, 0] if reserved is None else reserved

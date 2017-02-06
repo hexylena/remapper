@@ -60,6 +60,7 @@ class TextNum(Enum):
     DEFAULT_SKY = 0
     DEFAULT_GEOM = 1
 
+
 class WeaponType(Enum):
     SWORD = 2
     SHOTGUN = 3

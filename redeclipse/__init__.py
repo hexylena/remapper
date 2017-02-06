@@ -5,6 +5,7 @@ from collections import OrderedDict
 from redeclipse.enums import EntType, Faces, VTYPE, OCT, TextNum
 from redeclipse.objects import VSlot, SlotShaderParam, cube, SurfaceInfo
 from redeclipse.entities import Entity
+from tqdm import tqdm
 import simplejson as json
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -83,7 +84,11 @@ class Map:
         self.write_vslots(handle, self.vslots, self.chg)
 
         # World
+        self.pbar_0 = tqdm(total=8)
+        # self.pbar_1 = tqdm(total=8)
         self.savechildren(handle, self.world)
+        self.pbar_0.close()
+        # self.pbar_1.close()
 
     def write_custom(self, handle, fmt, data):
         handle.write(struct.pack(fmt, *data))
@@ -145,8 +150,10 @@ class Map:
     def savechildren(self, handle, cube_arr, indent=0):
         for i, c in enumerate(cube_arr):
             # TODO: Progress
-            if indent < 4:
-                log.info('%s %s', indent, i)
+            if indent == 0:
+                self.pbar_0.update(i)
+            # elif indent == 1:
+                # self.pbar_1.update(i)
             self.savec(handle, c, indent=indent)
 
     def savec(self, handle, c, indent=0):

@@ -18,6 +18,10 @@ class VoxelWorld:
     def set_point(self, x, y, z, data):
         self.world[x, y, z] = data
 
+    def del_point(self, x, y, z):
+        if (x, y, z) in self.world:
+            del self.world[x, y, z]
+
     def get_point(self, x, y, z):
         if (x, y, z) in self.world:
             return self.world[x, y, z]
