@@ -2,7 +2,9 @@
 
 Library to read in Red Eclipse maps. It isn't polished, but currently will read and write very simple maps.
 
-![](./media/cover.png)
+First playable map! (Albeit specifically for the game mode we play, sniper-counter-sniper.)
+
+![](./media/trollskogen.png)
 
 The end goal is to allow for automated generation of maps.
 
