@@ -6,7 +6,7 @@ from redeclipse.prefabs.construction_kit import wall, column, wall_points, mv, \
 import random # noqa
 import noise
 import colorsys
-random.seed(42)
+random.seed(22)
 SIZE = 8
 
 
@@ -67,13 +67,14 @@ class _Room:
         # Platform
         return {
             'platform': 0.1,
+            'platform_setpiece': 0.1,
             'hallway': 0.8,
-            'vertical': 0.3,
+            'vertical': 0.4,
             'hallway_jump': 0.2,
         }
 
 
-    def light(self):
+    def light(self, xmap):
         # 70% chance of a light below
         # if random.random() < 0.7:
         if True:
@@ -115,7 +116,7 @@ class _Room:
                 blue=int(b),
                 radius=64,
             )
-            self.xmap.ents.append(light)
+            xmap.ents.append(light)
 
 class _OrientedRoom(_Room):
     def _get_doorways(self):
@@ -135,6 +136,7 @@ class _OrientedRoom(_Room):
         # oriented platform / hallway
         return {
             'hallway': 0.4,
+            'platform_setpiece': 0.1,
             'platform': 0.3,
             'vertical': 0.6,
             'hallway_jump': 0.6,
@@ -183,8 +185,8 @@ class BaseRoom(_Room):
             y=8 * (self.pos[1] + SIZE / 2),
             z=8 * (self.pos[2] + 1),
         )
-        self.xmap.ents.append(spawn)
-        self.light()
+        xmap.ents.append(spawn)
+        self.light(xmap)
 
 
 class NLongCorridor(_OrientedRoom):
@@ -195,6 +197,7 @@ class NLongCorridor(_OrientedRoom):
         self.roof = roof
         self.length = length
         self.pos = pos
+        self.tex = tex
         # self.pos = mv(pos, self.get_offset())
         # print(pos, '+', self.get_offset(), '(' , self.orientation,') =>', self.pos, '==', self.get_positions(), self.get_doorways())
 
@@ -216,7 +219,7 @@ class NLongCorridor(_OrientedRoom):
                 wall(world, '-z', SIZE, mv(self.pos, m(0, -i, 0)), tex=self.tex)
             else:
                 raise Exception("Unknown Orientation")
-        self.light()
+        self.light(xmap)
 
     def get_positions(self):
         positions = [self.pos]
@@ -267,20 +270,21 @@ class Corridor2way(_OrientedRoom):
         self.pos = pos
         self.orientation = orientation
         self.roof = roof
+        self.tex = tex
 
     def render(self, world, xmap):
         wall(world, '-z', SIZE, self.pos, tex=self.tex)
-        if roof:
+        if self.roof:
             wall(world, '+z', SIZE, self.pos, tex=self.tex)
 
-        if orientation in ('+x', '-x'):
+        if self.orientation in ('+x', '-x'):
             wall(world, '+y', SIZE, self.pos, tex=self.tex)
             wall(world, '-y', SIZE, self.pos, tex=self.tex)
         else:
             wall(world, '+x', SIZE, self.pos, tex=self.tex)
             wall(world, '-x', SIZE, self.pos, tex=self.tex)
 
-        self.light()
+        self.light(xmap)
 
 
 class JumpCorridor3(_OrientedRoom):
@@ -290,8 +294,9 @@ class JumpCorridor3(_OrientedRoom):
     def get_transition_probs(cls):
         return {
             'hallway_jump': 0,
-            'platform': 0.4,
-            'hallway': 0.4,
+            'platform': 0.3,
+            'platform_setpiece': 0.1,
+            'hallway': 0.5,
             'vertical': 0.4,
         }
 
@@ -299,6 +304,7 @@ class JumpCorridor3(_OrientedRoom):
         self.pos = pos
         self.orientation = orientation
         self.roof = roof
+        self.tex = tex
 
     def render(self, world, xmap):
         wall(world, '-z', SIZE, self.pos, tex=self.tex)
@@ -351,10 +357,10 @@ class JumpCorridor3(_OrientedRoom):
                 force=175,
             )
 
-        if orientation in ('+x', '-x'):
-            low_wall(world, '+y', SIZE, pos)
-            low_wall(world, '-y', SIZE, pos)
-            if orientation == '-x':
+        if self.orientation in ('+x', '-x'):
+            low_wall(world, '+y', SIZE, self.pos)
+            low_wall(world, '-y', SIZE, self.pos)
+            if self.orientation == '-x':
                 low_wall(world, '+y', SIZE, mv(self.pos, m(2, 0, 0)))
                 low_wall(world, '-y', SIZE, mv(self.pos, m(2, 0, 0)))
                 (a, b, c) = mv(self.pos, m(2, 0, 0))
@@ -381,10 +387,10 @@ class JumpCorridor3(_OrientedRoom):
                     force=175,
                 )
         else:
-            low_wall(world, '+x', SIZE, pos)
-            low_wall(world, '-x', SIZE, pos)
+            low_wall(world, '+x', SIZE, self.pos)
+            low_wall(world, '-x', SIZE, self.pos)
 
-            if orientation == '-y':
+            if self.orientation == '-y':
                 low_wall(world, '+x', SIZE, mv(self.pos, m(0, 2, 0)))
                 low_wall(world, '-x', SIZE, mv(self.pos, m(0, 2, 0)))
                 (a, b, c) = mv(self.pos, m(0, 2, 0))
@@ -467,25 +473,26 @@ class Corridor2way_A(Corridor2way):
         if self.roof:
             wall(world, '+z', SIZE, self.pos)
 
-        if orientation in ('+x', '-x'):
+        if self.orientation in ('+x', '-x'):
             low_wall(world, '+y', SIZE, self.pos)
             low_wall(world, '-y', SIZE, self.pos)
         else:
             low_wall(world, '+x', SIZE, self.pos)
             low_wall(world, '-x', SIZE, self.pos)
-        self.light()
+        self.light(xmap)
 
 
 class Corridor4way(_Room):
     room_type = 'hallway'
 
-    def __init__(self, pos, roof=False, orientation=None):
+    def __init__(self, pos, roof=False, orientation=None, tex=2):
         self.pos = pos
         self.roof = roof
+        self.tex = tex
 
     def render(self, world, xmap):
         wall(world, '-z', SIZE, self.pos)
-        if roof:
+        if self.roof:
             wall(world, '+z', SIZE, self.pos)
 
         column(world, 'z', 8, mv(self.pos, (0, 0, 0)), tex=4)
@@ -493,15 +500,16 @@ class Corridor4way(_Room):
         column(world, 'z', 8, mv(self.pos, (SIZE - 1, 0, 0)), tex=4)
         column(world, 'z', 8, mv(self.pos, (SIZE - 1, SIZE - 1, 0)), tex=4)
 
-        self.light()
+        self.light(xmap)
 
 
 class Corridor4way_A(Corridor4way):
     room_type = 'hallway'
 
-    def __init__(self, pos, roof=None, orientation=None):
+    def __init__(self, pos, roof=None, orientation=None, tex=2):
         self.pos = pos
         self.roof = roof
+        self.tex = tex
 
     def render(self, world, xmap):
         wall(world, '-z', SIZE, self.pos)
@@ -510,7 +518,7 @@ class Corridor4way_A(Corridor4way):
         column(world, 'z', 2, mv(self.pos, (0, SIZE - 1, 0)), tex=4)
         column(world, 'z', 2, mv(self.pos, (SIZE - 1, 0, 0)), tex=4)
         column(world, 'z', 2, mv(self.pos, (SIZE - 1, SIZE - 1, 0)), tex=4)
-        self.light()
+        self.light(xmap)
 
 
 class SpawnRoom(_OrientedRoom):
@@ -589,7 +597,7 @@ class AltarRoom(_3X3Room):
 
 
     def render(self, world, xmap):
-        self.light()
+        self.light(xmap)
         # size = 24
         wall(world, '-z', SIZE, self.pos)
         # 4 corners
@@ -643,7 +651,7 @@ class AltarRoom(_3X3Room):
             mv(self.pos , m(1  , 1  , 1)) ,
         ]
 
-    def light(self):
+    def light(self, xmap):
         light = Light(
             x=8 * (self.pos[0] + 8),
             y=8 * (self.pos[1] + 8),
@@ -654,7 +662,7 @@ class AltarRoom(_3X3Room):
             blue=255,
             radius=128,
         )
-        self.xmap.ents.append(light)
+        xmap.ents.append(light)
 
 
 class Stair(_OrientedRoom):
@@ -665,11 +673,11 @@ class Stair(_OrientedRoom):
         self.orientation = orientation
 
     def render(self, world, xmap):
-        self.light()
+        self.light(xmap)
         wall(world, '-z', SIZE, self.pos)
 
         pusher_kw = {}
-        if orientation == '+x':
+        if self.orientation == '+x':
             wall(world, '-x', SIZE, self.pos)
             cube_s(world, 4, mv(self.pos, (0, 2, 0)), tex=3)
             pusher_kw = {
@@ -678,7 +686,7 @@ class Stair(_OrientedRoom):
                 'z': 8 * (self.pos[2] + 2),
                 'yaw': 90,
             }
-        elif orientation == '-x':
+        elif self.orientation == '-x':
             wall(world, '+x', SIZE, self.pos)
             cube_s(world, 4, mv(self.pos, (SIZE / 2, 2, 0)), tex=3)
             pusher_kw = {
@@ -687,7 +695,7 @@ class Stair(_OrientedRoom):
                 'z': 8 * (self.pos[2] + 2),
                 'yaw': 270,
             }
-        elif orientation == '+y':
+        elif self.orientation == '+y':
             wall(world, '-y', SIZE, self.pos)
             cube_s(world, 4, mv(self.pos, (2, 0, 0)), tex=3)
             pusher_kw = {
@@ -696,7 +704,7 @@ class Stair(_OrientedRoom):
                 'z': 8 * (self.pos[2] + 2),
                 'yaw': 180,
             }
-        elif orientation == '-y':
+        elif self.orientation == '-y':
             wall(world, '+y', SIZE, self.pos)
             cube_s(world, 4, mv(self.pos, (2, SIZE / 2, 0)), tex=3)
             pusher_kw = {
@@ -706,7 +714,7 @@ class Stair(_OrientedRoom):
                 'yaw': 0,
             }
         else:
-            raise Exception("Unknown orientation %s" % orientation)
+            raise Exception("Unknown orientation %s" % self.orientation)
 
         pusher = Pusher(
             maxrad=15,
@@ -750,6 +758,7 @@ class Stair(_OrientedRoom):
         # stair
         return {
             'platform': 0.5,
+            'platform_setpiece': 0.2,
             'hallway': 0.4,
             'vertical': 0.6,
             'hallway_jump': 0.2,

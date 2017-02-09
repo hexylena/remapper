@@ -122,6 +122,7 @@ if __name__ == '__main__':
         possible_rooms =  [
             BaseRoom,
             # Corridor4way,
+            SpawnRoom,
             JumpCorridor3,
             Corridor4way_A,
             Stair,
@@ -155,7 +156,7 @@ if __name__ == '__main__':
 
     room_count = 0
     while True:
-        if room_count > 100:
+        if room_count > 200:
             break
         # Pick a random position for this notional room to ugo
         try:
@@ -178,6 +179,7 @@ if __name__ == '__main__':
             room_count += 1
             r.render(v, mymap)
         except Exception as e:
+            print('hi', e)
             # We have failed to register the room because
             # it does not fit here.
             # So, we continue.
