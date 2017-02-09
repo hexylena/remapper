@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 from redeclipse.voxel import VoxelWorld
 from redeclipse.cli import parse
-from redeclipse.prefabs import m, BaseRoom, AltarRoom, \
+from redeclipse.prefabs import m, mv, BaseRoom, AltarRoom, \
     Corridor2way, Corridor2way_A, \
     Corridor4way, Corridor4way_A, \
-    Stair, SpawnRoom
+    Stair, SpawnRoom, NLongCorridor
 import argparse
 import sys
 import random
@@ -16,6 +16,7 @@ MAP_SEED = 0
 
 octaves = 1
 noise_scaling = 32
+
 # import random
 
 class UnusedPositionManager:
@@ -40,20 +41,37 @@ class UnusedPositionManager:
                     # return '-z'
                 # else:
                     # return '+z'
-        sys.exit()
+        raise Exception("UNKNOWN")
 
     def is_legal(self, position):
         return all([x >= 0 and x < IJ_SIZE for x in position])
+
+    def CoM(self, positions):
+        x = 0
+        y = 0
+        z = 0
+        for q in positions:
+            x += q[0]
+            y += q[1]
+            z += q[2]
+        return (
+            x / len(positions),
+            y / len(positions),
+            z / len(positions)
+        )
 
     def register_room(self, room):
         # Register positions occupied by this room
         used = room.get_positions()
         self.occupied = self.occupied.union(used)
+        # print('rr occ CoM', self.CoM(used), used)
         # Remove occupied positions from possibilities
         self.unoccupied = [(p, r, o) for (p, r, o) in self.unoccupied if p not in used]
+        # print('rr unocc', self.unoccupied)
 
         # Get doorways
         doors = room.get_doorways()
+        # print('rr door', doors)
         for position in doors:
             # If that door position is not occupied by something else
             if position not in self.occupied and self.is_legal(position):
@@ -61,7 +79,10 @@ class UnusedPositionManager:
                 self.unoccupied.append((position, room, orientation))
 
     def random_position(self):
-        return random.choice(self.unoccupied)
+        if len(self.occupied) > 0:
+            return random.choice(self.unoccupied)
+        else:
+            raise Exception("No more space!")
 
     def print(self):
         # print('Unused', pprint.pformat([(x, y.__class__.__name__, z) for (x, y, z) in self.unoccupied]))
@@ -94,12 +115,13 @@ if __name__ == '__main__':
         possible_rooms =  [
             # BaseRoom,
             # Corridor4way,
-            Corridor4way_A,
-            Stair,
-            SpawnRoom,
+            # Corridor4way_A,
+            # Stair,
+            # SpawnRoom,
             # Corridor2way,
-            Corridor2way_A,
-            # AltarRoom,
+            # Corridor2way_A,
+            AltarRoom,
+            NLongCorridor
         ]
 
         choices = []
@@ -116,23 +138,29 @@ if __name__ == '__main__':
 
 
     # Insert a starting room
-    starting_position = m(6, 6, 2)
-    b = BaseRoom(v, mymap, pos=starting_position, tex=5)
+    starting_position = m(6, 6, 6)
+    # b = BaseRoom(v, mymap, pos=starting_position, tex=5)
+    b = SpawnRoom(v, mymap, pos=starting_position, orientation='-y')
     print("Starting: ", starting_position)
     upm = UnusedPositionManager()
     upm.register_room(b)
+    upm.print()
 
-    for i in range(300):
-        # Pick a random position for this room to go
-        (position, prev_room, orientation) = upm.random_position()
+    for i in range(20):
+        # Pick a random position for this room to ugo
+        try:
+            (position, prev_room, orientation) = upm.random_position()
+        except Exception as e:
+            print(e)
         kwargs = {'orientation': orientation}
         # Get a random room, influence with prev_room
         roomClass = random_room(prev_room)
-        print("[%s] Placing %s at %s" % (i, roomClass.__name__, position))
+        print(position, prev_room, orientation, roomClass)
+        # print("[%s] Placing %s at %s" % (i, roomClass.__name__, position))
         # Place the room
         r = roomClass(v, mymap, pos=position, **kwargs)
-
         upm.register_room(r)
+        upm.print()
 
     mymap.world = v.to_octree()
     mymap.world[0].octsav = 0

@@ -2,7 +2,7 @@ from redeclipse.objects import cube
 from redeclipse.entities import Light, PlayerSpawn
 from redeclipse.entities.model import MapModel
 from redeclipse.prefabs.construction_kit import wall, column, wall_points, mv, \
-    m, low_wall, cube_s
+    m, mi, low_wall, cube_s
 import random # noqa
 import noise
 import colorsys
@@ -37,12 +37,26 @@ class Ring:
 class _Room:
     room_type = 'platform'
 
+    def get_offset(self):
+        # This should be inverse of FIRST get_doorways entry.
+        return m(1, 0, 0)
+
+    def _get_doorways(self):
+        return [
+            m(-1, 0, 0),
+            m(0, -1, 0),
+            m(1, 0, 0),
+            m(0, 1, 0)
+        ]
+
+    def get_offset(self):
+        # This should be inverse of FIRST get_doorways entry.
+        return self._get_doorways()[0]
+        # return mi(self._get_doorways()[0])
+
     def get_doorways(self):
         return [
-            mv(self.pos, m(-1, 0, 0)),
-            mv(self.pos, m(0, -1, 0)),
-            mv(self.pos, m(1, 0, 0)),
-            mv(self.pos, m(0, 1, 0))
+            mv(self.pos, q) for q in self._get_doorways()
         ]
 
     def get_positions(self):
@@ -102,49 +116,48 @@ class _Room:
             self.xmap.ents.append(light)
 
 class _OrientedRoom(_Room):
-
-    def get_doorways(self):
-        print('==================', self.orientation)
+    def _get_doorways(self):
+        print('HI', self.orientation)
         if self.orientation in ('+x', '-x'):
             return [
-                mv(self.pos, m(-1, 0, 0)),
-                mv(self.pos, m(1, 0, 0)),
+                m(-1, 0, 0),
+                m(1, 0, 0),
             ]
         else:
             return [
-                mv(self.pos, m(0, -1, 0)),
-                mv(self.pos, m(0, 1, 0))
+                m(0, 1, 0),
+                m(0, -1, 0)
             ]
 
     @classmethod
     def get_transition_probs(cls):
         return {
-            'hallway': 0.9,
-            'platform': 0.2,
+            'hallway': 0.1,
+            'platform': 0.9,
             'vertical': 0.9,
         }
 
 class _3X3Room(_Room):
 
-    def get_doorways(self):
+    def _get_doorways(self):
         return [
-            mv(self.pos, m(-1, 1, 0)),
-            mv(self.pos, m(3, 1, 0)),
-            mv(self.pos, m(1, -1, 0)),
-            mv(self.pos, m(1, 3, 0)),
+            m(-2, 0, 0),
+            m(2, 0, 0),
+            m(0, -2, 0),
+            m(0, 2, 0),
         ]
 
     def get_positions(self):
         return [
-            mv(self.pos, m(0, 0, 0)),
-            mv(self.pos, m(0, 1, 0)),
-            mv(self.pos, m(0, 2, 0)),
-            mv(self.pos, m(1, 0, 0)),
-            mv(self.pos, m(1, 1, 0)),
-            mv(self.pos, m(1, 2, 0)),
-            mv(self.pos, m(2, 0, 0)),
-            mv(self.pos, m(2, 1, 0)),
-            mv(self.pos, m(2, 2, 0)),
+            mv(self.pos , m(-1 , -1 , 0)) ,
+            mv(self.pos , m(-1 , 0  , 0)) ,
+            mv(self.pos , m(-1 , 1  , 0)) ,
+            mv(self.pos , m(0  , -1 , 0)) ,
+            mv(self.pos , m(0  , 0  , 0)) ,
+            mv(self.pos , m(0  , 1  , 0)) ,
+            mv(self.pos , m(1  , -1 , 0)) ,
+            mv(self.pos , m(1  , 0  , 0)) ,
+            mv(self.pos , m(1  , 1  , 0)) ,
         ]
 
 
@@ -171,25 +184,99 @@ class BaseRoom(_Room):
         self.light()
 
 
+class NLongCorridor(_OrientedRoom):
+    room_type = 'hallway'
+
+    def __init__(self, world, xmap, pos, orientation='+x', roof=False, length=2, tex=11):
+        self.orientation = orientation
+        self.roof = roof
+        self.length = length
+        self.xmap = xmap
+        self.pos = pos
+        # self.pos = mv(pos, self.get_offset())
+        print(pos, '+', self.get_offset(), '(' , self.orientation,') =>', self.pos, '==', self.get_positions(), self.get_doorways())
+
+        if self.length == 0:
+            raise Exception("Must have length")
+
+        # First tile
+        wall(world, '-z', SIZE, self.pos, tex=tex)
+
+        for i in range(1, self.length):
+            if self.orientation == '-x':
+                wall(world, '-z', SIZE, mv(self.pos, m(i, 0, 0)), tex=tex)
+            elif self.orientation == '+x':
+                wall(world, '-z', SIZE, mv(self.pos, m(-i, 0, 0)), tex=tex)
+            elif self.orientation == '-y':
+                wall(world, '-z', SIZE, mv(self.pos, m(0, i, 0)), tex=tex)
+            elif self.orientation == '+y':
+                wall(world, '-z', SIZE, mv(self.pos, m(0, -i, 0)), tex=tex)
+            else:
+                raise Exception("Unknown Orientation")
+
+        self.light()
+
+    def get_positions(self):
+        positions = [self.pos]
+
+        # Same logic as init
+        for i in range(1, self.length):
+            if self.orientation == '-x':
+                positions.append(mv(self.pos, m(i, 0, 0)))
+            elif self.orientation == '+x':
+                positions.append(mv(self.pos, m(-i, 0, 0)))
+            elif self.orientation == '-y':
+                positions.append(mv(self.pos, m(0, i, 0)))
+            elif self.orientation == '+y':
+                positions.append(mv(self.pos, m(0, -i, 0)))
+            else:
+                raise Exception("Unknown Orientation")
+        return positions
+
+    def _get_doorways(self):
+        if self.orientation == '+x':
+            return [
+                m(1, 0, 0),
+                m(-self.length, 0, 0),
+            ]
+        elif self.orientation == '-x':
+            return [
+                m(-1, 0, 0),
+                m(self.length, 0, 0),
+            ]
+        elif self.orientation == '+y':
+            return [
+                m(0, 1, 0),
+                m(0, -self.length, 0),
+            ]
+        elif self.orientation == '-y':
+            return [
+                m(0, -1, 0),
+                m(0, self.length, 0),
+            ]
+        else:
+            raise Exception("Unknown Orientation")
+
+
 class Corridor2way(_OrientedRoom):
     room_type = 'hallway'
 
-    def __init__(self, world, xmap, pos, orientation='+x', roof=False):
+    def __init__(self, world, xmap, pos, orientation='+x', roof=False, tex=10):
         self.pos = pos
         self.orientation = orientation
         self.roof = roof
         self.xmap = xmap
 
-        wall(world, '-z', SIZE, pos)
+        wall(world, '-z', SIZE, pos, tex=tex)
         if roof:
-            wall(world, '+z', SIZE, pos)
+            wall(world, '+z', SIZE, pos, tex=tex)
 
         if orientation in ('+x', '-x'):
-            wall(world, '+y', SIZE, pos)
-            wall(world, '-y', SIZE, pos)
+            wall(world, '+y', SIZE, pos, tex=tex)
+            wall(world, '-y', SIZE, pos, tex=tex)
         else:
-            wall(world, '+x', SIZE, pos)
-            wall(world, '-x', SIZE, pos)
+            wall(world, '+x', SIZE, pos, tex=tex)
+            wall(world, '-x', SIZE, pos, tex=tex)
 
         self.light()
 
@@ -297,38 +384,67 @@ class SpawnRoom(_OrientedRoom):
         )
         xmap.ents.append(light)
 
+    def _get_doorways(self):
+        if self.orientation == '+x':
+            return [m(1, 0, 0)]
+        elif self.orientation == '-x':
+            return [m(-1, 0, 0)]
+        if self.orientation == '+y':
+            return [m(0, 1, 0)]
+        elif self.orientation == '-y':
+            return [m(0, -1, 0)]
+
 
 class AltarRoom(_3X3Room):
     room_type = 'platform_setpiece'
 
     def __init__(self, world, xmap, pos, roof=False, orientation=None):
         # Push the position
-        self.pos = mv(pos, m(1, 0, 0))
+        self.orientation = orientation
+        # We (arbitrarily) define pos as the middle of one side.
+        self.pos = pos
+        # We move it once, in orientation in order to re-center the room?
+        if self.orientation == '+x':
+            self.pos = mv(self.pos, m(-1, 0, 0))
+        elif self.orientation == '-x':
+            self.pos = mv(self.pos, m(1, 0, 0))
+        elif self.orientation == '+y':
+            self.pos = mv(self.pos, m(0, -1, 0))
+        elif self.orientation == '-y':
+            self.pos = mv(self.pos, m(0, 1, 0))
+
         self.xmap = xmap
         self.light()
         # For bigger rooms, we have to shift them such that the previous_posision matches a doorway.
 
-        size = 24
-        wall(world, '-z', size, self.pos)
-        if roof:
-            wall(world, '+z', size, self.pos)
+        # size = 24
+        wall(world, '-z', SIZE, self.pos)
+        # 4 corners
+        wall(world, '-z', SIZE, mv(self.pos, m(1, 1, 0)))
+        wall(world, '-z', SIZE, mv(self.pos, m(1, -1, 0)))
+        wall(world, '-z', SIZE, mv(self.pos, m(-1, 1, 0)))
+        wall(world, '-z', SIZE, mv(self.pos, m(-1, -1, 0)))
+        # 4 middle pieces
+        wall(world, '-z', SIZE, mv(self.pos, m(1, 0, 0)))
+        wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 0)))
+        wall(world, '-z', SIZE, mv(self.pos, m(0, 1, 0)))
+        wall(world, '-z', SIZE, mv(self.pos, m(0, -1, 0)))
 
-        column(world, 'z', 8, mv(self.pos, (0, 0, 0)), tex=4)
-        column(world, 'z', 8, mv(self.pos, (0, size - 1, 0)), tex=4)
-        column(world, 'z', 8, mv(self.pos, (size - 1, 0, 0)), tex=4)
-        column(world, 'z', 8, mv(self.pos, (size - 1, size - 1, 0)), tex=4)
+        column(world, 'z', 8, mv(self.pos, (15, 15, 0)), tex=4)
+        column(world, 'z', 8, mv(self.pos, (-8, 15, 0)), tex=4)
+        column(world, 'z', 8, mv(self.pos, (15, -8, 0)), tex=4)
+        column(world, 'z', 8, mv(self.pos, (-8, -8, 0)), tex=4)
 
-        wall(world, '-z', size - 8, mv(self.pos, (4, 4, 1)), tex=5)
-        wall(world, '-z', size - 12, mv(self.pos, (6, 6, 2)), tex=6)
+        wall(world, '-z', 16, mv(self.pos, (-4, -4, 1)), tex=5)
+        wall(world, '-z', 12, mv(self.pos, (-2, -2, 2)), tex=6)
 
-        Ring.render(world, mv(self.pos, (4, 4, 6)), size=size - 8, tex=7, thickness=2)
+        Ring.render(world, mv(self.pos, (-4, -4, 7)), size=16, tex=7, thickness=2)
 
         tree = MapModel(
-            x=8 * (self.pos[0] + 12),
-            y=8 * (self.pos[1] + 12),
+            x=8 * (self.pos[0] + 4),
+            y=8 * (self.pos[1] + 4),
             z=8 * (self.pos[2] + 3),
             type=124
-            # type=random.randint(115, 129), # Tree
         )
         xmap.ents.append(tree)
 
@@ -359,26 +475,26 @@ class Stair(_OrientedRoom):
         else:
             raise Exception("Unknown orientation %s" % orientation)
 
-    def get_doorways(self):
+    def _get_doorways(self):
         if self.orientation == '+x':
             return [
-                mv(self.pos, m(1, 0, 0)),
-                mv(self.pos, m(-1, 0, 1))
+                m(1, 0, 0),
+                m(-1, 0, 1),
             ]
         elif self.orientation == '-x':
             return [
-                mv(self.pos, m(1, 0, 1)),
-                mv(self.pos, m(-1, 0, 0))
+                m(1, 0, 1),
+                m(-1, 0, 0),
             ]
         elif self.orientation == '+y':
             return [
-                mv(self.pos, m(0, 1, 0)),
-                mv(self.pos, m(0, -1, 1))
+                m(0, 1, 0),
+                m(0, -1, 1),
             ]
         elif self.orientation == '-y':
             return [
-                mv(self.pos, m(0, 1, 1)),
-                mv(self.pos, m(0, -1, 0))
+                m(0, 1, 1),
+                m(0, -1, 0),
             ]
         return []
 

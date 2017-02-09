@@ -7,6 +7,21 @@ def mv(a, b):
         a[2] + b[2],
     )
 
+def mi(*args):
+    if len(args) == 1:
+        p0 = args[0][0]
+        p1 = args[0][1]
+        p2 = args[0][2]
+    else:
+        p0 = args[0]
+        p1 = args[1]
+        p2 = args[2]
+
+    return (
+        p0 * -1,
+        p1 * -1,
+        p2 * -1,
+    )
 
 def m(*args):
     if len(args) == 2:
