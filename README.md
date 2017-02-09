@@ -17,13 +17,18 @@ See the [maps folder](./maps/) for screenshots and maps you can play
 
 ## Updates
 
-First playable map: Trollskogen
+First enjoyable map: Trollskogen
 
 ![](./maps/trollskogen-big.png)
 
-Second playable map: Bergen
+Second enjoyable map: Bergen
 
 ![](./maps/bergen-big.png)
+
+Screenshots from development:
+
+![](./maps/sandvika.png)
+![](./maps/fjell-big.png)
 
 Humble beginnings:
 
