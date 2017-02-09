@@ -13,6 +13,8 @@ voxel→octree translation routine which allows you to construct simple voxel
 worlds and have them rendered into a redeclipse octree. You could theoretically
 import your minecraft world, if you wished.
 
+See the [maps folder](./maps/) for screenshots and maps you can play
+
 ## Updates
 
 First playable map: Trollskogen
