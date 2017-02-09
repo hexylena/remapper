@@ -3,6 +3,8 @@ from redeclipse.entities import Light, PlayerSpawn
 from redeclipse.entities.model import MapModel
 from redeclipse.prefabs.construction_kit import wall, column, wall_points, mv, \
     m, low_wall, cube_s
+import random # noqa
+random.seed(42)
 
 SIZE = 8
 
@@ -52,6 +54,27 @@ class _Room:
             'hallway': 0.8,
             'vertical': 0.4,
         }
+
+
+    def light(self):
+        # 70% chance of a light below
+        if random.random() < 0.7:
+            if hasattr(self, 'size'):
+                size = self.size
+            else:
+                size = SIZE
+
+            light = Light(
+                x=8 * (self.pos[0] + size / 2),
+                y=8 * (self.pos[1] + size / 2),
+                # Light above head
+                z=8 * (self.pos[2] + 4),
+                red=random.randint(0, 255),
+                green=random.randint(0, 255),
+                blue=random.randint(0, 255),
+                radius=64,
+            )
+            self.xmap.ents.append(light)
 
 class _OrientedRoom(_Room):
 
@@ -106,8 +129,12 @@ class BaseRoom(_Room):
     def __init__(self, world, xmap, pos, tex=2, orientation=None):
         self.pos = pos
         self.tex = tex
+        self.xmap = xmap
+
         wall(world, '-z', SIZE, pos, tex=tex)
         wall(world, '+z', SIZE, pos, tex=tex)
+
+        self.light()
 
 
 class Corridor2way(_OrientedRoom):
@@ -117,6 +144,7 @@ class Corridor2way(_OrientedRoom):
         self.pos = pos
         self.orientation = orientation
         self.roof = roof
+        self.xmap = xmap
 
         wall(world, '-z', SIZE, pos)
         if roof:
@@ -129,6 +157,8 @@ class Corridor2way(_OrientedRoom):
             wall(world, '+x', SIZE, pos)
             wall(world, '-x', SIZE, pos)
 
+        self.light()
+
 
 class Corridor2way_A(Corridor2way):
     room_type = 'hallway'
@@ -136,6 +166,7 @@ class Corridor2way_A(Corridor2way):
     def __init__(self, world, xmap, pos, orientation='+x', roof=False):
         self.pos = pos
         self.orientation = orientation
+        self.xmap = xmap
 
         wall(world, '-z', SIZE, pos)
         if roof:
@@ -148,6 +179,8 @@ class Corridor2way_A(Corridor2way):
             low_wall(world, '+x', SIZE, pos)
             low_wall(world, '-x', SIZE, pos)
 
+        self.light()
+
 
 class Corridor4way(_Room):
     room_type = 'hallway'
@@ -155,6 +188,7 @@ class Corridor4way(_Room):
     def __init__(self, world, xmap, pos, roof=False, orientation=None):
         self.pos = pos
         self.roof = roof
+        self.xmap = xmap
 
         wall(world, '-z', SIZE, pos)
         if roof:
@@ -165,11 +199,16 @@ class Corridor4way(_Room):
         column(world, 'z', 8, mv(pos, (SIZE - 1, 0, 0)), tex=4)
         column(world, 'z', 8, mv(pos, (SIZE - 1, SIZE - 1, 0)), tex=4)
 
+        self.light()
+
+
 class Corridor4way_A(Corridor4way):
     room_type = 'hallway'
 
     def __init__(self, world, xmap, pos, roof=None, orientation=None):
         self.pos = pos
+        self.xmap = xmap
+        self.light()
 
         wall(world, '-z', SIZE, pos)
 
@@ -185,6 +224,8 @@ class SpawnRoom(_OrientedRoom):
     def __init__(self, world, xmap, pos, roof=None, orientation=None):
         self.pos = pos
         self.orientation = orientation
+        self.xmap = xmap
+        self.light()
         tex = 9
 
         wall(world, '-z', SIZE, pos, tex=tex)
@@ -229,6 +270,8 @@ class AltarRoom(_3X3Room):
     def __init__(self, world, xmap, pos, roof=False, orientation=None):
         # Push the position
         self.pos = mv(pos, m(1, 0, 0))
+        self.xmap = xmap
+        self.light()
         # For bigger rooms, we have to shift them such that the previous_posision matches a doorway.
 
         size = 24
@@ -262,6 +305,8 @@ class Stair(_OrientedRoom):
     def __init__(self, world, xmap, pos, orientation='+x'):
         self.pos = pos
         self.orientation = orientation
+        self.xmap = xmap
+        self.light()
 
         wall(world, '-z', SIZE, pos)
 
