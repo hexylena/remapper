@@ -12,22 +12,31 @@ class Entity:
             self.attr_annotations = [
                 'type', 'flags', 'modes', 'muts', 'id'
             ]
-            assert len(self.attrs) == len(self.attr_annotations)
         elif self.type == EntType.ET_PLAYERSTART:
             self.attrs[0] = WeaponType(self.attrs[0])
             self.attr_annotations = [
                 'team', 'yaw', 'pitch', 'modes', 'muts', 'id'
             ]
-            assert len(self.attrs) == len(self.attr_annotations)
         elif self.type == EntType.ET_MAPMODEL:
             self.attr_annotations = [
                 'type', 'yaw', 'pitch', 'roll', 'blend', 'scale', 'flags',
                 'colour', 'palette', 'palindex', 'spinyaw', 'spinpitch',
                 'spinroll'
             ]
-            assert len(self.attrs) == len(self.attr_annotations)
-        self.links = links
-        self.reserved = reserved
+        elif self.type == EntType.ET_SUNLIGHT:
+            self.attr_annotations = [
+                'yaw', 'pitch', 'red', 'green', 'blue', 'offset',
+                'flare', 'flarescale',
+            ]
+            print(self.type)
+        else:
+            raise Exception("Cannot serialize, please specify attrs")
+
+        # Must have right # of attrs.
+        assert len(self.attrs) == len(self.attr_annotations)
+
+        self.links = [] if links is None else links
+        self.reserved = [0, 0, 0] if reserved is None else reserved
 
     def __str__(self):
         return '[Ent %s %s [Attr: %s] [Links: %s]]' % (
@@ -84,6 +93,19 @@ class PlayerSpawn(Entity):
         ]
         self.attrs = [
             team, yaw, pitch, modes, muts, id
+        ]
+        self.links = [] if links is None else links
+        self.reserved = [0, 0, 0] if reserved is None else reserved
+
+
+class Sunlight(Entity):
+
+    def __init__(self, yaw=0, pitch=0, red=255, green=255, blue=255, offset=45, flare=0, flarescale=0, links=None, reserved=None):
+        self.attr_annotations = [
+            'yaw', 'pitch', 'red', 'green', 'blue', 'offset', 'flare', 'flarescale',
+        ]
+        self.attrs = [
+            yaw, pitch, red, green, blue, offset, flare, flarescale
         ]
         self.links = [] if links is None else links
         self.reserved = [0, 0, 0] if reserved is None else reserved
