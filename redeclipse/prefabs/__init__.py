@@ -4,8 +4,9 @@ from redeclipse.entities.model import MapModel
 from redeclipse.prefabs.construction_kit import wall, column, wall_points, mv, \
     m, low_wall, cube_s
 import random # noqa
+import noise
+import colorsys
 random.seed(42)
-
 SIZE = 8
 
 
@@ -58,20 +59,31 @@ class _Room:
 
     def light(self):
         # 70% chance of a light below
-        if random.random() < 0.7:
+        # if random.random() < 0.7:
+        if True:
             if hasattr(self, 'size'):
                 size = self.size
             else:
                 size = SIZE
+
+            def kleur(base):
+                nums = map(
+                    lambda x: x * (2 ** -6),
+                    self.pos
+                )
+
+                return int(abs(noise.pnoise3(*nums, base=base)) * 255)
+
+            print(kleur(10), kleur(1), kleur(-43))
 
             light = Light(
                 x=8 * (self.pos[0] + size / 2),
                 y=8 * (self.pos[1] + size / 2),
                 # Light above head
                 z=8 * (self.pos[2] + 4),
-                red=random.randint(0, 255),
-                green=random.randint(0, 255),
-                blue=random.randint(0, 255),
+                red=kleur(10),
+                green=kleur(1),
+                blue=kleur(-43),
                 radius=64,
             )
             self.xmap.ents.append(light)

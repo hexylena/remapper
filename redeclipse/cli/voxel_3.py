@@ -6,10 +6,8 @@ from redeclipse.prefabs import m, BaseRoom, AltarRoom, \
     Corridor4way, Corridor4way_A, \
     Stair, SpawnRoom
 import argparse
-import sys # noqa
-import random # noqa
-import math # noqa
-import noise # noqa
+import sys
+import random
 random.seed(82)
 
 IJ_SIZE = 2**7
