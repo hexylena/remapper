@@ -63,6 +63,13 @@ class UnusedPositionManager:
     def register_room(self, room):
         # Register positions occupied by this room
         used = room.get_positions()
+        # First, we need to check that ALL of those positions are
+        # unoccupied.
+        for position in used:
+            if position in self.occupied:
+                raise Exception("Occupado")
+        # Otheriwse, all positions are fine to use.
+
         self.occupied = self.occupied.union(used)
         # print('rr occ CoM', self.CoM(used), used)
         # Remove occupied positions from possibilities
@@ -118,7 +125,6 @@ if __name__ == '__main__':
             JumpCorridor3,
             Corridor4way_A,
             Stair,
-            SpawnRoom,
             Corridor2way,
             Corridor2way_A,
             AltarRoom,
@@ -140,28 +146,42 @@ if __name__ == '__main__':
 
     # Insert a starting room
     starting_position = m(6, 6, 3)
-    b = SpawnRoom(v, mymap, pos=starting_position, orientation="-x")
+    b = SpawnRoom(pos=starting_position, orientation="-x")
     print("Starting: ", starting_position)
     upm = UnusedPositionManager()
     upm.register_room(b)
+    b.render(v, mymap)
     # upm.print()
 
-    for i in range(200):
-        # Pick a random position for this room to ugo
+    room_count = 0
+    while True:
+        if room_count > 100:
+            break
+        # Pick a random position for this notional room to ugo
         try:
             (position, prev_room, orientation) = upm.random_position()
         except Exception as e:
+            # If we have no more positions left, break.
             print(e)
+            sys.exit()
+            break
 
         kwargs = {'orientation': orientation}
         # Get a random room, influence with prev_room
         roomClass = random_room(prev_room)
         # print(position, prev_room, orientation, roomClass)
-        print("[%s] Placing %s at %s (%s)" % (i, roomClass.__name__, position, orientation))
+        print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, position, orientation))
         # Place the room
-        r = roomClass(v, mymap, pos=position, **kwargs)
-        upm.register_room(r)
-        # upm.print()
+        r = roomClass(pos=position, **kwargs)
+        try:
+            upm.register_room(r)
+            room_count += 1
+            r.render(v, mymap)
+        except Exception as e:
+            # We have failed to register the room because
+            # it does not fit here.
+            # So, we continue.
+            continue
 
     mymap.world = v.to_octree()
     mymap.world[0].octsav = 0

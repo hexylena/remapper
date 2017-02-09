@@ -194,7 +194,6 @@ class NLongCorridor(_OrientedRoom):
         self.orientation = orientation
         self.roof = roof
         self.length = length
-        self.xmap = xmap
         self.pos = pos
         # self.pos = mv(pos, self.get_offset())
         # print(pos, '+', self.get_offset(), '(' , self.orientation,') =>', self.pos, '==', self.get_positions(), self.get_doorways())
@@ -526,24 +525,24 @@ class SpawnRoom(_OrientedRoom):
         wall(world, '-z', SIZE, self.pos, tex=self.tex)
         wall(world, '+z', SIZE, self.pos, tex=self.tex)
 
-        if orientation == '+x':
+        if self.orientation == '+x':
             wall(world, '-x', SIZE, self.pos)
             wall(world, '+y', SIZE, self.pos)
             wall(world, '-y', SIZE, self.pos)
-        elif orientation == '-x':
+        elif self.orientation == '-x':
             wall(world, '+x', SIZE, self.pos)
             wall(world, '+y', SIZE, self.pos)
             wall(world, '-y', SIZE, self.pos)
-        elif orientation == '+y':
+        elif self.orientation == '+y':
             wall(world, '-y', SIZE, self.pos)
             wall(world, '+x', SIZE, self.pos)
             wall(world, '-x', SIZE, self.pos)
-        elif orientation == '-y':
+        elif self.orientation == '-y':
             wall(world, '+y', SIZE, self.pos)
             wall(world, '+x', SIZE, self.pos)
             wall(world, '-x', SIZE, self.pos)
         else:
-            raise Exception("Unknown orientation %s" % orientation)
+            raise Exception("Unknown orientation %s" % self.orientation)
 
         spawn = PlayerSpawn(
             x=8 * (self.pos[0] + SIZE / 2),
