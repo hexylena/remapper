@@ -159,6 +159,15 @@ class BaseRoom(_Room):
         wall(world, '-z', SIZE, pos, tex=tex)
         wall(world, '+z', SIZE, pos, tex=tex)
 
+        # Add default spawn in base room  (so camera dosen't spawn in
+        # miles above where we want to be)
+        spawn = PlayerSpawn(
+            x=8 * (self.pos[0] + SIZE / 2),
+            y=8 * (self.pos[1] + SIZE / 2),
+            z=8 * (self.pos[2] + 1),
+        )
+        xmap.ents.append(spawn)
+
         self.light()
 
 
