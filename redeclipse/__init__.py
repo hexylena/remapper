@@ -148,13 +148,14 @@ class Map:
         pass
 
     def savechildren(self, handle, cube_arr, indent=0):
-        for i, c in enumerate(cube_arr):
-            # TODO: Progress
-            if indent == 0:
-                self.pbar_0.update(i)
-            # elif indent == 1:
-                # self.pbar_1.update(i)
-            self.savec(handle, c, indent=indent)
+        if cube_arr:
+            for i, c in enumerate(cube_arr):
+                # TODO: Progress
+                if indent == 0:
+                    self.pbar_0.update(i)
+                # elif indent == 1:
+                    # self.pbar_1.update(i)
+                self.savec(handle, c, indent=indent)
 
     def savec(self, handle, c, indent=0):
         """Inverse of loadc"""

@@ -3,7 +3,8 @@ from redeclipse.voxel import VoxelWorld
 from redeclipse.cli import parse
 from redeclipse.prefabs import m, BaseRoom, AltarRoom, \
     Corridor2way, Corridor2way_A, \
-    Corridor4way, Corridor4way_A
+    Corridor4way, Corridor4way_A, \
+    Stair
 import argparse
 import sys # noqa
 import random # noqa
@@ -26,12 +27,22 @@ class UnusedPositionManager:
 
     def getOrientationToManhattanRoom(self, p, used):
         for u in used:
-            if u[1] == p[1] and u[2] == p[2]:
-                return 'x'
-            elif u[0] == p[0] and u[2] == p[2]:
-                return 'y'
-            elif u[0] == p[0] and u[1] == p[1]:
-                return 'z'
+            if u[1] == p[1]:# and u[2] == p[2]:
+                if u[0] < p[0]:
+                    return '-x'
+                else:
+                    return '+x'
+            elif u[0] == p[0]:# and u[2] == p[2]:
+                if u[1] < p[1]:
+                    return '-y'
+                else:
+                    return '+y'
+            # elif u[0] == p[0] and u[1] == p[1]:
+                # if u[2] < p[2]:
+                    # return '-z'
+                # else:
+                    # return '+z'
+        sys.exit()
 
     def register_room(self, room):
         # Register positions occupied by this room
@@ -82,10 +93,11 @@ if __name__ == '__main__':
         possible_rooms =  [
             # BaseRoom,
             # Corridor4way,
-            # Corridor4way_A,
+            Corridor4way_A,
+            Stair,
             # Corridor2way,
-            # Corridor2way_A,
-            AltarRoom,
+            Corridor2way_A,
+            # AltarRoom,
         ]
 
         choices = []
@@ -102,13 +114,13 @@ if __name__ == '__main__':
 
 
     # Insert a starting room
-    starting_position = m(6, 6, 6)
+    starting_position = m(6, 6, 5)
     b = BaseRoom(v, mymap, pos=starting_position, tex=5)
     print("Starting: ", starting_position)
     upm = UnusedPositionManager()
     upm.register_room(b)
 
-    for i in range(2):
+    for i in range(90):
         # Pick a random position for this room to go
         (position, prev_room, orientation) = upm.random_position()
         kwargs = {'orientation': orientation}

@@ -1,8 +1,7 @@
 from redeclipse.objects import cube
 from redeclipse.entities.model import MapModel
 from redeclipse.prefabs.construction_kit import wall, column, wall_points, mv, \
-    m, low_wall
-import random
+    m, low_wall, cube_s
 
 SIZE = 8
 
@@ -48,15 +47,16 @@ class _Room:
     @classmethod
     def get_transition_probs(cls):
         return {
-            'platform': 0.6,
-            'hallway': 0.4,
+            'platform': 0.1,
+            'hallway': 0.8,
+            'vertical': 0.4,
         }
 
 class _OrientedRoom(_Room):
 
     def get_doorways(self):
         print('==================', self.orientation)
-        if self.orientation == 'x':
+        if self.orientation in ('+x', '-x'):
             return [
                 mv(self.pos, m(-1, 0, 0)),
                 mv(self.pos, m(1, 0, 0)),
@@ -70,8 +70,9 @@ class _OrientedRoom(_Room):
     @classmethod
     def get_transition_probs(cls):
         return {
-            'hallway': 0.8,
+            'hallway': 0.9,
             'platform': 0.2,
+            'vertical': 0.5,
         }
 
 class _3X3Room(_Room):
@@ -111,7 +112,7 @@ class BaseRoom(_Room):
 class Corridor2way(_OrientedRoom):
     room_type = 'hallway'
 
-    def __init__(self, world, xmap, pos, orientation='x', roof=False):
+    def __init__(self, world, xmap, pos, orientation='+x', roof=False):
         self.pos = pos
         self.orientation = orientation
         self.roof = roof
@@ -120,7 +121,7 @@ class Corridor2way(_OrientedRoom):
         if roof:
             wall(world, '+z', SIZE, pos)
 
-        if orientation == 'x':
+        if orientation in ('+x', '-x'):
             wall(world, '+y', SIZE, pos)
             wall(world, '-y', SIZE, pos)
         else:
@@ -131,7 +132,7 @@ class Corridor2way(_OrientedRoom):
 class Corridor2way_A(Corridor2way):
     room_type = 'hallway'
 
-    def __init__(self, world, xmap, pos, orientation='x', roof=False):
+    def __init__(self, world, xmap, pos, orientation='+x', roof=False):
         self.pos = pos
         self.orientation = orientation
 
@@ -139,7 +140,7 @@ class Corridor2way_A(Corridor2way):
         if roof:
             wall(world, '+z', SIZE, pos)
 
-        if orientation == 'x':
+        if orientation in ('+x', '-x'):
             low_wall(world, '+y', SIZE, pos)
             low_wall(world, '-y', SIZE, pos)
         else:
@@ -210,17 +211,63 @@ class AltarRoom(_3X3Room):
         xmap.ents.append(tree)
 
 
-class Stair:
+class Stair(_OrientedRoom):
     room_type = 'vertical'
 
-    @classmethod
-    def render(cls, world, xmap, pos, orientation='x', roof=False):
+    def __init__(self, world, xmap, pos, orientation='+x'):
+        self.pos = pos
+        self.orientation = orientation
+
         wall(world, '-z', SIZE, pos)
 
-        if orientation == 'x':
-            wall(world, '+y', SIZE, pos)
-            wall(world, '-y', SIZE, pos)
-        else:
-            wall(world, '+x', SIZE, pos)
+        if orientation == '+x':
             wall(world, '-x', SIZE, pos)
+            cube_s(world, 4, mv(pos, (0, 2, 0)), tex=3)
+        elif orientation == '-x':
+            wall(world, '+x', SIZE, pos)
+            cube_s(world, 4, mv(pos, (SIZE / 2, 2, 0)), tex=3)
+        elif orientation == '+y':
+            wall(world, '-y', SIZE, pos)
+            cube_s(world, 4, mv(pos, (2, 0, 0)), tex=3)
+        elif orientation == '-y':
+            wall(world, '+y', SIZE, pos)
+            cube_s(world, 4, mv(pos, (2, SIZE / 2, 0)), tex=3)
+        else:
+            raise Exception("Unknown orientation %s" % orientation)
 
+    def get_doorways(self):
+        if self.orientation == '+x':
+            return [
+                mv(self.pos, m(1, 0, 0)),
+                mv(self.pos, m(-1, 0, 1))
+            ]
+        elif self.orientation == '-x':
+            return [
+                mv(self.pos, m(1, 0, 1)),
+                mv(self.pos, m(-1, 0, 0))
+            ]
+        elif self.orientation == '+y':
+            return [
+                mv(self.pos, m(0, 1, 0)),
+                mv(self.pos, m(0, -1, 1))
+            ]
+        elif self.orientation == '-y':
+            return [
+                mv(self.pos, m(0, 1, 1)),
+                mv(self.pos, m(0, -1, 0))
+            ]
+        return []
+
+    def get_positions(self):
+        return [
+            self.pos, # Self
+            mv(self.pos, m(0, 0, 1)) # Above self
+        ]
+
+    @classmethod
+    def get_transition_probs(cls):
+        return {
+            'platform': 0.1,
+            'hallway': 0.4,
+            'vertical': 0.7,
+        }

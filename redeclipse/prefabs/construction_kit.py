@@ -83,6 +83,31 @@ def column(world, direction, size, pos, tex=2):
         )
 
 
+def cube_points(*args):
+    """
+    call with a single number for a cube, or x, y, z for a rectangular prism
+    """
+    if len(args) == 1:
+        x = args[0]
+        y = args[0]
+        z = args[0]
+    else:
+        (x, y, z) = args
+
+    for i in range(x):
+        for j in range(y):
+            for k in range(z):
+                yield (i, j, k)
+
+
+def cube_s(world, size, pos, tex=2):
+    for point in cube_points(size):
+        world.set_point(
+            *mv(point, pos),
+            cube.newtexcube(tex=tex)
+        )
+
+
 def slope(world, pos, corners_down=None, tex=2):
     # Broken
     c = cube.newtexcube(tex=tex)
