@@ -10,7 +10,7 @@ import sys # noqa
 import random # noqa
 import math # noqa
 import noise # noqa
-random.seed(22)
+random.seed(42)
 
 IJ_SIZE = 2**7
 K_SIZE = 50
