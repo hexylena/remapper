@@ -53,7 +53,7 @@ class _Room:
         return {
             'platform': 0.1,
             'hallway': 0.8,
-            'vertical': 0.4,
+            'vertical': 0.8,
         }
 
 
@@ -66,24 +66,37 @@ class _Room:
             else:
                 size = SIZE
 
-            def kleur(base):
-                nums = map(
-                    lambda x: x * (2 ** -6),
-                    self.pos
-                )
+            # Map to 0-1 scale
+            nums = list(map(
+                lambda x: x * (2 ** -7),
+                self.pos
+            ))
 
+            # convert a tuple of three nums + offset into a
+            # 0-255 integer.
+            def kleur(nums, base):
                 return int(abs(noise.pnoise3(*nums, base=base)) * 255)
 
-            print(kleur(10), kleur(1), kleur(-43))
+            # Now we generate our colour:
+            r = kleur(nums, 10)
+            g = kleur(nums, 0)
+            b = kleur(nums, 43)
+
+            # RGB isn't great, because it means low values of RGB are
+            # low luminance. So we convert to HSV to get hue
+            (h, s, v) = colorsys.rgb_to_hsv(r, g, b)
+            # We then peg S and V to high values and only retain huge
+            (r, g, b) = colorsys.hsv_to_rgb(h, 1, 255)
+            # This should give us a bright colour on a continuous form
 
             light = Light(
                 x=8 * (self.pos[0] + size / 2),
                 y=8 * (self.pos[1] + size / 2),
                 # Light above head
                 z=8 * (self.pos[2] + 4),
-                red=kleur(10),
-                green=kleur(1),
-                blue=kleur(-43),
+                red=int(r),
+                green=int(g),
+                blue=int(b),
                 radius=64,
             )
             self.xmap.ents.append(light)
@@ -108,7 +121,7 @@ class _OrientedRoom(_Room):
         return {
             'hallway': 0.9,
             'platform': 0.2,
-            'vertical': 0.5,
+            'vertical': 0.9,
         }
 
 class _3X3Room(_Room):
@@ -371,5 +384,5 @@ class Stair(_OrientedRoom):
         return {
             'platform': 0.1,
             'hallway': 0.4,
-            'vertical': 0.7,
+            'vertical': 10.7,
         }

@@ -116,7 +116,7 @@ if __name__ == '__main__':
 
 
     # Insert a starting room
-    starting_position = m(6, 6, 5)
+    starting_position = m(6, 6, 2)
     b = BaseRoom(v, mymap, pos=starting_position, tex=5)
     print("Starting: ", starting_position)
     upm = UnusedPositionManager()
