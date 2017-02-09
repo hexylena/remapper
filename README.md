@@ -19,11 +19,11 @@ See the [maps folder](./maps/) for screenshots and maps you can play
 
 First playable map: Trollskogen
 
-![](./media/trollskogen.png)
+![](./maps/trollskogen-big.png)
 
 Second playable map: Bergen
 
-![](./media/bergen-big.png)
+![](./maps/bergen-big.png)
 
 Humble beginnings:
 
