@@ -123,6 +123,14 @@ def cube_s(world, size, pos, tex=2):
         )
 
 
+def rectangular_prism(world, x, y, z, pos, tex=2):
+    for point in cube_points(x, y, z):
+        world.set_point(
+            *mv(point, pos),
+            cube.newtexcube(tex=tex)
+        )
+
+
 def slope(world, pos, corners_down=None, tex=2):
     # Broken
     c = cube.newtexcube(tex=tex)

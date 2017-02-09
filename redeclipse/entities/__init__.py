@@ -28,7 +28,10 @@ class Entity:
                 'yaw', 'pitch', 'red', 'green', 'blue', 'offset',
                 'flare', 'flarescale',
             ]
-            print(self.type)
+        elif self.type == EntType.ET_PUSHER:
+            self.attr_annotations = [
+                'yaw', 'pitch', 'force', 'maxrad', 'minrad', 'type'
+            ]
         else:
             raise Exception("Cannot serialize, please specify attrs")
 
@@ -121,6 +124,21 @@ class Light(Entity):
         ]
         self.attrs = [
             radius, red, green, blue, flare, flarescale
+        ]
+        self.links = [] if links is None else links
+        self.reserved = [0, 0, 0] if reserved is None else reserved
+
+
+class Pusher(Entity):
+
+    def __init__(self, x=0, y=0, z=0, yaw=0, pitch=45, force=150, maxrad=0, minrad=0, type=0, links=None, reserved=None):
+        self.o = ivec3(x, y, z)
+        self.type = EntType.ET_PUSHER
+        self.attr_annotations = [
+            'yaw', 'pitch', 'force', 'maxrad', 'minrad', 'type'
+        ]
+        self.attrs = [
+            yaw, pitch, force, maxrad, minrad, type
         ]
         self.links = [] if links is None else links
         self.reserved = [0, 0, 0] if reserved is None else reserved

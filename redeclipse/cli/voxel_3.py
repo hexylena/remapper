@@ -4,11 +4,11 @@ from redeclipse.cli import parse
 from redeclipse.prefabs import m, mv, BaseRoom, AltarRoom, \
     Corridor2way, Corridor2way_A, \
     Corridor4way, Corridor4way_A, \
-    Stair, SpawnRoom, NLongCorridor
+    Stair, SpawnRoom, NLongCorridor, JumpCorridor3
 import argparse
 import sys
 import random
-random.seed(82)
+random.seed(42)
 
 IJ_SIZE = 2**7
 K_SIZE = 50
@@ -84,11 +84,11 @@ class UnusedPositionManager:
         else:
             raise Exception("No more space!")
 
-    def print(self):
+    # def print(self):
         # print('Unused', pprint.pformat([(x, y.__class__.__name__, z) for (x, y, z) in self.unoccupied]))
         # print('  used', self.occupied)
-        print('  Unus', [x for (x, y, z) in self.unoccupied])
-        print('  used', self.occupied)
+        # print('  Unus', [x for (x, y, z) in self.unoccupied])
+        # print('  used', self.occupied)
 
 
 if __name__ == '__main__':
@@ -113,15 +113,16 @@ if __name__ == '__main__':
 
     def random_room(connecting_room):
         possible_rooms =  [
-            # BaseRoom,
+            BaseRoom,
             # Corridor4way,
-            # Corridor4way_A,
-            # Stair,
-            # SpawnRoom,
-            # Corridor2way,
-            # Corridor2way_A,
+            JumpCorridor3,
+            Corridor4way_A,
+            Stair,
+            SpawnRoom,
+            Corridor2way,
+            Corridor2way_A,
             AltarRoom,
-            NLongCorridor
+            NLongCorridor,
         ]
 
         choices = []
@@ -138,29 +139,29 @@ if __name__ == '__main__':
 
 
     # Insert a starting room
-    starting_position = m(6, 6, 6)
-    # b = BaseRoom(v, mymap, pos=starting_position, tex=5)
-    b = SpawnRoom(v, mymap, pos=starting_position, orientation='-y')
+    starting_position = m(6, 6, 3)
+    b = SpawnRoom(v, mymap, pos=starting_position, orientation="-x")
     print("Starting: ", starting_position)
     upm = UnusedPositionManager()
     upm.register_room(b)
-    upm.print()
+    # upm.print()
 
-    for i in range(20):
+    for i in range(200):
         # Pick a random position for this room to ugo
         try:
             (position, prev_room, orientation) = upm.random_position()
         except Exception as e:
             print(e)
+
         kwargs = {'orientation': orientation}
         # Get a random room, influence with prev_room
         roomClass = random_room(prev_room)
-        print(position, prev_room, orientation, roomClass)
-        # print("[%s] Placing %s at %s" % (i, roomClass.__name__, position))
+        # print(position, prev_room, orientation, roomClass)
+        print("[%s] Placing %s at %s (%s)" % (i, roomClass.__name__, position, orientation))
         # Place the room
         r = roomClass(v, mymap, pos=position, **kwargs)
         upm.register_room(r)
-        upm.print()
+        # upm.print()
 
     mymap.world = v.to_octree()
     mymap.world[0].octsav = 0

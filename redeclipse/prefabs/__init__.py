@@ -1,8 +1,8 @@
 from redeclipse.objects import cube
-from redeclipse.entities import Light, PlayerSpawn
+from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
 from redeclipse.prefabs.construction_kit import wall, column, wall_points, mv, \
-    m, mi, low_wall, cube_s
+    m, mi, low_wall, cube_s, rectangular_prism
 import random # noqa
 import noise
 import colorsys
@@ -64,10 +64,12 @@ class _Room:
 
     @classmethod
     def get_transition_probs(cls):
+        # Platform
         return {
             'platform': 0.1,
             'hallway': 0.8,
-            'vertical': 0.8,
+            'vertical': 0.3,
+            'hallway_jump': 0.2,
         }
 
 
@@ -82,7 +84,7 @@ class _Room:
 
             # Map to 0-1 scale
             nums = list(map(
-                lambda x: x * (2 ** -7),
+                lambda x: x * (2 ** -7.5),
                 self.pos
             ))
 
@@ -117,7 +119,6 @@ class _Room:
 
 class _OrientedRoom(_Room):
     def _get_doorways(self):
-        print('HI', self.orientation)
         if self.orientation in ('+x', '-x'):
             return [
                 m(-1, 0, 0),
@@ -131,10 +132,12 @@ class _OrientedRoom(_Room):
 
     @classmethod
     def get_transition_probs(cls):
+        # oriented platform / hallway
         return {
-            'hallway': 0.1,
-            'platform': 0.9,
-            'vertical': 0.9,
+            'hallway': 0.4,
+            'platform': 0.3,
+            'vertical': 0.6,
+            'hallway_jump': 0.6,
         }
 
 class _3X3Room(_Room):
@@ -164,13 +167,14 @@ class _3X3Room(_Room):
 
 class BaseRoom(_Room):
 
-    def __init__(self, world, xmap, pos, tex=2, orientation=None):
+    def __init__(self, pos, tex=2, orientation=None):
         self.pos = pos
         self.tex = tex
-        self.xmap = xmap
+        self.orientation = orientation
 
-        wall(world, '-z', SIZE, pos, tex=tex)
-        wall(world, '+z', SIZE, pos, tex=tex)
+    def render(self, world, xmap):
+        wall(world, '-z', SIZE, self.pos, tex=self.tex)
+        wall(world, '+z', SIZE, self.pos, tex=self.tex)
 
         # Add default spawn in base room  (so camera dosen't spawn in
         # miles above where we want to be)
@@ -179,41 +183,40 @@ class BaseRoom(_Room):
             y=8 * (self.pos[1] + SIZE / 2),
             z=8 * (self.pos[2] + 1),
         )
-        xmap.ents.append(spawn)
-
+        self.xmap.ents.append(spawn)
         self.light()
 
 
 class NLongCorridor(_OrientedRoom):
     room_type = 'hallway'
 
-    def __init__(self, world, xmap, pos, orientation='+x', roof=False, length=2, tex=11):
+    def __init__(self, pos, orientation='+x', roof=False, length=2, tex=7):
         self.orientation = orientation
         self.roof = roof
         self.length = length
         self.xmap = xmap
         self.pos = pos
         # self.pos = mv(pos, self.get_offset())
-        print(pos, '+', self.get_offset(), '(' , self.orientation,') =>', self.pos, '==', self.get_positions(), self.get_doorways())
+        # print(pos, '+', self.get_offset(), '(' , self.orientation,') =>', self.pos, '==', self.get_positions(), self.get_doorways())
 
         if self.length == 0:
             raise Exception("Must have length")
 
+    def render(self, world, xmap):
         # First tile
-        wall(world, '-z', SIZE, self.pos, tex=tex)
+        wall(world, '-z', SIZE, self.pos, tex=self.tex)
 
         for i in range(1, self.length):
             if self.orientation == '-x':
-                wall(world, '-z', SIZE, mv(self.pos, m(i, 0, 0)), tex=tex)
+                wall(world, '-z', SIZE, mv(self.pos, m(i, 0, 0)), tex=self.tex)
             elif self.orientation == '+x':
-                wall(world, '-z', SIZE, mv(self.pos, m(-i, 0, 0)), tex=tex)
+                wall(world, '-z', SIZE, mv(self.pos, m(-i, 0, 0)), tex=self.tex)
             elif self.orientation == '-y':
-                wall(world, '-z', SIZE, mv(self.pos, m(0, i, 0)), tex=tex)
+                wall(world, '-z', SIZE, mv(self.pos, m(0, i, 0)), tex=self.tex)
             elif self.orientation == '+y':
-                wall(world, '-z', SIZE, mv(self.pos, m(0, -i, 0)), tex=tex)
+                wall(world, '-z', SIZE, mv(self.pos, m(0, -i, 0)), tex=self.tex)
             else:
                 raise Exception("Unknown Orientation")
-
         self.light()
 
     def get_positions(self):
@@ -261,64 +264,235 @@ class NLongCorridor(_OrientedRoom):
 class Corridor2way(_OrientedRoom):
     room_type = 'hallway'
 
-    def __init__(self, world, xmap, pos, orientation='+x', roof=False, tex=10):
+    def __init__(self, pos, orientation='+x', roof=False, tex=2):
         self.pos = pos
         self.orientation = orientation
         self.roof = roof
-        self.xmap = xmap
 
-        wall(world, '-z', SIZE, pos, tex=tex)
+    def render(self, world, xmap):
+        wall(world, '-z', SIZE, self.pos, tex=self.tex)
         if roof:
-            wall(world, '+z', SIZE, pos, tex=tex)
+            wall(world, '+z', SIZE, self.pos, tex=self.tex)
 
         if orientation in ('+x', '-x'):
-            wall(world, '+y', SIZE, pos, tex=tex)
-            wall(world, '-y', SIZE, pos, tex=tex)
+            wall(world, '+y', SIZE, self.pos, tex=self.tex)
+            wall(world, '-y', SIZE, self.pos, tex=self.tex)
         else:
-            wall(world, '+x', SIZE, pos, tex=tex)
-            wall(world, '-x', SIZE, pos, tex=tex)
+            wall(world, '+x', SIZE, self.pos, tex=self.tex)
+            wall(world, '-x', SIZE, self.pos, tex=self.tex)
 
         self.light()
+
+
+class JumpCorridor3(_OrientedRoom):
+    room_type = 'hallway_jump'
+
+    @classmethod
+    def get_transition_probs(cls):
+        return {
+            'hallway_jump': 0,
+            'platform': 0.4,
+            'hallway': 0.4,
+            'vertical': 0.4,
+        }
+
+    def __init__(self, pos, orientation='+x', roof=False, tex=2):
+        self.pos = pos
+        self.orientation = orientation
+        self.roof = roof
+
+    def render(self, world, xmap):
+        wall(world, '-z', SIZE, self.pos, tex=self.tex)
+        pusher_a = None
+        pusher_b = None
+
+        (a, b, c) = self.pos
+        if self.orientation == '-x':
+            wall(world, '-z', SIZE, mv(self.pos, m(2, 0, 0)), tex=self.tex)
+            rectangular_prism(world, 2, 4, 1, (a + 6, b + 2, c), tex=self.tex + 1)
+            pusher_a = Pusher(
+                x=8 * (self.pos[0] + 7),
+                y=8 * (self.pos[1] + 4),
+                z=8 * (self.pos[2] + 1),
+                maxrad=15,
+                yaw=270,
+                force=175,
+            )
+        elif self.orientation == '+x':
+            wall(world, '-z', SIZE, mv(self.pos, m(-2, 0, 0)), tex=self.tex)
+            rectangular_prism(world, 2, 4, 1, (a, b + 2, c), tex=self.tex + 1)
+            pusher_a = Pusher(
+                x=8 * (self.pos[0] + 1),
+                y=8 * (self.pos[1] + 4),
+                z=8 * (self.pos[2] + 1),
+                maxrad=15,
+                yaw=90,
+                force=175,
+            )
+        elif self.orientation == '-y':
+            wall(world, '-z', SIZE, mv(self.pos, m(0, 2, 0)), tex=self.tex)
+            rectangular_prism(world, 4, 2, 1, (a + 2, b + 6, c), tex=self.tex + 1)
+            pusher_a = Pusher(
+                x=8 * (self.pos[0] + 4),
+                y=8 * (self.pos[1] + 7),
+                z=8 * (self.pos[2] + 1),
+                maxrad=15,
+                yaw=0,
+                force=175,
+            )
+        elif self.orientation == '+y':
+            wall(world, '-z', SIZE, mv(self.pos, m(0, -2, 0)), tex=self.tex)
+            rectangular_prism(world, 4, 2, 1, (a + 2, b, c), tex=self.tex + 1)
+            pusher_a = Pusher(
+                x=8 * (self.pos[0] + 4),
+                y=8 * (self.pos[1] + 1),
+                z=8 * (self.pos[2] + 1),
+                maxrad=15,
+                yaw=180,
+                force=175,
+            )
+
+        if orientation in ('+x', '-x'):
+            low_wall(world, '+y', SIZE, pos)
+            low_wall(world, '-y', SIZE, pos)
+            if orientation == '-x':
+                low_wall(world, '+y', SIZE, mv(self.pos, m(2, 0, 0)))
+                low_wall(world, '-y', SIZE, mv(self.pos, m(2, 0, 0)))
+                (a, b, c) = mv(self.pos, m(2, 0, 0))
+                rectangular_prism(world, 2, 4, 1, (a, b + 2, c), tex=self.tex + 1)
+                pusher_b = Pusher(
+                    x=8 * (a + 1),
+                    y=8 * (b + 4),
+                    z=8 * (c + 1),
+                    maxrad=15,
+                    yaw=90,
+                    force=175,
+                )
+            else:
+                low_wall(world, '+y', SIZE, mv(self.pos, m(-2, 0, 0)))
+                low_wall(world, '-y', SIZE, mv(self.pos, m(-2, 0, 0)))
+                (a, b, c) = mv(self.pos, m(-2, 0, 0))
+                rectangular_prism(world, 2, 4, 1, (a + 6, b + 2, c), tex=self.tex + 1)
+                pusher_b = Pusher(
+                    x=8 * (a + 7),
+                    y=8 * (b + 4),
+                    z=8 * (c + 1),
+                    maxrad=15,
+                    yaw=270,
+                    force=175,
+                )
+        else:
+            low_wall(world, '+x', SIZE, pos)
+            low_wall(world, '-x', SIZE, pos)
+
+            if orientation == '-y':
+                low_wall(world, '+x', SIZE, mv(self.pos, m(0, 2, 0)))
+                low_wall(world, '-x', SIZE, mv(self.pos, m(0, 2, 0)))
+                (a, b, c) = mv(self.pos, m(0, 2, 0))
+                rectangular_prism(world, 4, 2, 1, (a + 2, b, c), tex=self.tex + 1)
+                pusher_b = Pusher(
+                    x=8 * (a + 4),
+                    y=8 * (b + 1),
+                    z=8 * (c + 1),
+                    maxrad=15,
+                    yaw=180,
+                    force=175,
+                )
+            else:
+                low_wall(world, '+x', SIZE, mv(self.pos, m(0, -2, 0)))
+                low_wall(world, '-x', SIZE, mv(self.pos, m(0, -2, 0)))
+                (a, b, c) = mv(self.pos, m(0, -2, 0))
+                rectangular_prism(world, 4, 2, 1, (a + 2, b + 6, c), tex=self.tex + 1)
+                pusher_b = Pusher(
+                    x=8 * (a + 4),
+                    y=8 * (b + 7),
+                    z=8 * (c + 1),
+                    maxrad=15,
+                    yaw=0,
+                    force=175,
+                )
+
+        xmap.ents.append(pusher_a)
+        xmap.ents.append(pusher_b)
+
+    def get_positions(self):
+        positions = [self.pos]
+        for i in range(1, 3):
+            if self.orientation == '-x':
+                positions.append(mv(self.pos, m(i, 0, 0)))
+            elif self.orientation == '+x':
+                positions.append(mv(self.pos, m(-i, 0, 0)))
+            elif self.orientation == '-y':
+                positions.append(mv(self.pos, m(0, i, 0)))
+            elif self.orientation == '+y':
+                positions.append(mv(self.pos, m(0, -i, 0)))
+            else:
+                raise Exception("Unknown Orientation")
+        return positions
+
+    def _get_doorways(self):
+        if self.orientation == '+x':
+            return [
+                m(1, 0, 0),
+                m(-3, 0, 0),
+            ]
+        elif self.orientation == '-x':
+            return [
+                m(-1, 0, 0),
+                m(3, 0, 0),
+            ]
+        elif self.orientation == '+y':
+            return [
+                m(0, 1, 0),
+                m(0, -3, 0),
+            ]
+        elif self.orientation == '-y':
+            return [
+                m(0, -1, 0),
+                m(0, 3, 0),
+            ]
+        else:
+            raise Exception("Unknown Orientation")
 
 
 class Corridor2way_A(Corridor2way):
     room_type = 'hallway'
 
-    def __init__(self, world, xmap, pos, orientation='+x', roof=False):
+    def __init__(self, pos, orientation='+x', roof=False):
         self.pos = pos
         self.orientation = orientation
-        self.xmap = xmap
+        self.roof = roof
 
-        wall(world, '-z', SIZE, pos)
-        if roof:
-            wall(world, '+z', SIZE, pos)
+    def render(self, world, xmap):
+        wall(world, '-z', SIZE, self.pos)
+        if self.roof:
+            wall(world, '+z', SIZE, self.pos)
 
         if orientation in ('+x', '-x'):
-            low_wall(world, '+y', SIZE, pos)
-            low_wall(world, '-y', SIZE, pos)
+            low_wall(world, '+y', SIZE, self.pos)
+            low_wall(world, '-y', SIZE, self.pos)
         else:
-            low_wall(world, '+x', SIZE, pos)
-            low_wall(world, '-x', SIZE, pos)
-
+            low_wall(world, '+x', SIZE, self.pos)
+            low_wall(world, '-x', SIZE, self.pos)
         self.light()
 
 
 class Corridor4way(_Room):
     room_type = 'hallway'
 
-    def __init__(self, world, xmap, pos, roof=False, orientation=None):
+    def __init__(self, pos, roof=False, orientation=None):
         self.pos = pos
         self.roof = roof
-        self.xmap = xmap
 
-        wall(world, '-z', SIZE, pos)
+    def render(self, world, xmap):
+        wall(world, '-z', SIZE, self.pos)
         if roof:
-            wall(world, '+z', SIZE, pos)
+            wall(world, '+z', SIZE, self.pos)
 
-        column(world, 'z', 8, mv(pos, (0, 0, 0)), tex=4)
-        column(world, 'z', 8, mv(pos, (0, SIZE - 1, 0)), tex=4)
-        column(world, 'z', 8, mv(pos, (SIZE - 1, 0, 0)), tex=4)
-        column(world, 'z', 8, mv(pos, (SIZE - 1, SIZE - 1, 0)), tex=4)
+        column(world, 'z', 8, mv(self.pos, (0, 0, 0)), tex=4)
+        column(world, 'z', 8, mv(self.pos, (0, SIZE - 1, 0)), tex=4)
+        column(world, 'z', 8, mv(self.pos, (SIZE - 1, 0, 0)), tex=4)
+        column(world, 'z', 8, mv(self.pos, (SIZE - 1, SIZE - 1, 0)), tex=4)
 
         self.light()
 
@@ -326,48 +500,48 @@ class Corridor4way(_Room):
 class Corridor4way_A(Corridor4way):
     room_type = 'hallway'
 
-    def __init__(self, world, xmap, pos, roof=None, orientation=None):
+    def __init__(self, pos, roof=None, orientation=None):
         self.pos = pos
-        self.xmap = xmap
+        self.roof = roof
+
+    def render(self, world, xmap):
+        wall(world, '-z', SIZE, self.pos)
+
+        column(world, 'z', 2, mv(self.pos, (0, 0, 0)), tex=4)
+        column(world, 'z', 2, mv(self.pos, (0, SIZE - 1, 0)), tex=4)
+        column(world, 'z', 2, mv(self.pos, (SIZE - 1, 0, 0)), tex=4)
+        column(world, 'z', 2, mv(self.pos, (SIZE - 1, SIZE - 1, 0)), tex=4)
         self.light()
-
-        wall(world, '-z', SIZE, pos)
-
-        column(world, 'z', 2, mv(pos, (0, 0, 0)), tex=4)
-        column(world, 'z', 2, mv(pos, (0, SIZE - 1, 0)), tex=4)
-        column(world, 'z', 2, mv(pos, (SIZE - 1, 0, 0)), tex=4)
-        column(world, 'z', 2, mv(pos, (SIZE - 1, SIZE - 1, 0)), tex=4)
 
 
 class SpawnRoom(_OrientedRoom):
     room_type = 'platform_setpiece'
 
-    def __init__(self, world, xmap, pos, roof=None, orientation=None):
+    def __init__(self, pos, roof=None, orientation='+x'):
         self.pos = pos
         self.orientation = orientation
-        self.xmap = xmap
-        self.light()
-        tex = 9
+        self.tex = 9
 
-        wall(world, '-z', SIZE, pos, tex=tex)
-        wall(world, '+z', SIZE, pos, tex=tex)
+    def render(self, world, xmap):
+        wall(world, '-z', SIZE, self.pos, tex=self.tex)
+        wall(world, '+z', SIZE, self.pos, tex=self.tex)
 
         if orientation == '+x':
-            wall(world, '-x', SIZE, pos)
-            wall(world, '+y', SIZE, pos)
-            wall(world, '-y', SIZE, pos)
+            wall(world, '-x', SIZE, self.pos)
+            wall(world, '+y', SIZE, self.pos)
+            wall(world, '-y', SIZE, self.pos)
         elif orientation == '-x':
-            wall(world, '+x', SIZE, pos)
-            wall(world, '+y', SIZE, pos)
-            wall(world, '-y', SIZE, pos)
+            wall(world, '+x', SIZE, self.pos)
+            wall(world, '+y', SIZE, self.pos)
+            wall(world, '-y', SIZE, self.pos)
         elif orientation == '+y':
-            wall(world, '-y', SIZE, pos)
-            wall(world, '+x', SIZE, pos)
-            wall(world, '-x', SIZE, pos)
+            wall(world, '-y', SIZE, self.pos)
+            wall(world, '+x', SIZE, self.pos)
+            wall(world, '-x', SIZE, self.pos)
         elif orientation == '-y':
-            wall(world, '+y', SIZE, pos)
-            wall(world, '+x', SIZE, pos)
-            wall(world, '-x', SIZE, pos)
+            wall(world, '+y', SIZE, self.pos)
+            wall(world, '+x', SIZE, self.pos)
+            wall(world, '-x', SIZE, self.pos)
         else:
             raise Exception("Unknown orientation %s" % orientation)
 
@@ -398,7 +572,7 @@ class SpawnRoom(_OrientedRoom):
 class AltarRoom(_3X3Room):
     room_type = 'platform_setpiece'
 
-    def __init__(self, world, xmap, pos, roof=False, orientation=None):
+    def __init__(self, pos, roof=False, orientation=None):
         # Push the position
         self.orientation = orientation
         # We (arbitrarily) define pos as the middle of one side.
@@ -412,11 +586,11 @@ class AltarRoom(_3X3Room):
             self.pos = mv(self.pos, m(0, -1, 0))
         elif self.orientation == '-y':
             self.pos = mv(self.pos, m(0, 1, 0))
-
-        self.xmap = xmap
-        self.light()
         # For bigger rooms, we have to shift them such that the previous_posision matches a doorway.
 
+
+    def render(self, world, xmap):
+        self.light()
         # size = 24
         wall(world, '-z', SIZE, self.pos)
         # 4 corners
@@ -448,32 +622,100 @@ class AltarRoom(_3X3Room):
         )
         xmap.ents.append(tree)
 
+    def get_positions(self):
+        return [
+            mv(self.pos , m(-1 , -1 , 0)) ,
+            mv(self.pos , m(-1 , 0  , 0)) ,
+            mv(self.pos , m(-1 , 1  , 0)) ,
+            mv(self.pos , m(0  , -1 , 0)) ,
+            mv(self.pos , m(0  , 0  , 0)) ,
+            mv(self.pos , m(0  , 1  , 0)) ,
+            mv(self.pos , m(1  , -1 , 0)) ,
+            mv(self.pos , m(1  , 0  , 0)) ,
+            mv(self.pos , m(1  , 1  , 0)) ,
+            mv(self.pos , m(-1 , -1 , 1)) ,
+            mv(self.pos , m(-1 , 0  , 1)) ,
+            mv(self.pos , m(-1 , 1  , 1)) ,
+            mv(self.pos , m(0  , -1 , 1)) ,
+            mv(self.pos , m(0  , 0  , 1)) ,
+            mv(self.pos , m(0  , 1  , 1)) ,
+            mv(self.pos , m(1  , -1 , 1)) ,
+            mv(self.pos , m(1  , 0  , 1)) ,
+            mv(self.pos , m(1  , 1  , 1)) ,
+        ]
+
+    def light(self):
+        light = Light(
+            x=8 * (self.pos[0] + 8),
+            y=8 * (self.pos[1] + 8),
+            # Light above head
+            z=8 * (self.pos[2] + 7),
+            red=255,
+            green=255,
+            blue=255,
+            radius=128,
+        )
+        self.xmap.ents.append(light)
+
 
 class Stair(_OrientedRoom):
     room_type = 'vertical'
 
-    def __init__(self, world, xmap, pos, orientation='+x'):
+    def __init__(self, pos, orientation='+x'):
         self.pos = pos
         self.orientation = orientation
-        self.xmap = xmap
+
+    def render(self, world, xmap):
         self.light()
+        wall(world, '-z', SIZE, self.pos)
 
-        wall(world, '-z', SIZE, pos)
-
+        pusher_kw = {}
         if orientation == '+x':
-            wall(world, '-x', SIZE, pos)
-            cube_s(world, 4, mv(pos, (0, 2, 0)), tex=3)
+            wall(world, '-x', SIZE, self.pos)
+            cube_s(world, 4, mv(self.pos, (0, 2, 0)), tex=3)
+            pusher_kw = {
+                'x': 8 * (self.pos[0] + 5),
+                'y': 8 * (self.pos[1] + 4),
+                'z': 8 * (self.pos[2] + 2),
+                'yaw': 90,
+            }
         elif orientation == '-x':
-            wall(world, '+x', SIZE, pos)
-            cube_s(world, 4, mv(pos, (SIZE / 2, 2, 0)), tex=3)
+            wall(world, '+x', SIZE, self.pos)
+            cube_s(world, 4, mv(self.pos, (SIZE / 2, 2, 0)), tex=3)
+            pusher_kw = {
+                'x': 8 * (self.pos[0] + 3),
+                'y': 8 * (self.pos[1] + 4),
+                'z': 8 * (self.pos[2] + 2),
+                'yaw': 270,
+            }
         elif orientation == '+y':
-            wall(world, '-y', SIZE, pos)
-            cube_s(world, 4, mv(pos, (2, 0, 0)), tex=3)
+            wall(world, '-y', SIZE, self.pos)
+            cube_s(world, 4, mv(self.pos, (2, 0, 0)), tex=3)
+            pusher_kw = {
+                'x': 8 * (self.pos[0] + 4),
+                'y': 8 * (self.pos[1] + 5),
+                'z': 8 * (self.pos[2] + 2),
+                'yaw': 180,
+            }
         elif orientation == '-y':
-            wall(world, '+y', SIZE, pos)
-            cube_s(world, 4, mv(pos, (2, SIZE / 2, 0)), tex=3)
+            wall(world, '+y', SIZE, self.pos)
+            cube_s(world, 4, mv(self.pos, (2, SIZE / 2, 0)), tex=3)
+            pusher_kw = {
+                'x': 8 * (self.pos[0] + 4),
+                'y': 8 * (self.pos[1] + 3),
+                'z': 8 * (self.pos[2] + 2),
+                'yaw': 0,
+            }
         else:
             raise Exception("Unknown orientation %s" % orientation)
+
+        pusher = Pusher(
+            maxrad=15,
+            force=250,
+            pitch=66,
+            **pusher_kw
+        )
+        xmap.ents.append(pusher)
 
     def _get_doorways(self):
         if self.orientation == '+x':
@@ -506,8 +748,10 @@ class Stair(_OrientedRoom):
 
     @classmethod
     def get_transition_probs(cls):
+        # stair
         return {
-            'platform': 0.1,
+            'platform': 0.5,
             'hallway': 0.4,
-            'vertical': 10.7,
+            'vertical': 0.6,
+            'hallway_jump': 0.2,
         }
