@@ -109,3 +109,18 @@ class Sunlight(Entity):
         ]
         self.links = [] if links is None else links
         self.reserved = [0, 0, 0] if reserved is None else reserved
+
+
+class Light(Entity):
+
+    def __init__(self, x=0, y=0, z=0, radius=64, red=255, green=255, blue=255, flare=0, flarescale=0, links=None, reserved=None):
+        self.o = ivec3(x, y, z)
+        self.type = EntType.ET_LIGHT
+        self.attr_annotations = [
+            'radius', 'red', 'green', 'blue', 'flare', 'flarescale',
+        ]
+        self.attrs = [
+            radius, red, green, blue, flare, flarescale
+        ]
+        self.links = [] if links is None else links
+        self.reserved = [0, 0, 0] if reserved is None else reserved

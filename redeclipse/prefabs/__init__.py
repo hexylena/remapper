@@ -1,4 +1,5 @@
 from redeclipse.objects import cube
+from redeclipse.entities import Light, PlayerSpawn
 from redeclipse.entities.model import MapModel
 from redeclipse.prefabs.construction_kit import wall, column, wall_points, mv, \
     m, low_wall, cube_s
@@ -176,6 +177,50 @@ class Corridor4way_A(Corridor4way):
         column(world, 'z', 2, mv(pos, (0, SIZE - 1, 0)), tex=4)
         column(world, 'z', 2, mv(pos, (SIZE - 1, 0, 0)), tex=4)
         column(world, 'z', 2, mv(pos, (SIZE - 1, SIZE - 1, 0)), tex=4)
+
+
+class SpawnRoom(_OrientedRoom):
+    room_type = 'platform_setpiece'
+
+    def __init__(self, world, xmap, pos, roof=None, orientation=None):
+        self.pos = pos
+        self.orientation = orientation
+        tex = 9
+
+        wall(world, '-z', SIZE, pos, tex=tex)
+        wall(world, '+z', SIZE, pos, tex=tex)
+
+        if orientation == '+x':
+            wall(world, '-x', SIZE, pos)
+            wall(world, '+y', SIZE, pos)
+            wall(world, '-y', SIZE, pos)
+        elif orientation == '-x':
+            wall(world, '+x', SIZE, pos)
+            wall(world, '+y', SIZE, pos)
+            wall(world, '-y', SIZE, pos)
+        elif orientation == '+y':
+            wall(world, '-y', SIZE, pos)
+            wall(world, '+x', SIZE, pos)
+            wall(world, '-x', SIZE, pos)
+        elif orientation == '-y':
+            wall(world, '+y', SIZE, pos)
+            wall(world, '+x', SIZE, pos)
+            wall(world, '-x', SIZE, pos)
+        else:
+            raise Exception("Unknown orientation %s" % orientation)
+
+        spawn = PlayerSpawn(
+            x=8 * (self.pos[0] + SIZE / 2),
+            y=8 * (self.pos[1] + SIZE / 2),
+            z=8 * (self.pos[2] + 1),
+        )
+        xmap.ents.append(spawn)
+        light = Light(
+            x=8 * (self.pos[0] + SIZE / 2),
+            y=8 * (self.pos[1] + SIZE / 2),
+            z=8 * (self.pos[2] + 6),
+        )
+        xmap.ents.append(light)
 
 
 class AltarRoom(_3X3Room):

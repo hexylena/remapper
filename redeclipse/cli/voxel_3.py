@@ -4,7 +4,7 @@ from redeclipse.cli import parse
 from redeclipse.prefabs import m, BaseRoom, AltarRoom, \
     Corridor2way, Corridor2way_A, \
     Corridor4way, Corridor4way_A, \
-    Stair
+    Stair, SpawnRoom
 import argparse
 import sys # noqa
 import random # noqa
@@ -44,6 +44,9 @@ class UnusedPositionManager:
                     # return '+z'
         sys.exit()
 
+    def is_legal(self, position):
+        return all([x >= 0 and x < IJ_SIZE for x in position])
+
     def register_room(self, room):
         # Register positions occupied by this room
         used = room.get_positions()
@@ -55,7 +58,7 @@ class UnusedPositionManager:
         doors = room.get_doorways()
         for position in doors:
             # If that door position is not occupied by something else
-            if position not in self.occupied:
+            if position not in self.occupied and self.is_legal(position):
                 orientation = self.getOrientationToManhattanRoom(position, used)
                 self.unoccupied.append((position, room, orientation))
 
@@ -95,6 +98,7 @@ if __name__ == '__main__':
             # Corridor4way,
             Corridor4way_A,
             Stair,
+            SpawnRoom,
             # Corridor2way,
             Corridor2way_A,
             # AltarRoom,
@@ -120,7 +124,7 @@ if __name__ == '__main__':
     upm = UnusedPositionManager()
     upm.register_room(b)
 
-    for i in range(90):
+    for i in range(300):
         # Pick a random position for this room to go
         (position, prev_room, orientation) = upm.random_position()
         kwargs = {'orientation': orientation}
