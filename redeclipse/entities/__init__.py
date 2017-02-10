@@ -3,8 +3,8 @@ from redeclipse.enums import EntType, WeaponType
 
 class Entity:
 
-    def __init__(self, x, y, z, type, attrs, links, reserved):
-        self.o = ivec3(x, y, z)
+    def __init__(self, xyz, type, attrs, links, reserved):
+        self.o = ivec3(x[0], y[0], z[0])
         self.type = type
         self.attrs = attrs
         if self.type == EntType.ET_WEAPON:
@@ -88,8 +88,8 @@ class Entity:
 
 class PlayerSpawn(Entity):
 
-    def __init__(self, x=0, y=0, z=0, team=0, yaw=0, pitch=0, modes=0, muts=0, id=0, links=None, reserved=None):
-        self.o = ivec3(x, y, z)
+    def __init__(self, xyz=(0, 0, 0), team=0, yaw=0, pitch=0, modes=0, muts=0, id=0, links=None, reserved=None):
+        self.o = ivec3(*xyz)
         self.type = EntType.ET_PLAYERSTART
         self.attr_annotations = [
             'team', 'yaw', 'pitch', 'modes', 'muts', 'id'
@@ -116,8 +116,8 @@ class Sunlight(Entity):
 
 class Light(Entity):
 
-    def __init__(self, x=0, y=0, z=0, radius=64, red=255, green=255, blue=255, flare=0, flarescale=0, links=None, reserved=None):
-        self.o = ivec3(x, y, z)
+    def __init__(self, xyz, radius=64, red=255, green=255, blue=255, flare=0, flarescale=0, links=None, reserved=None):
+        self.o = ivec3(*xyz)
         self.type = EntType.ET_LIGHT
         self.attr_annotations = [
             'radius', 'red', 'green', 'blue', 'flare', 'flarescale',
@@ -131,8 +131,8 @@ class Light(Entity):
 
 class Pusher(Entity):
 
-    def __init__(self, x=0, y=0, z=0, yaw=0, pitch=45, force=150, maxrad=0, minrad=0, type=0, links=None, reserved=None):
-        self.o = ivec3(x, y, z)
+    def __init__(self, xyz, yaw=0, pitch=45, force=150, maxrad=0, minrad=0, type=0, links=None, reserved=None):
+        self.o = ivec3(*xyz)
         self.type = EntType.ET_PUSHER
         self.attr_annotations = [
             'yaw', 'pitch', 'force', 'maxrad', 'minrad', 'type'

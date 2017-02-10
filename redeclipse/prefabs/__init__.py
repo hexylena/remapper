@@ -1,8 +1,7 @@
-from redeclipse.objects import cube
 from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
-from redeclipse.prefabs.construction_kit import wall, column, wall_points, mv, \
-    m, mi, low_wall, cube_s, rectangular_prism
+from redeclipse.prefabs.construction_kit import wall, column, mv, \
+    m, low_wall, cube_s, rectangular_prism, ring, multi_wall
 import random # noqa
 import noise
 import colorsys
@@ -10,38 +9,15 @@ random.seed(22)
 SIZE = 8
 
 
-class Floor:
-
-    @classmethod
-    def render(cls, world, pos):
-        wall(world, '-z', SIZE, pos)
-
-    @classmethod
-    def get_doorways(cls, pos):
-        pass
-
-
-class Ring:
-
-    @classmethod
-    def render(cls, world, pos, size=8, tex=2, thickness=1):
-        for point in wall_points(size, '-z'):
-            if point[0] < thickness or point[0] >= size - thickness or \
-                    point[1] < thickness or point[1] >= size - thickness:
-                world.set_point(
-                    *mv(point, pos),
-                    cube.newtexcube(tex=tex)
-                )
-
-
 class _Room:
+    """Base 'room' class which all other room types inherit from
+    """
     room_type = 'platform'
 
-    def get_offset(self):
-        # This should be inverse of FIRST get_doorways entry.
-        return m(1, 0, 0)
-
     def _get_doorways(self):
+        """
+        Return the set of possible doorways as offsets to self.pos. DO NOT include self.pos
+        """
         return [
             m(-1, 0, 0),
             m(0, -1, 0),
@@ -50,20 +26,30 @@ class _Room:
         ]
 
     def get_offset(self):
+        """get_offset is used to obtain the shift required with non 1x1 units
+        """
         # This should be inverse of FIRST get_doorways entry.
         return self._get_doorways()[0]
         # return mi(self._get_doorways()[0])
 
     def get_doorways(self):
+        """The get_doorways function that most things actually use, which applies the offset.
+
+        This mostly means that you only need to override _get_doorways with
+        your doorways. Everyone will call this and have access to shifted
+        values.
+        """
         return [
             mv(self.pos, q) for q in self._get_doorways()
         ]
 
     def get_positions(self):
+        """Positions occupied by this unit"""
         return [self.pos]
 
     @classmethod
     def get_transition_probs(cls):
+        """Probabilities of transitioning to other named room types"""
         # Platform
         return {
             'platform': 0.1,
@@ -73,23 +59,22 @@ class _Room:
             'hallway_jump': 0.2,
         }
 
-
     def light(self, xmap):
-        # 70% chance of a light below
-        # if random.random() < 0.7:
+        """Function which applies light entities to the unit."""
         if True:
+            # If there is self.size, use that. Otherwise use default of 8.
             if hasattr(self, 'size'):
                 size = self.size
             else:
                 size = SIZE
 
-            # Map to 0-1 scale
+            # Map (x, y, z) to 0-1 scale
             nums = list(map(
                 lambda x: x * (2 ** -7.5),
                 self.pos
             ))
 
-            # convert a tuple of three nums + offset into a
+            # convert a tuple of three nums (x,y,z) + offset into a
             # 0-255 integer.
             def kleur(nums, base):
                 return int(abs(noise.pnoise3(*nums, base=base)) * 255)
@@ -100,26 +85,37 @@ class _Room:
             b = kleur(nums, 43)
 
             # RGB isn't great, because it means low values of RGB are
-            # low luminance. So we convert to HSV to get hue
+            # low luminance. So we convert to HSV to get pure hue
             (h, s, v) = colorsys.rgb_to_hsv(r, g, b)
-            # We then peg S and V to high values and only retain huge
+            # We then peg S and V to high and only retain hue
             (r, g, b) = colorsys.hsv_to_rgb(h, 1, 255)
-            # This should give us a bright colour on a continuous form
+            # This should give us a bright colour on a continuous range
 
             light = Light(
-                x=8 * (self.pos[0] + size / 2),
-                y=8 * (self.pos[1] + size / 2),
-                # Light above head
-                z=8 * (self.pos[2] + 4),
+                # Center the light in the unit, x&y
+                xyz=m(
+                    self.pos[0] + size / 2,
+                    self.pos[1] + size / 2,
+                    # Light above player head height
+                    self.pos[2] + 4,
+                ),
+                # Colours
                 red=int(r),
                 green=int(g),
                 blue=int(b),
+                # Make it a relatively small light, nice intimate feel without
+                # washing out.
                 radius=64,
             )
             xmap.ents.append(light)
 
 class _OrientedRoom(_Room):
+    """A special case of base _Room, a class which has different behaviour
+    based on its orientation.
+    """
+
     def _get_doorways(self):
+        """Doorways out of two axes"""
         if self.orientation in ('+x', '-x'):
             return [
                 m(-1, 0, 0),
@@ -143,6 +139,8 @@ class _OrientedRoom(_Room):
         }
 
 class _3X3Room(_Room):
+    """Another special case of room, though this probably does not need to be.
+    AltarRoom is currently the only user."""
 
     def _get_doorways(self):
         return [
@@ -163,13 +161,28 @@ class _3X3Room(_Room):
             mv(self.pos , m(1  , -1 , 0)) ,
             mv(self.pos , m(1  , 0  , 0)) ,
             mv(self.pos , m(1  , 1  , 0)) ,
+
+            # Do not place things above us
+            mv(self.pos , m(-1 , -1 , 1)) ,
+            mv(self.pos , m(-1 , 0  , 1)) ,
+            mv(self.pos , m(-1 , 1  , 1)) ,
+            mv(self.pos , m(0  , -1 , 1)) ,
+            mv(self.pos , m(0  , 0  , 1)) ,
+            mv(self.pos , m(0  , 1  , 1)) ,
+            mv(self.pos , m(1  , -1 , 1)) ,
+            mv(self.pos , m(1  , 0  , 1)) ,
+            mv(self.pos , m(1  , 1  , 1)) ,
         ]
 
 
 
 class BaseRoom(_Room):
+    """First real 'room' class."""
 
     def __init__(self, pos, tex=2, orientation=None):
+        """Init is kept separate from rendering, because init sets self.pos,
+        and we use that when calling self.get_positions(), which is required as
+        part of placement, we wouldn't want to place a partial room."""
         self.pos = pos
         self.tex = tex
         self.orientation = orientation
@@ -181,9 +194,11 @@ class BaseRoom(_Room):
         # Add default spawn in base room  (so camera dosen't spawn in
         # miles above where we want to be)
         spawn = PlayerSpawn(
-            x=8 * (self.pos[0] + SIZE / 2),
-            y=8 * (self.pos[1] + SIZE / 2),
-            z=8 * (self.pos[2] + 1),
+            xyz=m(
+                (self.pos[0] + SIZE / 2),
+                (self.pos[1] + SIZE / 2),
+                (self.pos[2] + 1),
+            )
         )
         xmap.ents.append(spawn)
         self.light(xmap)
@@ -316,9 +331,11 @@ class JumpCorridor3(_OrientedRoom):
             wall(world, '-z', SIZE, mv(self.pos, m(2, 0, 0)), tex=self.tex)
             rectangular_prism(world, 2, 4, 1, (a + 6, b + 2, c), tex=self.tex + 1)
             pusher_a = Pusher(
-                x=8 * (self.pos[0] + 7),
-                y=8 * (self.pos[1] + 4),
-                z=8 * (self.pos[2] + 1),
+                xyz=m(
+                    (self.pos[0] + 7),
+                    (self.pos[1] + 4),
+                    (self.pos[2] + 1),
+                ),
                 maxrad=15,
                 yaw=270,
                 force=175,
@@ -327,9 +344,11 @@ class JumpCorridor3(_OrientedRoom):
             wall(world, '-z', SIZE, mv(self.pos, m(-2, 0, 0)), tex=self.tex)
             rectangular_prism(world, 2, 4, 1, (a, b + 2, c), tex=self.tex + 1)
             pusher_a = Pusher(
-                x=8 * (self.pos[0] + 1),
-                y=8 * (self.pos[1] + 4),
-                z=8 * (self.pos[2] + 1),
+                xyz=m(
+                    (self.pos[0] + 1),
+                    (self.pos[1] + 4),
+                    (self.pos[2] + 1),
+                ),
                 maxrad=15,
                 yaw=90,
                 force=175,
@@ -338,9 +357,11 @@ class JumpCorridor3(_OrientedRoom):
             wall(world, '-z', SIZE, mv(self.pos, m(0, 2, 0)), tex=self.tex)
             rectangular_prism(world, 4, 2, 1, (a + 2, b + 6, c), tex=self.tex + 1)
             pusher_a = Pusher(
-                x=8 * (self.pos[0] + 4),
-                y=8 * (self.pos[1] + 7),
-                z=8 * (self.pos[2] + 1),
+                xyz=m(
+                    (self.pos[0] + 4),
+                    (self.pos[1] + 7),
+                    (self.pos[2] + 1),
+                ),
                 maxrad=15,
                 yaw=0,
                 force=175,
@@ -349,9 +370,11 @@ class JumpCorridor3(_OrientedRoom):
             wall(world, '-z', SIZE, mv(self.pos, m(0, -2, 0)), tex=self.tex)
             rectangular_prism(world, 4, 2, 1, (a + 2, b, c), tex=self.tex + 1)
             pusher_a = Pusher(
-                x=8 * (self.pos[0] + 4),
-                y=8 * (self.pos[1] + 1),
-                z=8 * (self.pos[2] + 1),
+                xyz=m(
+                    (self.pos[0] + 4),
+                    (self.pos[1] + 1),
+                    (self.pos[2] + 1),
+                ),
                 maxrad=15,
                 yaw=180,
                 force=175,
@@ -366,9 +389,11 @@ class JumpCorridor3(_OrientedRoom):
                 (a, b, c) = mv(self.pos, m(2, 0, 0))
                 rectangular_prism(world, 2, 4, 1, (a, b + 2, c), tex=self.tex + 1)
                 pusher_b = Pusher(
-                    x=8 * (a + 1),
-                    y=8 * (b + 4),
-                    z=8 * (c + 1),
+                    xyz=m(
+                        (a + 1),
+                        (b + 4),
+                        (c + 1),
+                    ),
                     maxrad=15,
                     yaw=90,
                     force=175,
@@ -379,9 +404,11 @@ class JumpCorridor3(_OrientedRoom):
                 (a, b, c) = mv(self.pos, m(-2, 0, 0))
                 rectangular_prism(world, 2, 4, 1, (a + 6, b + 2, c), tex=self.tex + 1)
                 pusher_b = Pusher(
-                    x=8 * (a + 7),
-                    y=8 * (b + 4),
-                    z=8 * (c + 1),
+                    xyz=m(
+                        (a + 7),
+                        (b + 4),
+                        (c + 1),
+                    ),
                     maxrad=15,
                     yaw=270,
                     force=175,
@@ -396,9 +423,11 @@ class JumpCorridor3(_OrientedRoom):
                 (a, b, c) = mv(self.pos, m(0, 2, 0))
                 rectangular_prism(world, 4, 2, 1, (a + 2, b, c), tex=self.tex + 1)
                 pusher_b = Pusher(
-                    x=8 * (a + 4),
-                    y=8 * (b + 1),
-                    z=8 * (c + 1),
+                    xyz=m(
+                        (a + 4),
+                        (b + 1),
+                        (c + 1),
+                    ),
                     maxrad=15,
                     yaw=180,
                     force=175,
@@ -409,9 +438,11 @@ class JumpCorridor3(_OrientedRoom):
                 (a, b, c) = mv(self.pos, m(0, -2, 0))
                 rectangular_prism(world, 4, 2, 1, (a + 2, b + 6, c), tex=self.tex + 1)
                 pusher_b = Pusher(
-                    x=8 * (a + 4),
-                    y=8 * (b + 7),
-                    z=8 * (c + 1),
+                    xyz=m(
+                        (a + 4),
+                        (b + 7),
+                        (c + 1),
+                    ),
                     maxrad=15,
                     yaw=0,
                     force=175,
@@ -458,6 +489,154 @@ class JumpCorridor3(_OrientedRoom):
             ]
         else:
             raise Exception("Unknown Orientation")
+
+
+class JumpCorridorVertical(_OrientedRoom):
+    room_type = 'vertical'
+
+    @classmethod
+    def get_transition_probs(cls):
+        return {
+            'hallway_jump': 0.2,
+            'platform': 0.3,
+            'platform_setpiece': 0.1,
+            'hallway': 0.6,
+            'vertical': 0.1,
+        }
+
+    def _get_doorways(self):
+        if self.orientation == '-x':
+            return [
+                m(1, 0, 0),
+                m(-1, 0, 2),
+            ]
+        elif self.orientation == '+x':
+            return [
+                m(-1, 0, 0),
+                m(1, 0, 2),
+            ]
+        if self.orientation == '-y':
+            return [
+                m(0, 1, 0),
+                m(0, -1, 2),
+            ]
+        if self.orientation == '+y':
+            return [
+                m(0, -1, 0),
+                m(0, 1, 2),
+            ]
+
+    def __init__(self, pos, orientation='+x', roof=False, tex=2):
+        self.pos = pos
+        self.orientation = orientation
+        self.roof = roof
+        self.tex = tex
+
+    def render(self, world, xmap):
+        wall(world, '-z', SIZE, self.pos, tex=self.tex)
+        wall(world, '+z', SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
+
+        (a, b, c) = self.pos
+        if self.orientation == '-x':
+            #Walls
+            multi_wall(world, ('+x', '+y', '-y'), SIZE, self.pos, tex=self.tex)
+            multi_wall(world, ('-x', '+x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, 1)), tex=self.tex)
+            multi_wall(world, ('+x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
+            column(world, 'y', 8, mv(self.pos, m(0, 0, 2)), tex=4)
+            # Red markers
+            rectangular_prism(world, 2, 4, 1, (a + 4, b + 2, c), tex=self.tex + 1)
+            rectangular_prism(world, 1, 4, 2, (a + 7, b + 2, c + 12), tex=self.tex + 1)
+            pusher_a = Pusher(
+                xyz=m(a + 5, b + 4, c + 1),
+                pitch=74,
+                yaw=270,
+                force=400,
+            )
+
+            pusher_b = Pusher(
+                xyz=m(a + 6, b + 4, c + 15),
+                pitch=40,
+                yaw=90,
+                force=200,
+            )
+        elif self.orientation == '+x':
+            #Walls
+            multi_wall(world, ('-x', '+y', '-y'), SIZE, self.pos, tex=self.tex)
+            multi_wall(world, ('-x', '+x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, 1)), tex=self.tex)
+            multi_wall(world, ('-x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
+            column(world, 'y', 8, mv(self.pos, m(7/8, 0, 2)), tex=4)
+            # Red markers
+            rectangular_prism(world, 2, 4, 1, (a + 2, b + 2, c), tex=self.tex + 1)
+            rectangular_prism(world, 1, 4, 2, (a, b + 2, c + 12), tex=self.tex + 1)
+
+            pusher_a = Pusher(
+                xyz=m(a + 3, b + 4, c + 1),
+                pitch=74,
+                yaw=90,
+                force=400,
+            )
+
+            pusher_b = Pusher(
+                xyz=m(a + 2, b + 4, c + 15),
+                pitch=40,
+                yaw=270,
+                force=200,
+            )
+        elif self.orientation == '-y':
+            #Walls
+            multi_wall(world, ('+y', '+x', '-x'), SIZE, self.pos, tex=self.tex)
+            multi_wall(world, ('-y', '+y', '+x', '-x'), SIZE, mv(self.pos, m(0, 0, 1)), tex=self.tex)
+            multi_wall(world, ('+y', '+x', '-x'), SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
+            column(world, 'x', 8, mv(self.pos, m(0, 0, 2)), tex=4)
+            # Red markers
+            rectangular_prism(world, 4, 2, 1, (a + 2, b + 4, c), tex=self.tex + 1)
+            rectangular_prism(world, 4, 1, 2, (a + 2, b + 7, c + 12), tex=self.tex + 1)
+            pusher_a = Pusher(
+                xyz=m(a + 4, b + 5, c + 1),
+                pitch=74,
+                yaw=0,
+                force=400,
+            )
+
+            pusher_b = Pusher(
+                xyz=m(a + 4, b + 6, c + 15),
+                pitch=40,
+                yaw=180,
+                force=200,
+            )
+        elif self.orientation == '+y':
+            #Walls
+            multi_wall(world, ('-y', '+x', '-x'), SIZE, self.pos, tex=self.tex)
+            multi_wall(world, ('-y', '+y', '+x', '-x'), SIZE, mv(self.pos, m(0, 0, 1)), tex=self.tex)
+            multi_wall(world, ('-y', '+x', '-x'), SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
+            column(world, 'x', 8, mv(self.pos, m(7/8, 0, 2)), tex=4)
+            # Red markers
+            rectangular_prism(world, 4, 2, 1, (a + 2, b + 2, c), tex=self.tex + 1)
+            rectangular_prism(world, 4, 1, 2, (a + 2, b, c + 12), tex=self.tex + 1)
+
+            pusher_a = Pusher(
+                xyz=m(a + 4, b + 3, c + 1),
+                pitch=74,
+                yaw=180,
+                force=400,
+            )
+
+            pusher_b = Pusher(
+                xyz=m(a + 4, b + 2, c + 15),
+                pitch=40,
+                yaw=0,
+                force=200,
+            )
+
+        xmap.ents.append(pusher_a)
+        xmap.ents.append(pusher_b)
+
+    def get_positions(self):
+        return [
+            self.pos,
+            mv(self.pos, m(0, 0, 1)),
+            mv(self.pos, m(0, 0, 2)),
+        ]
 
 
 class Corridor2way_A(Corridor2way):
@@ -553,15 +732,19 @@ class SpawnRoom(_OrientedRoom):
             raise Exception("Unknown orientation %s" % self.orientation)
 
         spawn = PlayerSpawn(
-            x=8 * (self.pos[0] + SIZE / 2),
-            y=8 * (self.pos[1] + SIZE / 2),
-            z=8 * (self.pos[2] + 1),
+            xyz=m(
+                (self.pos[0] + SIZE / 2),
+                (self.pos[1] + SIZE / 2),
+                (self.pos[2] + 1),
+            )
         )
         xmap.ents.append(spawn)
         light = Light(
-            x=8 * (self.pos[0] + SIZE / 2),
-            y=8 * (self.pos[1] + SIZE / 2),
-            z=8 * (self.pos[2] + 6),
+            xyz=m(
+                (self.pos[0] + SIZE / 2),
+                (self.pos[1] + SIZE / 2),
+                (self.pos[2] + 6),
+            )
         )
         xmap.ents.append(light)
 
@@ -619,12 +802,14 @@ class AltarRoom(_3X3Room):
         wall(world, '-z', 16, mv(self.pos, (-4, -4, 1)), tex=5)
         wall(world, '-z', 12, mv(self.pos, (-2, -2, 2)), tex=6)
 
-        Ring.render(world, mv(self.pos, (-4, -4, 7)), size=16, tex=7, thickness=2)
+        ring(world, mv(self.pos, (-4, -4, 7)), size=16, tex=7, thickness=2)
 
         tree = MapModel(
-            x=8 * (self.pos[0] + 4),
-            y=8 * (self.pos[1] + 4),
-            z=8 * (self.pos[2] + 3),
+            xyz=m(
+                (self.pos[0] + 4),
+                (self.pos[1] + 4),
+                (self.pos[2] + 3),
+            ),
             type=124
         )
         xmap.ents.append(tree)

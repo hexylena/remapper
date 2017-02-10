@@ -1,14 +1,14 @@
 from redeclipse.entities import Entity
 from redeclipse.vec import ivec3
-from redeclipse.enums import EntType, WeaponType
+from redeclipse.enums import EntType
 
 
 class Weapon(Entity):
 
-    def __init__(self, x=0, y=0, z=0, type=0, flags=0, modes=0, muts=0, id=0,
+    def __init__(self, xyz, type=0, flags=0, modes=0, muts=0, id=0,
                  links=None, reserved=None):
 
-        self.o = ivec3(x, y, z)
+        self.o = ivec3(*xyz)
         self.type = EntType.ET_WEAPON
         self.attr_annotations = [
             'type', 'flags', 'modes', 'muts', 'id'

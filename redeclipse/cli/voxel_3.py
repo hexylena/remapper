@@ -4,7 +4,8 @@ from redeclipse.cli import parse
 from redeclipse.prefabs import m, BaseRoom, AltarRoom, \
     Corridor2way, Corridor2way_A, \
     Corridor4way_A, \
-    Stair, SpawnRoom, NLongCorridor, JumpCorridor3
+    Stair, SpawnRoom, NLongCorridor, \
+    JumpCorridor3, JumpCorridorVertical
 import argparse
 import random
 
@@ -109,16 +110,17 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
         """Pick out a random room based on the connecting room and the
         transition probabilities of that room."""
         possible_rooms =  [
-            BaseRoom,
+            # BaseRoom,
             # Corridor4way,
-            SpawnRoom,
-            JumpCorridor3,
-            Corridor4way_A,
-            Stair,
-            Corridor2way,
-            Corridor2way_A,
-            AltarRoom,
-            NLongCorridor,
+            # SpawnRoom,
+            # JumpCorridor3,
+            # Corridor4way_A,
+            # Stair,
+            # Corridor2way,
+            # Corridor2way_A,
+            # AltarRoom,
+            JumpCorridorVertical,
+            # NLongCorridor,
         ]
 
         choices = []
@@ -140,16 +142,18 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
     # we have no way to build stairs downwards yet.
     starting_position = m(6, 6, 3)
     # We use the spawn room as our base starting room
-    b = SpawnRoom(pos=starting_position, orientation="-x")
+    b = SpawnRoom(pos=starting_position, orientation="+y")
     # Register our new room
     upm.register_room(b)
     # Render it to the map
     b.render(v, mymap)
+    # Convert rooms to int
+    rooms = int(rooms)
 
     room_count = 0
     while True:
-        # Continualyl try and place rooms until we hit 200.
-        if room_count > rooms:
+        # Continually try and place rooms until we hit 200.
+        if room_count >= rooms:
             break
         # Pick a random position for this notional room to go
         try:

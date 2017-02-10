@@ -74,6 +74,10 @@ def wall_points(size, direction, limit_j=100, limit_i=100):
             elif direction == '+x':
                 yield (size - 1, i, j)
 
+def multi_wall(world, directions, size, pos, tex=2):
+    for direction in directions:
+        wall(world, direction, size, pos, tex=tex)
+
 
 def wall(world, direction, size, pos, tex=2):
     for point in wall_points(size, direction):
@@ -81,6 +85,7 @@ def wall(world, direction, size, pos, tex=2):
             *mv(point, pos),
             cube.newtexcube(tex=tex)
         )
+
 
 def low_wall(world, direction, size, pos, height=2, tex=2):
     for point in wall_points(size, direction, limit_j=height):
@@ -146,4 +151,11 @@ def slope(world, pos, corners_down=None, tex=2):
 
     world.set_point(*pos, c)
 
-
+def ring(world, pos, size=8, tex=2, thickness=1):
+    for point in wall_points(size, '-z'):
+        if point[0] < thickness or point[0] >= size - thickness or \
+                point[1] < thickness or point[1] >= size - thickness:
+            world.set_point(
+                *mv(point, pos),
+                cube.newtexcube(tex=tex)
+            )
