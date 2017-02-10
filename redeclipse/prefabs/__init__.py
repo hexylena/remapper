@@ -11,7 +11,7 @@ SIZE = 8
 
 def positionColour(pos, size):
     nums = list(map(
-        lambda x: x * (2 ** -7.5),
+        lambda x: x * (2 ** -7),
         pos
     ))
 
