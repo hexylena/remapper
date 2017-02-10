@@ -1,5 +1,7 @@
 # Redeclipse map library
 
+![](./maps/lillehammer-night-1.png)
+
 Library to read and write Red Eclipse maps. It isn't polished, but is "good
 enough". My gaming group and I play "sniper-counter-sniper", a very unusual
 mode for most people who play redeclipse. It involves stalking and sniping each
