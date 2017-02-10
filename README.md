@@ -25,6 +25,11 @@ Second enjoyable map: Bergen
 
 ![](./maps/bergen-big.png)
 
+Third map: Lillehammer (with day/night versions)
+
+![](./maps/lillehammer-day-2.png)
+![](./maps/lillehammer-night-2.png)
+
 Screenshots from development:
 
 ![](./maps/sandvika.png)
