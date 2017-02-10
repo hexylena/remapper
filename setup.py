@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="redeclipse",
-    version='0.0.1',
+    version='1.0.0',
     description='RedEclipse / Cube2 / Saurbrauten map editor library',
     author='E. Rasche',
     author_email='hxr@hx42.org',
@@ -20,10 +20,11 @@ setup(
                 'redeclipse_voxel_1 = redeclipse.cli.voxel_1:main',
                 'redeclipse_voxel_2 = redeclipse.cli.voxel_2:main',
                 'redeclipse_voxel_3 = redeclipse.cli.voxel_3:main',
+                'redeclipse_snow_forest = redeclipse.cli.snow_forest:main',
             ]
         },
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',
         'Intended Audience :: Developers',
         'Environment :: Console',
