@@ -7,10 +7,6 @@ from redeclipse.prefabs import m, BaseRoom, AltarRoom, \
     Stair, SpawnRoom, NLongCorridor, JumpCorridor3
 import argparse
 import random
-random.seed(42)
-
-# Scale of map, 2**7 individual cubes.
-IJ_SIZE = 2**7
 
 
 class UnusedPositionManager:
@@ -18,11 +14,12 @@ class UnusedPositionManager:
 
     This is closely tied to our prefab model
     """
-    def __init__(self):
+    def __init__(self, world_size):
         # Set of occupied positions
         self.occupied = set()
         # Set of doors that we can connect to
         self.unoccupied = []
+        self.world_size = world_size
 
     def getOrientationToManhattanRoom(self, p, used):
         """Get the orientation from the previous room to the door.
@@ -56,7 +53,7 @@ class UnusedPositionManager:
 
     def is_legal(self, position):
         """Is the position within the bounds of the map"""
-        return all([x >= 0 and x < IJ_SIZE for x in position])
+        return all([x >= 0 and x < self.world_size for x in position])
 
     def register_room(self, room):
         # Register positions occupied by this room
@@ -90,14 +87,10 @@ class UnusedPositionManager:
             raise Exception("No more space!")
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Add trees to map')
-    parser.add_argument('input', help='Input .mpz file')
-    parser.add_argument('output', help='Output .mpz file')
-    args = parser.parse_args()
-
-    mymap = parse(args.input)
-    v = VoxelWorld(size=2**7)
+def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
+    random.seed(seed)
+    mymap = parse(mpz_in.name)
+    v = VoxelWorld(size=size)
 
     def weighted_choice(choices):
         """Weighted random distribution. Given a list like [('a', 1), ('b', 2)]
@@ -141,7 +134,7 @@ if __name__ == '__main__':
         return weighted_choice(choices)
 
     # Initialize
-    upm = UnusedPositionManager()
+    upm = UnusedPositionManager(size)
 
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.
@@ -156,7 +149,7 @@ if __name__ == '__main__':
     room_count = 0
     while True:
         # Continualyl try and place rooms until we hit 200.
-        if room_count > 200:
+        if room_count > rooms:
             break
         # Pick a random position for this notional room to go
         try:
@@ -189,4 +182,16 @@ if __name__ == '__main__':
     # Standard code to render octree to file.
     mymap.world = v.to_octree()
     mymap.world[0].octsav = 0
-    mymap.write(args.output)
+    mymap.write(mpz_out.name)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Add trees to map')
+    parser.add_argument('mpz_in', type=argparse.FileType('r'), help='Input .mpz file')
+    parser.add_argument('mpz_out', type=argparse.FileType('w'), help='Output .mpz file')
+
+    parser.add_argument('--size', default=2**7, help="World size. Danger!")
+    parser.add_argument('--seed', default=42, help="Random seed")
+    parser.add_argument('--rooms', default=200, help="Number of rooms to place")
+    args = parser.parse_args()
+    main(**vars(args))
