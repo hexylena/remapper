@@ -101,16 +101,15 @@ class _Room:
 
     def light(self, xmap):
         """Function which applies light entities to the unit."""
-        if True:
-            # If there is self.size, use that. Otherwise use default of 8.
-            if hasattr(self, 'size'):
-                size = self.size
-            else:
-                size = SIZE
+        # If there is self.size, use that. Otherwise use default of 8.
+        if hasattr(self, 'size'):
+            size = self.size
+        else:
+            size = SIZE
 
-            light = positionColour(self.pos, size)
-            # Map (x, y, z) to 0-1 scale
-            xmap.ents.append(light)
+        light = positionColour(self.pos, size)
+        # Map (x, y, z) to 0-1 scale
+        xmap.ents.append(light)
 
 class _OrientedRoom(_Room):
     """A special case of base _Room, a class which has different behaviour
@@ -324,10 +323,21 @@ class JumpCorridor3(_OrientedRoom):
         self.roof = roof
         self.tex = tex
 
+    def light(self, xmap):
+        if hasattr(self, 'size'):
+            size = self.size
+        else:
+            size = SIZE
+
+        poss = self.get_positions()
+        xmap.ents.append(positionColour(poss[0], size))
+        xmap.ents.append(positionColour(poss[2], size))
+
     def render(self, world, xmap):
         wall(world, '-z', SIZE, self.pos, tex=self.tex)
         pusher_a = None
         pusher_b = None
+        self.light(xmap)
 
         (a, b, c) = self.pos
         if self.orientation == '-x':
@@ -535,23 +545,14 @@ class JumpCorridorVertical(_OrientedRoom):
         self.roof = roof
         self.tex = tex
 
-    def light(self):
-        light = Light(
-            xyz=m(
-                self.pos[0] + size / 2,
-                self.pos[1] + size / 2,
-                self.pos[2] + 12
-            ),
-            red=255,
-            green=255,
-            blue=255,
-            radius=200,
-        )
-        xmap.ents.append(light)
+    def light(self, xmap):
+        xmap.ents.append(positionColour(
+            mv(self.pos, m(0, 0, 1)), SIZE))
 
     def render(self, world, xmap):
         wall(world, '-z', SIZE, self.pos, tex=self.tex)
         wall(world, '+z', SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
+        self.light(xmap)
 
         (a, b, c) = self.pos
         if self.orientation == '-x':
@@ -647,7 +648,6 @@ class JumpCorridorVertical(_OrientedRoom):
 
         xmap.ents.append(pusher_a)
         xmap.ents.append(pusher_b)
-        self.light(xmap)
 
     def get_positions(self):
         return [
@@ -857,14 +857,14 @@ class AltarRoom(_3X3Room):
     def light(self, xmap):
         light = Light(
             xyz=m(
-                self.pos[0] + 8,
-                self.pos[1] + 8,
+                self.pos[0] + 12,
+                self.pos[1] + 12,
                 self.pos[2] + 7
             ),
             red=255,
             green=255,
             blue=255,
-            radius=128,
+            radius=196,
         )
         xmap.ents.append(light)
 

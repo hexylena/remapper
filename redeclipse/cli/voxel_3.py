@@ -180,6 +180,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
             # We have failed to register the room because
             # it does not fit here.
             # So, we continue.
+            print(e)
             continue
 
     # Standard code to render octree to file.
