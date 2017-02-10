@@ -9,6 +9,46 @@ random.seed(22)
 SIZE = 8
 
 
+def positionColour(pos, size):
+    nums = list(map(
+        lambda x: x * (2 ** -7.5),
+        pos
+    ))
+
+    # convert a tuple of three nums (x,y,z) + offset into a
+    # 0-255 integer.
+    def kleur(nums, base):
+        return int(abs(noise.pnoise3(*nums, base=base)) * 255)
+
+    # Now we generate our colour:
+    r = kleur(nums, 10)
+    g = kleur(nums, 0)
+    b = kleur(nums, 43)
+
+    # RGB isn't great, because it means low values of RGB are
+    # low luminance. So we convert to HSV to get pure hue
+    (h, s, v) = colorsys.rgb_to_hsv(r, g, b)
+    # We then peg S and V to high and only retain hue
+    (r, g, b) = colorsys.hsv_to_rgb(h, 1, 255)
+    # This should give us a bright colour on a continuous range
+
+    return Light(
+        # Center the light in the unit, x&y
+        xyz=m(
+            pos[0] + size / 2,
+            pos[1] + size / 2,
+            # Light above player head height
+            pos[2] + 4,
+        ),
+        # Colours
+        red=int(r),
+        green=int(g),
+        blue=int(b),
+        # Make it a relatively small light, nice intimate feel without
+        # washing out.
+        radius=64,
+    )
+
 class _Room:
     """Base 'room' class which all other room types inherit from
     """
@@ -55,7 +95,7 @@ class _Room:
             'platform': 0.1,
             'platform_setpiece': 0.1,
             'hallway': 0.8,
-            'vertical': 0.4,
+            'vertical': 0.3,
             'hallway_jump': 0.2,
         }
 
@@ -68,45 +108,8 @@ class _Room:
             else:
                 size = SIZE
 
+            light = positionColour(self.pos, size)
             # Map (x, y, z) to 0-1 scale
-            nums = list(map(
-                lambda x: x * (2 ** -7.5),
-                self.pos
-            ))
-
-            # convert a tuple of three nums (x,y,z) + offset into a
-            # 0-255 integer.
-            def kleur(nums, base):
-                return int(abs(noise.pnoise3(*nums, base=base)) * 255)
-
-            # Now we generate our colour:
-            r = kleur(nums, 10)
-            g = kleur(nums, 0)
-            b = kleur(nums, 43)
-
-            # RGB isn't great, because it means low values of RGB are
-            # low luminance. So we convert to HSV to get pure hue
-            (h, s, v) = colorsys.rgb_to_hsv(r, g, b)
-            # We then peg S and V to high and only retain hue
-            (r, g, b) = colorsys.hsv_to_rgb(h, 1, 255)
-            # This should give us a bright colour on a continuous range
-
-            light = Light(
-                # Center the light in the unit, x&y
-                xyz=m(
-                    self.pos[0] + size / 2,
-                    self.pos[1] + size / 2,
-                    # Light above player head height
-                    self.pos[2] + 4,
-                ),
-                # Colours
-                red=int(r),
-                green=int(g),
-                blue=int(b),
-                # Make it a relatively small light, nice intimate feel without
-                # washing out.
-                radius=64,
-            )
             xmap.ents.append(light)
 
 class _OrientedRoom(_Room):
@@ -134,7 +137,7 @@ class _OrientedRoom(_Room):
             'hallway': 0.4,
             'platform_setpiece': 0.1,
             'platform': 0.3,
-            'vertical': 0.6,
+            'vertical': 0.4,
             'hallway_jump': 0.6,
         }
 
@@ -312,7 +315,7 @@ class JumpCorridor3(_OrientedRoom):
             'platform': 0.3,
             'platform_setpiece': 0.1,
             'hallway': 0.5,
-            'vertical': 0.4,
+            'vertical': 0.2,
         }
 
     def __init__(self, pos, orientation='+x', roof=False, tex=2):
@@ -532,6 +535,20 @@ class JumpCorridorVertical(_OrientedRoom):
         self.roof = roof
         self.tex = tex
 
+    def light(self):
+        light = Light(
+            xyz=m(
+                self.pos[0] + size / 2,
+                self.pos[1] + size / 2,
+                self.pos[2] + 12
+            ),
+            red=255,
+            green=255,
+            blue=255,
+            radius=200,
+        )
+        xmap.ents.append(light)
+
     def render(self, world, xmap):
         wall(world, '-z', SIZE, self.pos, tex=self.tex)
         wall(world, '+z', SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
@@ -630,6 +647,7 @@ class JumpCorridorVertical(_OrientedRoom):
 
         xmap.ents.append(pusher_a)
         xmap.ents.append(pusher_b)
+        self.light(xmap)
 
     def get_positions(self):
         return [
@@ -838,10 +856,11 @@ class AltarRoom(_3X3Room):
 
     def light(self, xmap):
         light = Light(
-            x=8 * (self.pos[0] + 8),
-            y=8 * (self.pos[1] + 8),
-            # Light above head
-            z=8 * (self.pos[2] + 7),
+            xyz=m(
+                self.pos[0] + 8,
+                self.pos[1] + 8,
+                self.pos[2] + 7
+            ),
             red=255,
             green=255,
             blue=255,
@@ -866,36 +885,44 @@ class Stair(_OrientedRoom):
             wall(world, '-x', SIZE, self.pos)
             cube_s(world, 4, mv(self.pos, (0, 2, 0)), tex=3)
             pusher_kw = {
-                'x': 8 * (self.pos[0] + 5),
-                'y': 8 * (self.pos[1] + 4),
-                'z': 8 * (self.pos[2] + 2),
+                'xyz': m(
+                    (self.pos[0] + 5),
+                    (self.pos[1] + 4),
+                    (self.pos[2] + 2),
+                ),
                 'yaw': 90,
             }
         elif self.orientation == '-x':
             wall(world, '+x', SIZE, self.pos)
             cube_s(world, 4, mv(self.pos, (SIZE / 2, 2, 0)), tex=3)
             pusher_kw = {
-                'x': 8 * (self.pos[0] + 3),
-                'y': 8 * (self.pos[1] + 4),
-                'z': 8 * (self.pos[2] + 2),
+                'xyz': m(
+                    (self.pos[0] + 3),
+                    (self.pos[1] + 4),
+                    (self.pos[2] + 2),
+                ),
                 'yaw': 270,
             }
         elif self.orientation == '+y':
             wall(world, '-y', SIZE, self.pos)
             cube_s(world, 4, mv(self.pos, (2, 0, 0)), tex=3)
             pusher_kw = {
-                'x': 8 * (self.pos[0] + 4),
-                'y': 8 * (self.pos[1] + 5),
-                'z': 8 * (self.pos[2] + 2),
+                'xyz': m(
+                    (self.pos[0] + 4),
+                    (self.pos[1] + 5),
+                    (self.pos[2] + 2),
+                ),
                 'yaw': 180,
             }
         elif self.orientation == '-y':
             wall(world, '+y', SIZE, self.pos)
             cube_s(world, 4, mv(self.pos, (2, SIZE / 2, 0)), tex=3)
             pusher_kw = {
-                'x': 8 * (self.pos[0] + 4),
-                'y': 8 * (self.pos[1] + 3),
-                'z': 8 * (self.pos[2] + 2),
+                'xyz': m(
+                    (self.pos[0] + 4),
+                    (self.pos[1] + 3),
+                    (self.pos[2] + 2),
+                ),
                 'yaw': 0,
             }
         else:
@@ -945,6 +972,6 @@ class Stair(_OrientedRoom):
             'platform': 0.5,
             'platform_setpiece': 0.2,
             'hallway': 0.4,
-            'vertical': 0.6,
+            'vertical': 0.3,
             'hallway_jump': 0.2,
         }

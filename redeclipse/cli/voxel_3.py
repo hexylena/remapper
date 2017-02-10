@@ -54,7 +54,7 @@ class UnusedPositionManager:
 
     def is_legal(self, position):
         """Is the position within the bounds of the map"""
-        return all([x >= 0 and x < self.world_size for x in position])
+        return all([x >= 0 and x < self.world_size - 8 for x in position])
 
     def register_room(self, room):
         # Register positions occupied by this room
@@ -110,17 +110,16 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
         """Pick out a random room based on the connecting room and the
         transition probabilities of that room."""
         possible_rooms =  [
-            # BaseRoom,
-            # Corridor4way,
-            # SpawnRoom,
-            # JumpCorridor3,
-            # Corridor4way_A,
-            # Stair,
-            # Corridor2way,
-            # Corridor2way_A,
-            # AltarRoom,
+            BaseRoom,
+            SpawnRoom,
+            JumpCorridor3,
+            Corridor4way_A,
+            Stair,
+            Corridor2way,
+            Corridor2way_A,
+            AltarRoom,
             JumpCorridorVertical,
-            # NLongCorridor,
+            NLongCorridor,
         ]
 
         choices = []
