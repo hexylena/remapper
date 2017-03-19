@@ -15,6 +15,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
     random.seed(seed)
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
+    room_counts = size
 
     def weighted_choice(choices):
         """Weighted random distribution. Given a list like [('a', 1), ('b', 2)]
@@ -28,6 +29,20 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
                 return c
             upto += w
         assert False, "Shouldn't get here"
+
+    def mirror(d):
+        if isinstance(d, dict):
+            if '-' in kwargs['orientation']:
+                kwargs['orientation'] = kwargs['orientation'].replace('-', '+')
+            else:
+                kwargs['orientation'] = kwargs['orientation'].replace('+', '-')
+            return kwargs
+        else:
+            return (
+                room_counts - d[0],
+                room_counts - d[1],
+                d[2]
+            )
 
     def random_room(connecting_room):
         """Pick out a random room based on the connecting room and the
@@ -90,15 +105,19 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
         # Get a random room, influenced by the prev_room
         roomClass = random_room(prev_room)
         print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, position, orientation))
+        print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, mirror(position), orientation))
         # Initialize room, required to correctly calculate get_positions()
         r = roomClass(pos=position, **kwargs)
+        r_m = roomClass(pos=mirror(position), **mirror(kwargs))
         # Try adding it
         try:
             # This step might raise an exception
             upm.register_room(r)
+            upm.register_room(r_m)
             # If we get here, we've placed successfully so bump count + render
-            room_count += 1
+            room_count += 2
             r.render(v, mymap)
+            r_m.render(v, mymap)
         except Exception as e:
             # We have failed to register the room because
             # it does not fit here.
