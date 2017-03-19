@@ -18,3 +18,20 @@ class Weapon(Entity):
         ]
         self.links = [] if links is None else links
         self.reserved = [0, 0, 0] if reserved is None else reserved
+
+
+class Grenade(Entity):
+
+    def __init__(self, xyz, flags=0, modes=0, muts=0, id=0,
+                 links=None, reserved=None):
+
+        self.o = ivec3(*xyz)
+        self.type = EntType.ET_WEAPON
+        self.attr_annotations = [
+            'type', 'flags', 'modes', 'muts', 'id'
+        ]
+        self.attrs = [
+            9, flags, modes, muts, id
+        ]
+        self.links = [] if links is None else links
+        self.reserved = [0, 0, 0] if reserved is None else reserved

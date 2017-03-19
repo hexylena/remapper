@@ -1,5 +1,6 @@
 from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
+from redeclipse.entities.weapon import Grenade
 from redeclipse.prefabs.construction_kit import wall, column, mv, \
     m, low_wall, cube_s, rectangular_prism, ring, multi_wall, rotate, rotate_a
 import random # noqa
@@ -206,6 +207,26 @@ class BaseRoom(_Room):
         )
         xmap.ents.append(spawn)
         self.light(xmap)
+
+
+class TestRoom(_Room):
+    def __init__(self, pos, tex=2, orientation=None):
+        """Init is kept separate from rendering, because init sets self.pos,
+        and we use that when calling self.get_positions(), which is required as
+        part of placement, we wouldn't want to place a partial room."""
+        self.pos = pos
+        self.tex = tex
+        self.orientation = orientation
+
+    def render(self, world, xmap):
+        g = Grenade(
+            xyz=m(
+                (self.pos[0] + SIZE / 2),
+                (self.pos[1] + SIZE / 2),
+                (self.pos[2] + 1),
+            )
+        )
+        xmap.ents.append(g)
 
 
 class NLongCorridor(_OrientedRoom):

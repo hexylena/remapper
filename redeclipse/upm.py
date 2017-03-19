@@ -1,4 +1,5 @@
 import random
+import copy
 
 
 class UnusedPositionManager:
@@ -6,12 +7,14 @@ class UnusedPositionManager:
 
     This is closely tied to our prefab model
     """
-    def __init__(self, world_size):
+    def __init__(self, world_size, mirror=False):
         # Set of occupied positions
         self.occupied = set()
         # Set of doors that we can connect to
         self.unoccupied = []
         self.world_size = world_size
+        # Special restrictions on mirror-mode
+        self.mirror = mirror
 
     def getOrientationToManhattanRoom(self, p, used):
         """Get the orientation from the previous room to the door.
@@ -45,7 +48,23 @@ class UnusedPositionManager:
 
     def is_legal(self, position):
         """Is the position within the bounds of the map"""
-        return all([x >= 0 and x < self.world_size - 8 for x in position])
+        lowest = 0
+        if self.mirror:
+            lowest = 8
+        return all([x >= lowest and x < self.world_size - 8 for x in position])
+
+    def preregister_rooms(self, *rooms):
+        # Register positions occupied by this room
+        tmp_occupied = copy.deepcopy(self.occupied)
+        for room in rooms:
+            used = room.get_positions()
+            # First, we need to check that ALL of those positions are
+            # unoccupied.
+            for position in used:
+                if position in tmp_occupied:
+                    return False
+            tmp_occupied = tmp_occupied.union(used)
+        return True
 
     def register_room(self, room):
         # Register positions occupied by this room
@@ -54,7 +73,7 @@ class UnusedPositionManager:
         # unoccupied.
         for position in used:
             if position in self.occupied:
-                raise Exception("Occupado")
+                raise Exception("Occupado %s %s %s" % position)
         # Otheriwse, all positions are fine to use.
 
         self.occupied = self.occupied.union(used)

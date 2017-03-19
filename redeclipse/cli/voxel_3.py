@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 from redeclipse.voxel import VoxelWorld
 from redeclipse.cli import parse
+from redeclipse.entities import Sunlight
 from redeclipse.prefabs import m, BaseRoom, AltarRoom, \
     Corridor2way, Corridor2way_A, \
     Corridor4way_A, \
-    Stair, SpawnRoom, NLongCorridor, \
+    Stair, SpawnRoom, NLongCorridor, TestRoom, \
     JumpCorridor3, JumpCorridorVertical
 from redeclipse.upm import UnusedPositionManager
 import argparse
 import random
 
 
-def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
+def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     random.seed(seed)
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
@@ -71,6 +72,13 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
     b.render(v, mymap)
     # Convert rooms to int
     rooms = int(rooms)
+    sunlight = Sunlight(
+        red=128,
+        green=128,
+        blue=128,
+        offset=45, # top
+    )
+    mymap.ents.append(sunlight)
 
     room_count = 0
     while True:
@@ -103,8 +111,15 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
             # We have failed to register the room because
             # it does not fit here.
             # So, we continue.
-            print(e)
+            if debug:
+                print(e)
             continue
+
+    if debug:
+        for (pos, typ, ori) in upm.unoccupied:
+            r = TestRoom(pos, orientation='+x')
+            r.render(v, mymap)
+
 
     # Standard code to render octree to file.
     mymap.world = v.to_octree()
@@ -120,5 +135,6 @@ if __name__ == '__main__':
     parser.add_argument('--size', default=2**7, type=int, help="World size. Danger!")
     parser.add_argument('--seed', default=42, type=int, help="Random seed")
     parser.add_argument('--rooms', default=200, type=int, help="Number of rooms to place")
+    parser.add_argument('--debug', action='store_true', help="Debugging")
     args = parser.parse_args()
     main(**vars(args))

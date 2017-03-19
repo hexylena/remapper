@@ -103,7 +103,9 @@ class PlayerSpawn(Entity):
 
 class Sunlight(Entity):
 
-    def __init__(self, yaw=0, pitch=0, red=255, green=255, blue=255, offset=45, flare=0, flarescale=0, links=None, reserved=None):
+    def __init__(self, xyz=(0, 0, 0), yaw=0, pitch=0, red=255, green=255, blue=255, offset=45, flare=0, flarescale=0, links=None, reserved=None):
+        self.o = ivec3(*xyz)
+        self.type = EntType.ET_SUNLIGHT
         self.attr_annotations = [
             'yaw', 'pitch', 'red', 'green', 'blue', 'offset', 'flare', 'flarescale',
         ]

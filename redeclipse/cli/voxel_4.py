@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 from redeclipse.voxel import VoxelWorld
 from redeclipse.cli import parse
+from redeclipse.entities import Sunlight
 from redeclipse.prefabs import m, BaseRoom, AltarRoom, \
     Corridor2way, Corridor2way_A, \
     Corridor4way_A, \
-    Stair, SpawnRoom, NLongCorridor, \
+    Stair, SpawnRoom, NLongCorridor, TestRoom, \
     JumpCorridor3, JumpCorridorVertical
 from redeclipse.upm import UnusedPositionManager
 import argparse
 import random
 
 
-def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
+def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     random.seed(seed)
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
@@ -73,19 +74,29 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
         return weighted_choice(choices)
 
     # Initialize
-    upm = UnusedPositionManager(size)
+    upm = UnusedPositionManager(size, mirror=True)
 
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.
     starting_position = m(6, 6, 3)
     # We use the spawn room as our base starting room
     b = SpawnRoom(pos=starting_position, orientation="+y")
+    b_m = SpawnRoom(pos=mirror(starting_position), orientation="-y")
     # Register our new room
     upm.register_room(b)
+    upm.register_room(b_m)
     # Render it to the map
     b.render(v, mymap)
+    b_m.render(v, mymap)
     # Convert rooms to int
     rooms = int(rooms)
+    sunlight = Sunlight(
+        red=128,
+        green=128,
+        blue=128,
+        offset=45, # top
+    )
+    mymap.ents.append(sunlight)
 
     room_count = 0
     while True:
@@ -111,6 +122,8 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
         r_m = roomClass(pos=mirror(position), **mirror(kwargs))
         # Try adding it
         try:
+            if not upm.preregister_rooms(r, r_m):
+                raise Exception("would fail on one or more rooms")
             # This step might raise an exception
             upm.register_room(r)
             upm.register_room(r_m)
@@ -122,8 +135,15 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200):
             # We have failed to register the room because
             # it does not fit here.
             # So, we continue.
-            print(e)
+            if debug:
+                print(e)
             continue
+
+    if debug:
+        for (pos, typ, ori) in upm.unoccupied:
+            r = TestRoom(pos, orientation='+x')
+            r.render(v, mymap)
+
 
     # Standard code to render octree to file.
     mymap.world = v.to_octree()
@@ -139,5 +159,6 @@ if __name__ == '__main__':
     parser.add_argument('--size', default=2**7, type=int, help="World size. Danger!")
     parser.add_argument('--seed', default=42, type=int, help="Random seed")
     parser.add_argument('--rooms', default=200, type=int, help="Number of rooms to place")
+    parser.add_argument('--debug', action='store_true', help="Debugging")
     args = parser.parse_args()
     main(**vars(args))
