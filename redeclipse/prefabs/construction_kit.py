@@ -7,6 +7,7 @@ def mv(a, b):
         a[2] + b[2],
     )
 
+
 def mi(*args):
     if len(args) == 1:
         p0 = args[0][0]
@@ -22,6 +23,7 @@ def mi(*args):
         p1 * -1,
         p2 * -1,
     )
+
 
 def m(*args):
     if len(args) == 2:
@@ -73,6 +75,7 @@ def wall_points(size, direction, limit_j=100, limit_i=100):
                 yield (0, i, j)
             elif direction == '+x':
                 yield (size - 1, i, j)
+
 
 def multi_wall(world, directions, size, pos, tex=2):
     for direction in directions:
@@ -151,6 +154,7 @@ def slope(world, pos, corners_down=None, tex=2):
 
     world.set_point(*pos, c)
 
+
 def ring(world, pos, size=8, tex=2, thickness=1):
     for point in wall_points(size, '-z'):
         if point[0] < thickness or point[0] >= size - thickness or \
@@ -159,3 +163,29 @@ def ring(world, pos, size=8, tex=2, thickness=1):
                 *mv(point, pos),
                 cube.newtexcube(tex=tex)
             )
+
+def rotate(position, orientation):
+    (x, y, z) = position
+    if orientation == '-x':
+        return (x, y, z)
+    elif orientation == '+x':
+        return (-x, y, z)
+    elif orientation == '-y':
+        return (y, x, z)
+    elif orientation == '+y':
+        return (y, -x, z)
+    else:
+        raise Exception("Unknown Orientation")
+
+
+def rotate_a(direction, orientation):
+    if orientation == '-x':
+        return direction + 0 % 360
+    elif orientation == '+x':
+        return direction + 180 % 360
+    elif orientation == '-y':
+        return direction + 90 % 360
+    elif orientation == '+y':
+        return direction + 270 % 360
+    else:
+        raise Exception("Unknown Orientation")

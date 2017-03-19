@@ -1,7 +1,7 @@
 from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
 from redeclipse.prefabs.construction_kit import wall, column, mv, \
-    m, low_wall, cube_s, rectangular_prism, ring, multi_wall
+    m, low_wall, cube_s, rectangular_prism, ring, multi_wall, rotate, rotate_a
 import random # noqa
 import noise
 import colorsys
@@ -48,6 +48,7 @@ def positionColour(pos, size):
         # washing out.
         radius=64,
     )
+
 
 class _Room:
     """Base 'room' class which all other room types inherit from
@@ -111,6 +112,7 @@ class _Room:
         # Map (x, y, z) to 0-1 scale
         xmap.ents.append(light)
 
+
 class _OrientedRoom(_Room):
     """A special case of base _Room, a class which has different behaviour
     based on its orientation.
@@ -139,6 +141,7 @@ class _OrientedRoom(_Room):
             'vertical': 0.4,
             'hallway_jump': 0.6,
         }
+
 
 class _3X3Room(_Room):
     """Another special case of room, though this probably does not need to be.
@@ -175,7 +178,6 @@ class _3X3Room(_Room):
             mv(self.pos , m(1  , 0  , 1)) ,
             mv(self.pos , m(1  , 1  , 1)) ,
         ]
-
 
 
 class BaseRoom(_Room):
@@ -828,6 +830,7 @@ class AltarRoom(_3X3Room):
                 (self.pos[1] + 4),
                 (self.pos[2] + 3),
             ),
+            yaw=rotate_a(270, self.orientation),
             type=124
         )
         xmap.ents.append(tree)
