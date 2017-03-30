@@ -148,6 +148,14 @@ class _3X3Room(_Room):
     """Another special case of room, though this probably does not need to be.
     AltarRoom is currently the only user."""
 
+    def __init__(self, pos, tex=2, orientation=None):
+        """Init is kept separate from rendering, because init sets self.pos,
+        and we use that when calling self.get_positions(), which is required as
+        part of placement, we wouldn't want to place a partial room."""
+        self.pos = pos
+        self.tex = tex
+        self.orientation = orientation
+
     def _get_doorways(self):
         return [
             m(-2, 0, 0),
@@ -158,26 +166,26 @@ class _3X3Room(_Room):
 
     def get_positions(self):
         return [
-            mv(self.pos , m(-1 , -1 , 0)) ,
-            mv(self.pos , m(-1 , 0  , 0)) ,
-            mv(self.pos , m(-1 , 1  , 0)) ,
-            mv(self.pos , m(0  , -1 , 0)) ,
-            mv(self.pos , m(0  , 0  , 0)) ,
-            mv(self.pos , m(0  , 1  , 0)) ,
-            mv(self.pos , m(1  , -1 , 0)) ,
-            mv(self.pos , m(1  , 0  , 0)) ,
-            mv(self.pos , m(1  , 1  , 0)) ,
+            mv(self.pos, m(-1, -1, 0)),
+            mv(self.pos, m(-1, 0, 0)),
+            mv(self.pos, m(-1, 1, 0)),
+            mv(self.pos, m(0, -1, 0)),
+            mv(self.pos, m(0, 0, 0)),
+            mv(self.pos, m(0, 1, 0)),
+            mv(self.pos, m(1, -1, 0)),
+            mv(self.pos, m(1, 0, 0)),
+            mv(self.pos, m(1, 1, 0)),
 
             # Do not place things above us
-            mv(self.pos , m(-1 , -1 , 1)) ,
-            mv(self.pos , m(-1 , 0  , 1)) ,
-            mv(self.pos , m(-1 , 1  , 1)) ,
-            mv(self.pos , m(0  , -1 , 1)) ,
-            mv(self.pos , m(0  , 0  , 1)) ,
-            mv(self.pos , m(0  , 1  , 1)) ,
-            mv(self.pos , m(1  , -1 , 1)) ,
-            mv(self.pos , m(1  , 0  , 1)) ,
-            mv(self.pos , m(1  , 1  , 1)) ,
+            mv(self.pos, m(-1, -1, 1)),
+            mv(self.pos, m(-1, 0, 1)),
+            mv(self.pos, m(-1, 1, 1)),
+            mv(self.pos, m(0, -1, 1)),
+            mv(self.pos, m(0, 0, 1)),
+            mv(self.pos, m(0, 1, 1)),
+            mv(self.pos, m(1, -1, 1)),
+            mv(self.pos, m(1, 0, 1)),
+            mv(self.pos, m(1, 1, 1)),
         ]
 
 
