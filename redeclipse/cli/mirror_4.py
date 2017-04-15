@@ -3,9 +3,10 @@ from redeclipse.voxel import VoxelWorld
 from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
 from redeclipse.prefabs import m, BaseRoom, AltarRoom, \
-    Corridor2way, Corridor4way, \
+    Corridor2way, Corridor2way_A, \
+    Corridor4way_A, \
     Stair, SpawnRoom, NLongCorridor, TestRoom, \
-    JumpCorridor3, JumpCorridorVertical, ImposingRingRoom, ImposingBlockRoom
+    JumpCorridor3, JumpCorridorVertical
 from redeclipse.upm import UnusedPositionManager
 import argparse
 import random
@@ -15,6 +16,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     random.seed(seed)
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
+    room_counts = size
 
     def weighted_choice(choices):
         """Weighted random distribution. Given a list like [('a', 1), ('b', 2)]
@@ -29,6 +31,22 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             upto += w
         assert False, "Shouldn't get here"
 
+    def mirror4(d):
+        if isinstance(d, dict):
+            orientations = ['+x', '-x', '+y', '-y']
+            orientations.remove(d['orientation'])
+
+            for orient in orientations:
+                tmpkw = copy.deepcopy(kwargs)
+                tmpkw['orientation'] = orient
+                yield tmpkw
+        else:
+            return (
+                room_counts - d[0],
+                room_counts - d[1],
+                d[2]
+            )
+
     def random_room(connecting_room):
         """Pick out a random room based on the connecting room and the
         transition probabilities of that room."""
@@ -36,12 +54,11 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             BaseRoom,
             SpawnRoom,
             JumpCorridor3,
-            Corridor4way,
+            Corridor4way_A,
             Stair,
             Corridor2way,
+            Corridor2way_A,
             AltarRoom,
-            ImposingRingRoom,
-            ImposingBlockRoom,
             JumpCorridorVertical,
             NLongCorridor,
         ]
@@ -59,17 +76,20 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         return weighted_choice(choices)
 
     # Initialize
-    upm = UnusedPositionManager(size)
+    upm = UnusedPositionManager(size, mirror=True)
 
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.
     starting_position = m(6, 6, 3)
     # We use the spawn room as our base starting room
     b = SpawnRoom(pos=starting_position, orientation="+y")
+    b_m = SpawnRoom(pos=mirror(starting_position), orientation="-y")
     # Register our new room
     upm.register_room(b)
+    upm.register_room(b_m)
     # Render it to the map
     b.render(v, mymap)
+    b_m.render(v, mymap)
     # Convert rooms to int
     rooms = int(rooms)
     sunlight = Sunlight(
@@ -97,17 +117,22 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         kwargs = {'orientation': orientation}
         # Get a random room, influenced by the prev_room
         roomClass = random_room(prev_room)
-        kwargs.update(roomClass.randOpts(prev_room))
+        print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, position, orientation))
+        print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, mirror(position), orientation))
         # Initialize room, required to correctly calculate get_positions()
         r = roomClass(pos=position, **kwargs)
+        r_m = roomClass(pos=mirror(position), **mirror(kwargs))
         # Try adding it
         try:
+            if not upm.preregister_rooms(r, r_m):
+                raise Exception("would fail on one or more rooms")
             # This step might raise an exception
             upm.register_room(r)
+            upm.register_room(r_m)
             # If we get here, we've placed successfully so bump count + render
-            room_count += 1
+            room_count += 2
             r.render(v, mymap)
-            print("[%s] Placing %s at %s (%s) Variant:%s" % (room_count, roomClass.__name__, position, orientation, '|'.join(['1' if x else '0' for x in kwargs.get('randflags', [])])))
+            r_m.render(v, mymap)
         except Exception as e:
             # We have failed to register the room because
             # it does not fit here.
@@ -133,7 +158,7 @@ if __name__ == '__main__':
     parser.add_argument('mpz_in', type=argparse.FileType('r'), help='Input .mpz file')
     parser.add_argument('mpz_out', type=argparse.FileType('w'), help='Output .mpz file')
 
-    parser.add_argument('--size', default=2**8, type=int, help="World size. Danger!")
+    parser.add_argument('--size', default=2**7, type=int, help="World size. Danger!")
     parser.add_argument('--seed', default=42, type=int, help="Random seed")
     parser.add_argument('--rooms', default=200, type=int, help="Number of rooms to place")
     parser.add_argument('--debug', action='store_true', help="Debugging")

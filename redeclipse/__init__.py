@@ -102,6 +102,8 @@ class Map:
     def write_int(self, handle, value):
         if isinstance(value, int):
             handle.write(struct.pack('i', value))
+        elif isinstance(value, float):
+            handle.write(struct.pack('i', int(value)))
         else:
             handle.write(struct.pack('i', value.value))
 

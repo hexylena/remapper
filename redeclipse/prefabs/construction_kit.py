@@ -25,7 +25,7 @@ def mi(*args):
     )
 
 
-def m(*args):
+def m(*args, size=8):
     if len(args) == 2:
         p0 = args[0][0]
         p1 = args[0][1]
@@ -36,9 +36,9 @@ def m(*args):
         p2 = args[2]
 
     return (
-        p0 * 8,
-        p1 * 8,
-        p2 * 8,
+        p0 * size,
+        p1 * size,
+        p2 * size,
     )
 
 
@@ -98,12 +98,17 @@ def low_wall(world, direction, size, pos, height=2, tex=2):
         )
 
 
-def column(world, direction, size, pos, tex=2):
+def column(world, direction, size, pos, tex=2, subtract=False):
     for point in column_points(size, direction):
-        world.set_point(
-            *mv(point, pos),
-            cube.newtexcube(tex=tex)
-        )
+        if subtract:
+            world.del_point(
+                *mv(point, pos)
+            )
+        else:
+            world.set_point(
+                *mv(point, pos),
+                cube.newtexcube(tex=tex)
+            )
 
 
 def cube_points(*args):
