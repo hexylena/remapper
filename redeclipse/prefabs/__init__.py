@@ -1056,10 +1056,10 @@ class ImposingRingRoom(_LargeRoom):
         column(world, 'z', 8 * self._height, mv(self.pos, (-8, -8, 0)), tex=100)
 
         if self._randflags[3]:
-            column(world, 'z', 8 * self._height, mv(self.pos, (3, 3, 0)), tex=100)
-            column(world, 'z', 8 * self._height, mv(self.pos, (3, 4, 0)), tex=100)
-            column(world, 'z', 8 * self._height, mv(self.pos, (4, 3, 0)), tex=100)
-            column(world, 'z', 8 * self._height, mv(self.pos, (4, 4, 0)), tex=100)
+            column(world, 'z', 8 * self._height, mv(self.pos, (2, 3, 0)), tex=100)
+            column(world, 'z', 8 * self._height, mv(self.pos, (4, 2, 0)), tex=100)
+            column(world, 'z', 8 * self._height, mv(self.pos, (3, 5, 0)), tex=100)
+            column(world, 'z', 8 * self._height, mv(self.pos, (5, 4, 0)), tex=100)
 
         for i in range(1, self._height * 8, 2):
             ring(world, mv(self.pos, (-4, -4, i)), size=16, tex=123, thickness=1)
