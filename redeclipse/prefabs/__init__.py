@@ -14,11 +14,6 @@ _REAL_SIZE = 2 ** 8
 SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
 
 
-def updateSizeOffset(newSizeOffset):
-    _REAL_SIZE = newSizeOffset
-    SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
-
-
 def posColor(pos):
     nums = list(map(
         lambda x: x * (2 ** -8.4),
@@ -75,10 +70,10 @@ class _Room:
         # Platform
         return {
             'platform': 0.1,
-            'platform_setpiece': 0.3,
-            'hallway': 0.8,
+            'platform_setpiece': 0,
             'vertical': 0.3,
-            'hallway_jump': 0.2,
+            'hallway': 0.8,
+            'hallway_jump': 0.4,
         }
 
     def _get_doorways(self):
@@ -159,11 +154,11 @@ class _OrientedRoom(_Room):
     def get_transition_probs(cls):
         # oriented platform / hallway
         return {
-            'hallway': 0.4,
-            'platform_setpiece': 0.3,
-            'platform': 0.3,
-            'vertical': 0.4,
-            'hallway_jump': 0.6,
+            'hallway': 2.3,
+            'hallway_jump': 0.8,
+            'platform_setpiece': 0.2,
+            'platform': 0.6,
+            'vertical': 0.3,
         }
 
     def _get_doorways(self):
@@ -183,6 +178,19 @@ class _OrientedRoom(_Room):
 class _3X3Room(_Room):
     """Another special case of room, though this probably does not need to be.
     AltarRoom is currently the only user."""
+    room_type = 'platform_setpiece'
+
+    @classmethod
+    def get_transition_probs(cls):
+        """Probabilities of transitioning to other named room types"""
+        # Platform
+        return {
+            'platform': 0.1,
+            'platform_setpiece': 0,
+            'vertical': 0.3,
+            'hallway': 1.8,
+            'hallway_jump': 0.4,
+        }
 
     def __init__(self, pos, tex=2, orientation=None, randflags=None):
         """Init is kept separate from rendering, because init sets self.pos,
@@ -394,9 +402,9 @@ class JumpCorridor3(_OrientedRoom):
     def get_transition_probs(cls):
         return {
             'hallway_jump': 0,
-            'platform': 0.3,
+            'platform': 0.6,
             'platform_setpiece': 0.1,
-            'hallway': 0.5,
+            'hallway': 0.6,
             'vertical': 0.2,
         }
 
@@ -590,13 +598,16 @@ class JumpCorridor3(_OrientedRoom):
 
 class JumpCorridorVertical(_OrientedRoom):
     room_type = 'vertical'
+    _randflags = (
+        True, # extra section
+    )
 
     @classmethod
     def get_transition_probs(cls):
         return {
             'hallway_jump': 0.2,
             'platform': 0.3,
-            'platform_setpiece': 0.2,
+            'platform_setpiece': 0.1,
             'hallway': 0.9,
             'vertical': 0.1,
         }
@@ -785,7 +796,7 @@ class JumpCorridorVerticalCenter(JumpCorridorVertical):
 
 
 class Corridor4way(_Room):
-    room_type = 'hallway'
+    room_type = 'platform'
     _randflags = (
         True, # roof
         True, # Wall: A (A + B; !A!B: no walls, B!A: half, A!B: full, AB: columns)
@@ -890,7 +901,6 @@ class SpawnRoom(_OrientedRoom):
 
 class _LargeRoom(_3X3Room):
     _height = 1
-    room_type = 'platform_setpiece'
 
     def __init__(self, pos, roof=False, orientation=None, randflags=None):
         # Push the position
@@ -1106,7 +1116,6 @@ class ImposingRingRoom(_LargeRoom):
 
 
 class AltarRoom(_3X3Room):
-    room_type = 'platform_setpiece'
     _randflags = (
         True, # Tree
         True, # Rings
@@ -1215,10 +1224,10 @@ class Stair(_OrientedRoom):
         # stair
         return {
             'platform': 0.2,
-            'platform_setpiece': 0.0,
-            'hallway': 0.4,
+            'platform_setpiece': 0.1,
+            'hallway': 0.6,
             'vertical': 0.6,
-            'hallway_jump': 0.0,
+            'hallway_jump': 0.2,
         }
 
     def __init__(self, pos, orientation='+x', randflags=None):
@@ -1383,6 +1392,31 @@ class CrossingWalkways(_LargeRoom):
             xmap.ents.append(light)
 
 
+class PlusPlatform(_LargeRoom):
+    _height = 2
+    room_type = 'platform'
+
+    def render(self, world, xmap):
+        self.light(xmap)
+
+        # Corners are up 1
+        tex1 = random.randint(92, 115)
+
+        wall(world, '-z', SIZE, mv(self.pos, m(0, 0, 0)), tex=tex1)
+        wall(world, '-z', SIZE, mv(self.pos, m(1, 0, 0)), tex=tex1)
+        wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 0)), tex=tex1)
+        wall(world, '-z', SIZE, mv(self.pos, m(0, 1, 0)), tex=tex1)
+        wall(world, '-z', SIZE, mv(self.pos, m(0, -1, 0)), tex=tex1)
+
+    def _get_doorways(self):
+        return [
+            m(-2, 0, 0),
+            m(2, 0, 0),
+            m(0, -2, 0),
+            m(0, 2, 0),
+        ]
+
+
 class MultiPlatform(_LargeRoom):
     _height = 3
 
@@ -1440,7 +1474,6 @@ class MultiPlatform(_LargeRoom):
 
 
 class DigitalRoom(_LargeRoom):
-    room_type = 'hallway'
     _height = 1
     _randflags = (
         True, # Roof
