@@ -1363,8 +1363,24 @@ class CrossingWalkways(_LargeRoom):
                 m(-2, 0, 2),
                 m(2, 0, 2),
             ]
-
         return doors
+
+    def light(self, xmap):
+        (r, g, b) = posColor(self.pos)
+
+        for i in range(6, self._height * 8, 8):
+            light = Light(
+                xyz=m(
+                    SIZE_OFFSET * (self.pos[0] + 4),
+                    SIZE_OFFSET * (self.pos[1] + 4),
+                    SIZE_OFFSET * (self.pos[2] + i),
+                ),
+                red=r,
+                green=g,
+                blue=b,
+                radius=SIZE_OFFSET * 256,
+            )
+            xmap.ents.append(light)
 
 
 class MultiPlatform(_LargeRoom):
