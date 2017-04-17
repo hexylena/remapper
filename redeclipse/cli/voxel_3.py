@@ -48,7 +48,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             p.MultiPlatform,
             p.DigitalRoom,
             p.CrossingWalkways,
-
+            p.JumpCorridorVerticalCenter,
         ]
 
         choices = []
