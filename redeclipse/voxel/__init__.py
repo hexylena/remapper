@@ -6,6 +6,9 @@ resolution cube that makes sense, and then let RE optimise the map when need be.
 """
 from redeclipse.objects import cube
 from redeclipse.enums import OCT
+import logging
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
 
 
 class VoxelWorld:
@@ -16,9 +19,11 @@ class VoxelWorld:
         self.world = {}
 
     def set_point(self, x, y, z, data):
+        log.debug("set_point (%d, %d, %d)", x, y, z)
         self.world[x, y, z] = data
 
     def del_point(self, x, y, z):
+        log.debug("del_point (%d, %d, %d)", x, y, z)
         if (x, y, z) in self.world:
             del self.world[x, y, z]
 

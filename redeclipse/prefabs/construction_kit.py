@@ -1,4 +1,6 @@
 from redeclipse.objects import cube
+import random
+
 
 def mv(a, b):
     return (
@@ -88,6 +90,15 @@ def wall(world, direction, size, pos, tex=2):
             *mv(point, pos),
             cube.newtexcube(tex=tex)
         )
+
+
+def faded_wall(world, direction, size, pos, tex=2, prob=0.7):
+    for point in wall_points(size, direction):
+        if random.random() < prob:
+            world.set_point(
+                *mv(point, pos),
+                cube.newtexcube(tex=tex)
+            )
 
 
 def low_wall(world, direction, size, pos, height=2, tex=2):

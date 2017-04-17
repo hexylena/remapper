@@ -2,7 +2,7 @@ from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
 from redeclipse.entities.weapon import Grenade
 from redeclipse.prefabs.construction_kit import wall, column, mv, \
-    m, low_wall, cube_s, rectangular_prism, ring, multi_wall, rotate, rotate_a
+    m, low_wall, cube_s, rectangular_prism, ring, multi_wall, rotate, rotate_a, faded_wall
 import random # noqa
 import noise
 import copy
@@ -14,7 +14,12 @@ _REAL_SIZE = 2 ** 8
 SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
 
 
-def positionColour(pos, size):
+def updateSizeOffset(newSizeOffset):
+    _REAL_SIZE = newSizeOffset
+    SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
+
+
+def posColor(pos):
     nums = list(map(
         lambda x: x * (2 ** -8),
         pos
@@ -36,6 +41,10 @@ def positionColour(pos, size):
     # We then peg S and V to high and only retain hue
     (r, g, b) = colorsys.hsv_to_rgb(h, 1, 255)
     # This should give us a bright colour on a continuous range
+    return (int(r), int(g), int(b))
+
+def positionColour(pos, size):
+    (r, g, b) = posColor(pos)
 
     return Light(
         # Center the light in the unit, x&y
@@ -46,9 +55,9 @@ def positionColour(pos, size):
             SIZE_OFFSET * (pos[2] + 4),
         ),
         # Colours
-        red=int(r),
-        green=int(g),
-        blue=int(b),
+        red=r,
+        green=g,
+        blue=b,
         # Make it a relatively small light, nice intimate feel without
         # washing out.
         radius=SIZE_OFFSET * 64,
@@ -352,8 +361,7 @@ class Corridor2way(_OrientedRoom):
     room_type = 'hallway'
     _randflags = (
         True, # roof
-        True, # Wall: A (A + B; !A!B: no walls, B!A: half, A!B: full, AB: columns)
-        True, # Wall: B
+        True, # no wall / low wall
     )
 
     def __init__(self, pos, orientation='+x', tex=2, randflags=None):
@@ -370,25 +378,13 @@ class Corridor2way(_OrientedRoom):
         if self._randflags[0]:
             wall(world, '+z', SIZE, self.pos, tex=self.tex)
 
-        if not self._randflags[1] and not self._randflags[2]:
-            pass
-        elif self._randflags[1] and not self._randflags[2]:
-            if self.orientation in ('+x', '-x'):
-                wall(world, '+y', SIZE, self.pos, tex=self.tex)
-                wall(world, '-y', SIZE, self.pos, tex=self.tex)
-            else:
-                wall(world, '+x', SIZE, self.pos, tex=self.tex)
-                wall(world, '-x', SIZE, self.pos, tex=self.tex)
-        elif not self._randflags[1] and self._randflags[2]:
+        if self._randflags[1]:
             if self.orientation in ('+x', '-x'):
                 wall(world, '+y', 2, self.pos, tex=self.tex)
                 wall(world, '-y', 2, self.pos, tex=self.tex)
             else:
                 wall(world, '+x', 2, self.pos, tex=self.tex)
                 wall(world, '-x', 2, self.pos, tex=self.tex)
-        else:
-            pass
-            # TODO
 
 
 class JumpCorridor3(_OrientedRoom):
@@ -647,9 +643,7 @@ class JumpCorridorVertical(_OrientedRoom):
         (a, b, c) = self.pos
         if self.orientation == '-x':
             #Walls
-            multi_wall(world, ('+x', '+y', '-y'), SIZE, self.pos, tex=self.tex)
             multi_wall(world, ('-x', '+x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, 1)), tex=self.tex)
-            multi_wall(world, ('+x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
             column(world, 'y', 8, mv(self.pos, m(0, 0, 2)), tex=4)
             # Red markers
             rectangular_prism(world, 2, 4, 1, (a + 4, b + 2, c), tex=self.tex + 1)
@@ -662,16 +656,14 @@ class JumpCorridorVertical(_OrientedRoom):
             )
 
             pusher_b = Pusher(
-                xyz=m(a + 6, b + 4, c + 15, size=SIZE * SIZE_OFFSET),
+                xyz=m(a + 6, b + 4, c + 15 + (2 if SIZE_OFFSET == 0.5 else 0), size=SIZE * SIZE_OFFSET),
                 pitch=40,
                 yaw=90,
                 force=200 * SIZE_OFFSET,
             )
         elif self.orientation == '+x':
             #Walls
-            multi_wall(world, ('-x', '+y', '-y'), SIZE, self.pos, tex=self.tex)
             multi_wall(world, ('-x', '+x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, 1)), tex=self.tex)
-            multi_wall(world, ('-x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
             column(world, 'y', 8, mv(self.pos, m(7/8, 0, 2)), tex=4)
             # Red markers
             rectangular_prism(world, 2, 4, 1, (a + 2, b + 2, c), tex=self.tex + 1)
@@ -685,16 +677,14 @@ class JumpCorridorVertical(_OrientedRoom):
             )
 
             pusher_b = Pusher(
-                xyz=m(a + 2, b + 4, c + 15, size=SIZE * SIZE_OFFSET),
+                xyz=m(a + 2, b + 4, c + 15 + (2 if SIZE_OFFSET == 0.5 else 0), size=SIZE * SIZE_OFFSET),
                 pitch=40,
                 yaw=270,
                 force=200 * SIZE_OFFSET,
             )
         elif self.orientation == '-y':
             #Walls
-            multi_wall(world, ('+y', '+x', '-x'), SIZE, self.pos, tex=self.tex)
             multi_wall(world, ('-y', '+y', '+x', '-x'), SIZE, mv(self.pos, m(0, 0, 1)), tex=self.tex)
-            multi_wall(world, ('+y', '+x', '-x'), SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
             column(world, 'x', 8, mv(self.pos, m(0, 0, 2)), tex=4)
             # Red markers
             rectangular_prism(world, 4, 2, 1, (a + 2, b + 4, c), tex=self.tex + 1)
@@ -707,16 +697,14 @@ class JumpCorridorVertical(_OrientedRoom):
             )
 
             pusher_b = Pusher(
-                xyz=m(a + 4, b + 6, c + 15, size=SIZE * SIZE_OFFSET),
+                xyz=m(a + 4, b + 6, c + 15 + (2 if SIZE_OFFSET == 0.5 else 0), size=SIZE * SIZE_OFFSET),
                 pitch=40,
                 yaw=180,
                 force=200 * SIZE_OFFSET,
             )
         elif self.orientation == '+y':
             #Walls
-            multi_wall(world, ('-y', '+x', '-x'), SIZE, self.pos, tex=self.tex)
             multi_wall(world, ('-y', '+y', '+x', '-x'), SIZE, mv(self.pos, m(0, 0, 1)), tex=self.tex)
-            multi_wall(world, ('-y', '+x', '-x'), SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
             column(world, 'x', 8, mv(self.pos, m(7/8, 0, 2)), tex=4)
             # Red markers
             rectangular_prism(world, 4, 2, 1, (a + 2, b + 2, c), tex=self.tex + 1)
@@ -730,7 +718,7 @@ class JumpCorridorVertical(_OrientedRoom):
             )
 
             pusher_b = Pusher(
-                xyz=m(a + 4, b + 2, c + 15, size=SIZE * SIZE_OFFSET),
+                xyz=m(a + 4, b + 2, c + 15 + (2 if SIZE_OFFSET == 0.5 else 0), size=SIZE * SIZE_OFFSET),
                 pitch=40,
                 yaw=0,
                 force=200 * SIZE_OFFSET,
@@ -762,7 +750,7 @@ class Corridor4way(_Room):
             self._randflags = randflags
 
     def render(self, world, xmap):
-        wall(world, '-z', SIZE, random.randint(92, 115))
+        wall(world, '-z', SIZE, self.pos, random.randint(92, 115))
         if self._randflags[0]:
             wall(world, '+z', SIZE, self.pos)
 
@@ -786,6 +774,9 @@ class Corridor4way(_Room):
 
 class SpawnRoom(_OrientedRoom):
     room_type = 'platform_setpiece'
+    _randflags = (
+        True, # Two sides open
+    )
 
     def __init__(self, pos, roof=None, orientation='+x', randflags=None):
         self.pos = pos
@@ -799,19 +790,23 @@ class SpawnRoom(_OrientedRoom):
         wall(world, '+z', SIZE, self.pos, tex=self.tex)
 
         if self.orientation == '+x':
-            wall(world, '-x', SIZE, self.pos)
+            if not self._randflags[0]:
+                wall(world, '-x', SIZE, self.pos)
             wall(world, '+y', SIZE, self.pos)
             wall(world, '-y', SIZE, self.pos)
         elif self.orientation == '-x':
-            wall(world, '+x', SIZE, self.pos)
+            if not self._randflags[0]:
+                wall(world, '+x', SIZE, self.pos)
             wall(world, '+y', SIZE, self.pos)
             wall(world, '-y', SIZE, self.pos)
         elif self.orientation == '+y':
-            wall(world, '-y', SIZE, self.pos)
+            if not self._randflags[0]:
+                wall(world, '-y', SIZE, self.pos)
             wall(world, '+x', SIZE, self.pos)
             wall(world, '-x', SIZE, self.pos)
         elif self.orientation == '-y':
-            wall(world, '+y', SIZE, self.pos)
+            if not self._randflags[0]:
+                wall(world, '+y', SIZE, self.pos)
             wall(world, '+x', SIZE, self.pos)
             wall(world, '-x', SIZE, self.pos)
         else:
@@ -867,30 +862,71 @@ class _LargeRoom(_3X3Room):
             self._randflags = randflags
 
     def get_positions(self):
-        positions = [
-            mv(self.pos , m(-1 , -1 , 0)) ,
-            mv(self.pos , m(-1 , 0  , 0)) ,
-            mv(self.pos , m(-1 , 1  , 0)) ,
-            mv(self.pos , m(0  , -1 , 0)) ,
-            mv(self.pos , m(0  , 0  , 0)) ,
-            mv(self.pos , m(0  , 1  , 0)) ,
-            mv(self.pos , m(1  , -1 , 0)) ,
-            mv(self.pos , m(1  , 0  , 0)) ,
-            mv(self.pos , m(1  , 1  , 0)) ,
-        ]
-        if self._randflags[1]:
+        positions = []
+        for z in range(self._height):
             positions += [
-                mv(self.pos , m(-1 , -1 , 1)) ,
-                mv(self.pos , m(-1 , 0  , 1)) ,
-                mv(self.pos , m(-1 , 1  , 1)) ,
-                mv(self.pos , m(0  , -1 , 1)) ,
-                mv(self.pos , m(0  , 0  , 1)) ,
-                mv(self.pos , m(0  , 1  , 1)) ,
-                mv(self.pos , m(1  , -1 , 1)) ,
-                mv(self.pos , m(1  , 0  , 1)) ,
-                mv(self.pos , m(1  , 1  , 1)) ,
+                mv(self.pos , m(-1 , -1 , z)),
+                mv(self.pos , m(-1 , 0  , z)),
+                mv(self.pos , m(-1 , 1  , z)),
+                mv(self.pos , m(0  , -1 , z)),
+                mv(self.pos , m(0  , 0  , z)),
+                mv(self.pos , m(0  , 1  , z)),
+                mv(self.pos , m(1  , -1 , z)),
+                mv(self.pos , m(1  , 0  , z)),
+                mv(self.pos , m(1  , 1  , z)),
             ]
         return positions
+
+
+class PoleRoom(_LargeRoom):
+    _height = 1
+    _randflags = (
+        True, # Floating
+        True, # Tall
+    )
+
+    def render(self, world, xmap):
+        if self._randflags[0]:
+            self._height = 2
+
+        self.light(xmap)
+        # size = 24
+        wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)))
+        if self._randflags[1]:
+            wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, self._height)))
+
+        for i in range(-8, 15):
+            for j in range(-8, 15):
+                if random.random() < 0.05:
+                    if False and self._randflags[0]:
+                        column(
+                            world, 'z',
+                            random.randint(0, 8 * self._height),
+                            mv(self.pos, (i, j, 0)),
+                            tex=random.randint(712, 715)
+                        )
+                    else:
+                        offset = random.randint(1, 8 * self._height / 2)
+                        column(
+                            world, 'z',
+                            (8 * self._height) - (2 * offset),
+                            mv(self.pos, (i, j, offset)),
+                            tex=random.randint(161, 179)
+                        )
+
+    def light(self, xmap):
+        light = Light(
+            xyz=m(
+                SIZE_OFFSET * (self.pos[0] + 3),
+                SIZE_OFFSET * (self.pos[1] + 4),
+                SIZE_OFFSET * (self.pos[2] + 7),
+            ),
+            red=255,
+            green=255,
+            blue=255,
+            radius=SIZE_OFFSET * 256,
+        )
+        xmap.ents.append(light)
 
 
 class ImposingBlockRoom(_LargeRoom):
@@ -902,13 +938,17 @@ class ImposingBlockRoom(_LargeRoom):
     )
 
     def render(self, world, xmap):
+        if self._randflags[1]:
+            self._height = 2
+
         self.light(xmap)
         # size = 24
         wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)))
         if self._randflags[0]:
             wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, self._height)))
 
-        tex = random.randint(170, 181)
+        # tex = random.randint(161, 169)
+        tex = random.randint(712, 715)
         if self._randflags[2]:
             cube_s(world, random.randint(4,7), mv(self.pos, (7, 7, 0)), tex=tex)
             cube_s(world, random.randint(4,7), mv(self.pos, (-5, 7, 0)), tex=tex)
@@ -1223,3 +1263,193 @@ class Stair(_OrientedRoom):
             self.pos, # Self
             mv(self.pos, m(0, 0, 1)) # Above self
         ]
+
+
+class CrossingWalkways(_LargeRoom):
+    _height = 2
+    _randflags = (
+        True, # 2 or 3 units tall
+    )
+
+    def render(self, world, xmap):
+        self.light(xmap)
+        if self._randflags[0]:
+            self._height = 3
+
+        # Corners are up 1
+        tex2 = random.randint(92, 115)
+
+        wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 0)), tex=tex2)
+        wall(world, '-z', SIZE, mv(self.pos, m( 0, 0, 0)), tex=tex2)
+        wall(world, '-z', SIZE, mv(self.pos, m( 1, 0, 0)), tex=tex2)
+
+        wall(world, '-z', SIZE, mv(self.pos, m(0, -1, 1)), tex=tex2)
+        wall(world, '-z', SIZE, mv(self.pos, m(0,  0, 1)), tex=tex2)
+        wall(world, '-z', SIZE, mv(self.pos, m(0,  1, 1)), tex=tex2)
+
+        if self._randflags[0]:
+            wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 2)), tex=tex2)
+            wall(world, '-z', SIZE, mv(self.pos, m( 0, 0, 2)), tex=tex2)
+            wall(world, '-z', SIZE, mv(self.pos, m( 1, 0, 2)), tex=tex2)
+
+    def _get_doorways(self):
+        doors = [
+            m(-2, 0, 0),
+            m(2, 0, 0),
+            m(0, -2, 1),
+            m(0, 2, 1),
+        ]
+
+        if self._randflags[0]:
+            doors += [
+                m(-2, 0, 2),
+                m(2, 0, 2),
+            ]
+
+        return doors
+
+    def get_positions(self):
+        positions = []
+        for z in range(self._height):
+            positions += [
+                mv(self.pos , m(-1 , -1 , z)),
+                mv(self.pos , m(-1 , 0  , z)),
+                mv(self.pos , m(-1 , 1  , z)),
+                mv(self.pos , m(0  , -1 , z)),
+                mv(self.pos , m(0  , 0  , z)),
+                mv(self.pos , m(0  , 1  , z)),
+                mv(self.pos , m(1  , -1 , z)),
+                mv(self.pos , m(1  , 0  , z)),
+                mv(self.pos , m(1  , 1  , z)),
+            ]
+        return positions
+
+
+class MultiPlatform(_LargeRoom):
+    _height = 3
+
+    def render(self, world, xmap):
+        self.light(xmap)
+
+        # size = 24
+        wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=random.randint(92, 115))
+
+        # Corners are up 1
+        tex1 = random.randint(92, 115)
+        tex2 = random.randint(92, 115)
+
+        wall(world, '-z', SIZE, mv(self.pos, m(1, 1, 0.50)), tex=tex1)
+        wall(world, '-z', SIZE, mv(self.pos, m(-1, -1, 0.50)), tex=tex1)
+        wall(world, '-z', SIZE, mv(self.pos, m(1, -1, 1)), tex=tex2)
+        wall(world, '-z', SIZE, mv(self.pos, m(-1, 1, 1)), tex=tex2)
+
+        wall(world, '-z', SIZE, mv(self.pos, m(1, 0, 1.5)), tex=tex1)
+        wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 1.50)), tex=tex1)
+
+        wall(world, '-z', SIZE, mv(self.pos, m(0, 1, 2)), tex=tex2)
+        wall(world, '-z', SIZE, mv(self.pos, m(0, -1, 2)), tex=tex2)
+
+    def _get_doorways(self):
+        return [
+            m(-2, 0, 0),
+            m(2, 0, 0),
+            m(0, -2, 0),
+            m(0, 2, 0),
+
+            m(2, -1, 1),
+            m(1, -2, 1),
+
+            m(-1, 2, 1),
+            m(-2, 1, 1),
+
+            m(0, -2, 2),
+            m(0, 2, 2),
+        ]
+
+    def light(self, xmap):
+        light = Light(
+            xyz=m(
+                SIZE_OFFSET * (self.pos[0] + 4),
+                SIZE_OFFSET * (self.pos[1] + 4),
+                SIZE_OFFSET * (self.pos[2] + 16),
+            ),
+            red=255,
+            green=255,
+            blue=255,
+            radius=SIZE_OFFSET * 256,
+        )
+        xmap.ents.append(light)
+
+
+class DigitalRoom(_LargeRoom):
+    room_type = 'hallway'
+    _height = 1
+    _randflags = (
+        True, # Roof
+        True, # Tall
+        True, # Density Low / High
+    )
+
+    def render(self, world, xmap):
+        self.light(xmap)
+        if self._randflags[1]:
+            self._height = 2
+
+        prob = 0.3
+        if self._randflags[2]:
+            prob = 0.7
+
+        # size = 24
+        faded_wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=random.randint(92, 115), prob=0.9)
+        if self._randflags[1]:
+            faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -1)), tex=random.randint(92, 115), prob=prob)
+        else:
+            faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -2)), tex=random.randint(92, 115), prob=prob)
+
+        wall_tex = random.randint(92, 115)
+        #wall_tex = 644
+        faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=prob)
+        faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, 1, 0)), tex=wall_tex, prob=prob)
+        if self._randflags[1]:
+            faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, -1, 1)), tex=wall_tex, prob=prob)
+            faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, 0, 1)), tex=wall_tex, prob=prob)
+            faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, 1, 1)), tex=wall_tex, prob=prob)
+
+        faded_wall(world, '+x', SIZE, mv(self.pos, m(1, -1, 0)), tex=wall_tex, prob=prob)
+        faded_wall(world, '+x', SIZE, mv(self.pos, m(1, 1, 0)), tex=wall_tex, prob=prob)
+        if self._randflags[1]:
+            faded_wall(world, '+x', SIZE, mv(self.pos, m(1, -1, 1)), tex=wall_tex, prob=prob)
+            faded_wall(world, '+x', SIZE, mv(self.pos, m(1, 0, 1)), tex=wall_tex, prob=prob)
+            faded_wall(world, '+x', SIZE, mv(self.pos, m(1, 1, 1)), tex=wall_tex, prob=prob)
+
+        faded_wall(world, '-y', SIZE, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=prob)
+        faded_wall(world, '-y', SIZE, mv(self.pos, m(1, -1, 0)), tex=wall_tex, prob=prob)
+        if self._randflags[1]:
+            faded_wall(world, '-y', SIZE, mv(self.pos, m(-1, -1, 1)), tex=wall_tex, prob=prob)
+            faded_wall(world, '-y', SIZE, mv(self.pos, m(0, -1, 1)), tex=wall_tex, prob=prob)
+            faded_wall(world, '-y', SIZE, mv(self.pos, m(1, -1, 1)), tex=wall_tex, prob=prob)
+
+        faded_wall(world, '+y', SIZE, mv(self.pos, m(-1, 1, 0)), tex=wall_tex, prob=prob)
+        faded_wall(world, '+y', SIZE, mv(self.pos, m(1, 1, 0)), tex=wall_tex, prob=prob)
+        if self._randflags[1]:
+            faded_wall(world, '+y', SIZE, mv(self.pos, m(-1, 1, 1)), tex=wall_tex, prob=prob)
+            faded_wall(world, '+y', SIZE, mv(self.pos, m(0, 1, 1)), tex=wall_tex, prob=prob)
+            faded_wall(world, '+y', SIZE, mv(self.pos, m(1, 1, 1)), tex=wall_tex, prob=prob)
+
+    def light(self, xmap):
+        (r, g, b) = posColor(self.pos)
+        h = 6
+        if self._height > 1:
+            h = 14
+        light = Light(
+            xyz=m(
+                SIZE_OFFSET * (self.pos[0] + 4),
+                SIZE_OFFSET * (self.pos[1] + 4),
+                SIZE_OFFSET * (self.pos[2] + h),
+            ),
+            red=r,
+            green=g,
+            blue=b,
+            radius=SIZE_OFFSET * 256,
+        )
+        xmap.ents.append(light)

@@ -2,17 +2,17 @@
 from redeclipse.voxel import VoxelWorld
 from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
-from redeclipse.prefabs import m, BaseRoom, AltarRoom, \
-    Corridor2way, Corridor4way, \
-    Stair, SpawnRoom, NLongCorridor, TestRoom, \
-    JumpCorridor3, JumpCorridorVertical, ImposingRingRoom, ImposingBlockRoom
+from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
+import sys
+import traceback
 import argparse
 import random
 
 
 def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     random.seed(seed)
+    p.updateSizeOffset(size)
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
 
@@ -33,17 +33,22 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         """Pick out a random room based on the connecting room and the
         transition probabilities of that room."""
         possible_rooms =  [
-            BaseRoom,
-            SpawnRoom,
-            JumpCorridor3,
-            Corridor4way,
-            Stair,
-            Corridor2way,
-            AltarRoom,
-            ImposingRingRoom,
-            ImposingBlockRoom,
-            JumpCorridorVertical,
-            NLongCorridor,
+            p.BaseRoom,
+            p.SpawnRoom,
+            p.JumpCorridor3,
+            p.Corridor4way,
+            p.Stair,
+            p.PoleRoom,
+            p.Corridor2way,
+            p.AltarRoom,
+            p.ImposingRingRoom,
+            p.ImposingBlockRoom,
+            p.JumpCorridorVertical,
+            p.NLongCorridor,
+            p.MultiPlatform,
+            p.DigitalRoom,
+            p.CrossingWalkways,
+
         ]
 
         choices = []
@@ -63,9 +68,9 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
 
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.
-    starting_position = m(6, 6, 3)
+    starting_position = p.m(6, 6, 3)
     # We use the spawn room as our base starting room
-    b = SpawnRoom(pos=starting_position, orientation="+y")
+    b = p.SpawnRoom(pos=starting_position, orientation="+y")
     # Register our new room
     upm.register_room(b)
     # Render it to the map
@@ -118,7 +123,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
 
     if debug:
         for (pos, typ, ori) in upm.unoccupied:
-            r = TestRoom(pos, orientation='+x')
+            r = p.TestRoom(pos, orientation='+x')
             r.render(v, mymap)
 
 
