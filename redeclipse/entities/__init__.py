@@ -4,7 +4,7 @@ from redeclipse.enums import EntType, WeaponType
 class Entity:
 
     def __init__(self, xyz, type, attrs, links, reserved):
-        self.o = ivec3(x[0], y[0], z[0])
+        self.o = ivec3(*xyz)
         self.type = type
         self.attrs = attrs
         if self.type == EntType.ET_WEAPON:
@@ -32,8 +32,13 @@ class Entity:
             self.attr_annotations = [
                 'yaw', 'pitch', 'force', 'maxrad', 'minrad', 'type'
             ]
+        elif self.type == EntType.ET_LIGHT:
+            self.attr_annotations = [
+                'radius', 'red', 'green', 'blue', 'flare', 'flarescale',
+            ]
+
         else:
-            raise Exception("Cannot serialize, please specify attrs")
+            raise Exception("Cannot serialize %s, please specify attrs", self.type)
 
         # Must have right # of attrs.
         assert len(self.attrs) == len(self.attr_annotations)

@@ -4,6 +4,7 @@ We can't work with octrees. Just... no.
 So we work in a voxel world, and then convert this to an octree with the small
 resolution cube that makes sense, and then let RE optimise the map when need be.
 """
+import sys
 from redeclipse.objects import cube
 from redeclipse.enums import OCT
 import logging
@@ -17,9 +18,12 @@ class VoxelWorld:
         # Size defines number of cubes from left to right.
         self.size = size
         self.world = {}
+        self.heighest_point = 0
 
     def set_point(self, x, y, z, data):
         log.debug("set_point (%d, %d, %d)", x, y, z)
+        if z > self.heighest_point:
+            self.heighest_point = z
         self.world[x, y, z] = data
 
     def del_point(self, x, y, z):

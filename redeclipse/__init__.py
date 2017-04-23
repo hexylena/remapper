@@ -472,7 +472,7 @@ class MapParser(object):
             for j in range(link_count):
                 links.append(self.read_int())
 
-            e = Entity(x, y, z, EntType(ord(etype)), attrs, links, reserved)
+            e = Entity((x, y, z), EntType(ord(etype)), attrs, links, reserved)
             ents.append(e)
         return ents
 

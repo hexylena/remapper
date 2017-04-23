@@ -27,7 +27,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             upto += w
         assert False, "Shouldn't get here"
 
-    def mirror(d):
+    def mirror1(d):
         if isinstance(d, dict):
             if '-' in kwargs['orientation']:
                 kwargs['orientation'] = kwargs['orientation'].replace('-', '+')
@@ -41,28 +41,63 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
                 d[2]
             )
 
+    def mirror2(d):
+        if isinstance(d, dict):
+            if 'x' in kwargs['orientation']:
+                kwargs['orientation'] = kwargs['orientation'].replace('x', 'y')
+            else:
+                kwargs['orientation'] = kwargs['orientation'].replace('y', 'x')
+            return kwargs
+        else:
+            return (
+                room_counts - d[0],
+                d[1],
+                d[2]
+            )
+
+    def mirror3(d):
+        if isinstance(d, dict):
+            if 'x' in kwargs['orientation']:
+                kwargs['orientation'] = kwargs['orientation'].replace('x', 'y')
+            else:
+                kwargs['orientation'] = kwargs['orientation'].replace('y', 'x')
+            return kwargs
+
+            if '-' in kwargs['orientation']:
+                kwargs['orientation'] = kwargs['orientation'].replace('-', '+')
+            else:
+                kwargs['orientation'] = kwargs['orientation'].replace('+', '-')
+            return kwargs
+        else:
+            return (
+                d[0],
+                room_counts - d[1],
+                d[2]
+            )
+
+
+
     def random_room(connecting_room):
         """Pick out a random room based on the connecting room and the
         transition probabilities of that room."""
-        possible_rooms = [
+        possible_rooms =  [
             # p.BaseRoom,
-            p.SpawnRoom,
+            # p.SpawnRoom,
             # p.JumpCorridor3,
             # p.Corridor4way,
+            # p.Stair,
             # p.PoleRoom,
-            # p.Corridor2way,
+            p.Corridor2way,
             # p.AltarRoom,
             # p.ImposingRingRoom,
             # p.ImposingBlockRoom,
             # p.JumpCorridorVertical,
-            p.Stair,
             p.NLongCorridor,
-            p.MultiPlatform,
-            p.DigitalRoom,
-            p.CrossingWalkways,
-            p.JumpCorridorVerticalCenter,
-            p.PlusPlatform,
-            # p.DoricTemple,
+            # p.MultiPlatform,
+            # p.DigitalRoom,
+            # p.CrossingWalkways,
+            # p.JumpCorridorVerticalCenter,
+            # p.PlusPlatform,
         ]
 
         choices = []
@@ -82,16 +117,22 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
 
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.
-    starting_position = p.m(4, 4, 3)
+    starting_position = p.m(2, 5, 3)
     # We use the spawn room as our base starting room
-    b = p.SpawnRoom(pos=starting_position, orientation="+y")
-    b_m = p.SpawnRoom(pos=mirror(starting_position), orientation="-y")
+    b_xp = p.SpawnRoom(pos=starting_position, orientation="+y")
+    b_xm = p.SpawnRoom(pos=mirror1(starting_position), orientation="-y")
+    b_yp = p.SpawnRoom(pos=mirror2(starting_position), orientation="+x")
+    b_ym = p.SpawnRoom(pos=mirror3(starting_position), orientation="-x")
     # Register our new room
-    upm.register_room(b)
-    upm.register_room(b_m)
+    upm.register_room(b_xp)
+    upm.register_room(b_xm)
+    upm.register_room(b_yp)
+    upm.register_room(b_ym)
     # Render it to the map
-    b.render(v, mymap)
-    b_m.render(v, mymap)
+    b_xp.render(v, mymap)
+    b_xm.render(v, mymap)
+    b_yp.render(v, mymap)
+    b_ym.render(v, mymap)
     # Convert rooms to int
     rooms = int(rooms)
     sunlight = Sunlight(
@@ -120,22 +161,30 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         # Get a random room, influenced by the prev_room
         roomClass = random_room(prev_room)
         kwargs.update(roomClass.randOpts(prev_room))
+        print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, position, orientation))
+        print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, mirror1(position), orientation))
+        print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, mirror2(position), orientation))
+        print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, mirror3(position), orientation))
         # Initialize room, required to correctly calculate get_positions()
-        r = roomClass(pos=position, **kwargs)
-        r_m = roomClass(pos=mirror(position), **mirror(kwargs))
+        r_1 = roomClass(pos=position, **kwargs)
+        r_2 = roomClass(pos=mirror1(position), **mirror1(kwargs))
+        r_3 = roomClass(pos=mirror2(position), **mirror2(kwargs))
+        r_4 = roomClass(pos=mirror3(position), **mirror3(kwargs))
         # Try adding it
         try:
-            if not upm.preregister_rooms(r, r_m):
+            if not upm.preregister_rooms(r_1, r_2, r_3, r_4):
                 raise Exception("would fail on one or more rooms")
             # This step might raise an exception
-            upm.register_room(r)
-            upm.register_room(r_m)
-            print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, position, kwargs['orientation']))
-            print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, mirror(position), mirror(kwargs)['orientation']))
+            upm.register_room(r_1)
+            upm.register_room(r_2)
+            upm.register_room(r_3)
+            upm.register_room(r_4)
             # If we get here, we've placed successfully so bump count + render
-            room_count += 2
-            r.render(v, mymap)
-            r_m.render(v, mymap)
+            room_count += 4
+            r_1.render(v, mymap)
+            r_2.render(v, mymap)
+            r_3.render(v, mymap)
+            r_4.render(v, mymap)
         except Exception as e:
             # We have failed to register the room because
             # it does not fit here.
@@ -149,10 +198,6 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             r = p.TestRoom(pos, orientation='+x')
             r.render(v, mymap)
 
-
-    from redeclipse.aftereffects import vertical_gradient, vertical_gradient2inv, decay, growth
-    # decay(v, vertical_gradient)
-    growth(v, vertical_gradient2inv)
 
     # Standard code to render octree to file.
     mymap.world = v.to_octree()
