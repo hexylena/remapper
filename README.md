@@ -19,6 +19,10 @@ See the [maps folder](./maps/) for screenshots and maps you can play
 
 ## Updates
 
+Some new features and new rooms:
+
+![](./maps/straumsvik.screenshot.png)
+
 First enjoyable map: Trollskogen
 
 ![](./maps/trollskogen-big.png)
