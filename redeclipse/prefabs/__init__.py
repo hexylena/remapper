@@ -13,6 +13,14 @@ _BUILTIN_SIZE = 2 ** 7
 _REAL_SIZE = 2 ** 8
 SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
 
+DEFAULT_TRANSITION_MATIX = [
+    #h  hj   p  ps   v
+    [0,  0,  0,  0,  0], # 'hallway'
+    [    0,  0,  0,  0], # 'hallway_jump'
+    [        0,  0,  0], # 'platform'
+    [            0,  0], # 'platform_setpiece'
+    [                0], # 'vertical'
+]
 
 def posColor(pos):
     nums = list(map(
@@ -71,7 +79,7 @@ class _Room:
         return {
             'platform': 0.1,
             'platform_setpiece': 0.05,
-            'vertical': 0.3,
+            'vertical': 0.5,
             'hallway': 0.8,
             'hallway_jump': 0.4,
         }
@@ -158,7 +166,7 @@ class _OrientedRoom(_Room):
             'hallway_jump': 0.8,
             'platform_setpiece': 0.2,
             'platform': 0.6,
-            'vertical': 0.3,
+            'vertical': 1.3,
         }
 
     def __init__(self, pos, orientation='+x', randflags=None):
@@ -372,6 +380,35 @@ class NLongCorridor(_OrientedRoom):
             ]
         else:
             raise Exception("Unknown Orientation")
+
+
+class LongCorridor2(NLongCorridor):
+    room_type = 'hallway'
+
+    def __init__(self, pos, orientation='+x', tex=504, randflags=None):
+        self.orientation = orientation
+        self.pos = pos
+        self.tex = tex
+        if randflags:
+            self._randflags = randflags
+        self.length = 2
+
+    def render(self, world, xmap):
+        # First tile
+        wall(world, '-z', SIZE, self.pos, tex=504)
+
+        for i in range(1, self.length):
+            if self.orientation == '-x':
+                wall(world, '-z', SIZE, mv(self.pos, m(i, 0, 0)), tex=self.tex)
+            elif self.orientation == '+x':
+                wall(world, '-z', SIZE, mv(self.pos, m(-i, 0, 0)), tex=self.tex)
+            elif self.orientation == '-y':
+                wall(world, '-z', SIZE, mv(self.pos, m(0, i, 0)), tex=self.tex)
+            elif self.orientation == '+y':
+                wall(world, '-z', SIZE, mv(self.pos, m(0, -i, 0)), tex=self.tex)
+            else:
+                raise Exception("Unknown Orientation")
+        self.light(xmap)
 
 
 class Corridor2way(_OrientedRoom):
@@ -657,7 +694,7 @@ class JumpCorridorVertical(_OrientedRoom):
 
     def render(self, world, xmap):
         wall(world, '-z', SIZE, self.pos, tex=random.randint(92, 115))
-        wall(world, '+z', SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
+        #wall(world, '+z', SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
         self.light(xmap)
 
         (a, b, c) = self.pos
@@ -764,27 +801,35 @@ class JumpCorridorVertical(_OrientedRoom):
 
 
 class JumpCorridorVerticalCenter(JumpCorridorVertical):
-    def _get_doorways(self):
-        return [
-            m(1, 0, 0),
-            m(-1, 0, 0),
-            m(0, 1, 0),
-            m(0, -1, 0),
+    length = 1
+    _randflags = (
+        True, # Tall
+        True, # Rings
+    )
 
-            m(1, 0, 2),
-            m(-1, 0, 2),
-            m(0, 1, 2),
-            m(0, -1, 2),
-        ]
+    def __init__(self, pos, orientation='+x', roof=False, tex=506, randflags=None):
+        self.pos = pos
+        self.orientation = orientation
+        self.roof = roof
+        self.tex = tex
+        if randflags:
+            self._randflags = randflags
+        if self._randflags[0]:
+            self.length = 2
 
     def render(self, world, xmap):
         wall(world, '-z', SIZE, self.pos, tex=random.randint(92, 115))
-        wall(world, '+z', SIZE, mv(self.pos, m(0, 0, 2)), tex=self.tex)
         self.light(xmap)
 
         (a, b, c) = self.pos
         #Walls
-        multi_wall(world, ('-x', '+x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, 1)), tex=self.tex)
+        for i in range(1, self.length + 1):
+            if self._randflags[1]:
+                multi_wall(world, ('-x', '+x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, i)), tex=self.tex)
+            else:
+                for j in range(i * 8, (i + 1) * 8):
+                    ring(world, mv(self.pos, (0, 0, j)), size=8, tex=self.tex, thickness=1)
+
         # Red markers
         rectangular_prism(world, 4, 4, 1, (a + 2, b + 2, c), tex=self.tex + 1)
         pusher_a = Pusher(
@@ -797,10 +842,21 @@ class JumpCorridorVerticalCenter(JumpCorridorVertical):
         xmap.ents.append(pusher_a)
 
     def get_positions(self):
+        p = [self.pos]
+        for i in range(1, self.length + 2):
+            p.append(mv(self.pos, m(0, 0, 1)))
+
+    def _get_doorways(self):
         return [
-            self.pos,
-            mv(self.pos, m(0, 0, 1)),
-            mv(self.pos, m(0, 0, 2)),
+            m(1, 0, 0),
+            m(-1, 0, 0),
+            m(0, 1, 0),
+            m(0, -1, 0),
+
+            m(1, 0, self.length + 1),
+            m(-1, 0, self.length + 1),
+            m(0, 1, self.length + 1),
+            m(0, -1, self.length + 1),
         ]
 
 
@@ -1250,10 +1306,10 @@ class Stair(_OrientedRoom):
     def get_transition_probs(cls):
         # stair
         return {
-            'platform': 0.2,
-            'platform_setpiece': 0.4,
-            'hallway': 0.6,
-            'vertical': 0.6,
+            'platform': 1.2,
+            'platform_setpiece': 0.2,
+            'hallway': 1.6,
+            'vertical': 1.0,
             'hallway_jump': 0.2,
         }
 
@@ -1558,13 +1614,14 @@ class DigitalRoom(_LargeRoom):
         if self._randflags[2]:
             prob = 0.7
 
-        wall_tex = random.randint(418, 423)
+        ceil_tex = random.randint(482, 483)
+        wall_tex = random.randint(418, 422)
         # size = 24
-        faded_wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=0.9)
+        faded_wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=ceil_tex, prob=0.9)
         if self._randflags[1]:
-            faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -1)), tex=wall_tex, prob=prob)
+            faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -1)), tex=ceil_tex, prob=prob)
         else:
-            faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -2)), tex=wall_tex, prob=prob)
+            faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -2)), tex=ceil_tex, prob=prob)
 
         #wall_tex = 644
         faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=prob)

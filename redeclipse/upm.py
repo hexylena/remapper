@@ -1,5 +1,8 @@
+import math
+import sys
 import random
 import copy
+from redeclipse.cli import weighted_choice
 
 
 class UnusedPositionManager:
@@ -97,3 +100,17 @@ class UnusedPositionManager:
         else:
             raise Exception("No more space!")
 
+    def nrp_flavour_center_hole(self, x, y, z):
+        return math.pow(z, 5) #+ math.log10(math.pow(x, 4))
+
+    def nonrandom_position(self, flavour_function):
+        """Non-randomly select doorway to use"""
+        choices = [
+            (idx, flavour_function(*posD[0]))
+            for idx, posD in enumerate(self.unoccupied)
+        ]
+
+        if len(self.occupied) > 0:
+            return self.unoccupied[weighted_choice(choices)]
+        else:
+            raise Exception("No more space!")

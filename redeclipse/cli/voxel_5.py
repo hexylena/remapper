@@ -1,11 +1,15 @@
 #!/usr/bin/env python
+import argparse
+import random
+import logging
 from redeclipse.voxel import VoxelWorld
-from redeclipse.cli import parse
+from redeclipse.cli import parse, weighted_choice
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
-import argparse
-import random
+from tqdm import tqdm
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
 
 
 def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
@@ -14,20 +18,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     v = VoxelWorld(size=size)
     room_counts = size
 
-    def weighted_choice(choices):
-        """Weighted random distribution. Given a list like [('a', 1), ('b', 2)]
-        will return a 33% of the time and b 66% of the time."""
-        # http://stackoverflow.com/a/3679747
-        total = sum(w for c, w in choices)
-        r = random.uniform(0, total)
-        upto = 0
-        for c, w in choices:
-            if upto + w >= r:
-                return c
-            upto += w
-        assert False, "Shouldn't get here"
-
-    def mirror1(d):
+    def mirror(d):
         if isinstance(d, dict):
             if '-' in kwargs['orientation']:
                 kwargs['orientation'] = kwargs['orientation'].replace('-', '+')
@@ -40,64 +31,31 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
                 room_counts - d[1],
                 d[2]
             )
-
-    def mirror2(d):
-        if isinstance(d, dict):
-            if 'x' in kwargs['orientation']:
-                kwargs['orientation'] = kwargs['orientation'].replace('x', 'y')
-            else:
-                kwargs['orientation'] = kwargs['orientation'].replace('y', 'x')
-            return kwargs
-        else:
-            return (
-                room_counts - d[0],
-                d[1],
-                d[2]
-            )
-
-    def mirror3(d):
-        if isinstance(d, dict):
-            if 'x' in kwargs['orientation']:
-                kwargs['orientation'] = kwargs['orientation'].replace('x', 'y')
-            else:
-                kwargs['orientation'] = kwargs['orientation'].replace('y', 'x')
-            return kwargs
-
-            if '-' in kwargs['orientation']:
-                kwargs['orientation'] = kwargs['orientation'].replace('-', '+')
-            else:
-                kwargs['orientation'] = kwargs['orientation'].replace('+', '-')
-            return kwargs
-        else:
-            return (
-                d[0],
-                room_counts - d[1],
-                d[2]
-            )
-
-
 
     def random_room(connecting_room):
         """Pick out a random room based on the connecting room and the
         transition probabilities of that room."""
-        possible_rooms =  [
-            # p.BaseRoom,
-            # p.SpawnRoom,
+        possible_rooms = [
+            p.BaseRoom,
+            p.SpawnRoom,
             # p.JumpCorridor3,
             # p.Corridor4way,
-            # p.Stair,
             # p.PoleRoom,
-            p.Corridor2way,
+            # p.Corridor2way,
             # p.AltarRoom,
             # p.ImposingRingRoom,
             # p.ImposingBlockRoom,
             # p.JumpCorridorVertical,
-            p.NLongCorridor,
+            p.Stair,
+            p.LongCorridor2,
+            # p.NLongCorridor,
             # p.MultiPlatform,
-            # p.DigitalRoom,
+            p.DigitalRoom,
             # p.CrossingWalkways,
-            # p.JumpCorridorVerticalCenter,
-            # p.PlusPlatform,
+            p.JumpCorridorVerticalCenter,
+            p.PlusPlatform,
+            # p.FlatSpace,
+            # p.DoricTemple,
         ]
 
         choices = []
@@ -117,22 +75,16 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
 
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.
-    starting_position = p.m(2, 5, 3)
+    starting_position = p.m(4, 4, 3)
     # We use the spawn room as our base starting room
-    b_xp = p.SpawnRoom(pos=starting_position, orientation="+y")
-    b_xm = p.SpawnRoom(pos=mirror1(starting_position), orientation="-y")
-    b_yp = p.SpawnRoom(pos=mirror2(starting_position), orientation="+x")
-    b_ym = p.SpawnRoom(pos=mirror3(starting_position), orientation="-x")
+    b = p.SpawnRoom(pos=starting_position, orientation="+y")
+    b_m = p.SpawnRoom(pos=mirror(starting_position), orientation="-y")
     # Register our new room
-    upm.register_room(b_xp)
-    upm.register_room(b_xm)
-    upm.register_room(b_yp)
-    upm.register_room(b_ym)
+    upm.register_room(b)
+    upm.register_room(b_m)
     # Render it to the map
-    b_xp.render(v, mymap)
-    b_xm.render(v, mymap)
-    b_yp.render(v, mymap)
-    b_ym.render(v, mymap)
+    b.render(v, mymap)
+    b_m.render(v, mymap)
     # Convert rooms to int
     rooms = int(rooms)
     sunlight = Sunlight(
@@ -144,60 +96,61 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     mymap.ents.append(sunlight)
 
     room_count = 0
-    while True:
-        # Continually try and place rooms until we hit 200.
-        if room_count >= rooms:
-            break
-        # Pick a random position for this notional room to go
-        try:
-            (position, prev_room, orientation) = upm.random_position()
-        except Exception as e:
-            # If we have no more positions left, break.
-            print(e)
-            break
 
-        # If we are here, we do have a position + orientation to place in
-        kwargs = {'orientation': orientation}
-        # Get a random room, influenced by the prev_room
-        roomClass = random_room(prev_room)
-        kwargs.update(roomClass.randOpts(prev_room))
-        print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, position, orientation))
-        print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, mirror1(position), orientation))
-        print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, mirror2(position), orientation))
-        print("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, mirror3(position), orientation))
-        # Initialize room, required to correctly calculate get_positions()
-        r_1 = roomClass(pos=position, **kwargs)
-        r_2 = roomClass(pos=mirror1(position), **mirror1(kwargs))
-        r_3 = roomClass(pos=mirror2(position), **mirror2(kwargs))
-        r_4 = roomClass(pos=mirror3(position), **mirror3(kwargs))
-        # Try adding it
-        try:
-            if not upm.preregister_rooms(r_1, r_2, r_3, r_4):
-                raise Exception("would fail on one or more rooms")
-            # This step might raise an exception
-            upm.register_room(r_1)
-            upm.register_room(r_2)
-            upm.register_room(r_3)
-            upm.register_room(r_4)
-            # If we get here, we've placed successfully so bump count + render
-            room_count += 4
-            r_1.render(v, mymap)
-            r_2.render(v, mymap)
-            r_3.render(v, mymap)
-            r_4.render(v, mymap)
-        except Exception as e:
-            # We have failed to register the room because
-            # it does not fit here.
-            # So, we continue.
-            if debug:
+    logging.info("Placing rooms")
+    with tqdm(total=rooms) as pbar:
+        while True:
+            # Continually try and place rooms until we hit 200.
+            if room_count >= rooms:
+                break
+            # Pick a random position for this notional room to go
+            try:
+                (position, prev_room, orientation) = upm.nonrandom_position(upm.nrp_flavour_center_hole)
+            except Exception as e:
+                # If we have no more positions left, break.
                 print(e)
-            continue
+                break
+
+            # If we are here, we do have a position + orientation to place in
+            kwargs = {'orientation': orientation}
+            # Get a random room, influenced by the prev_room
+            roomClass = random_room(prev_room)
+            kwargs.update(roomClass.randOpts(prev_room))
+            # Initialize room, required to correctly calculate get_positions()
+            r = roomClass(pos=position, **kwargs)
+            r_m = roomClass(pos=mirror(position), **mirror(kwargs))
+            # Try adding it
+            try:
+                if not upm.preregister_rooms(r, r_m):
+                    raise Exception("would fail on one or more rooms")
+                # This step might raise an exception
+                upm.register_room(r)
+                upm.register_room(r_m)
+
+                pbar.update(2)
+                pbar.set_description('%3d' % v.heighest_point)
+                # pbar.set_description("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, position, kwargs['orientation']))
+                # If we get here, we've placed successfully so bump count + render
+                room_count += 2
+                r.render(v, mymap)
+                r_m.render(v, mymap)
+            except Exception as e:
+                # We have failed to register the room because
+                # it does not fit here.
+                # So, we continue.
+                if debug:
+                    print(e)
+                continue
 
     if debug:
         for (pos, typ, ori) in upm.unoccupied:
             r = p.TestRoom(pos, orientation='+x')
             r.render(v, mymap)
 
+
+    from redeclipse.aftereffects import grid, decay, gradient3
+    grid(v, size=48)
+    # decay(v, gradient3)
 
     # Standard code to render octree to file.
     mymap.world = v.to_octree()
