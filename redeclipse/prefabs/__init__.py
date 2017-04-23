@@ -2,7 +2,7 @@ from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
 from redeclipse.entities.weapon import Grenade
 from redeclipse.prefabs.construction_kit import wall, column, mv, \
-    m, low_wall, cube_s, rectangular_prism, ring, multi_wall, rotate, rotate_a, faded_wall
+    m, low_wall, cube_s, rectangular_prism, ring, multi_wall, rotate_a, faded_wall
 import random # noqa
 import noise
 import copy
@@ -242,7 +242,7 @@ class _3X3Room(_Room):
 class BaseRoom(_Room):
     """First real 'room' class."""
 
-    def __init__(self, pos, tex=2, orientation=None, randflags=None):
+    def __init__(self, pos, tex=504, orientation=None, randflags=None):
         """Init is kept separate from rendering, because init sets self.pos,
         and we use that when calling self.get_positions(), which is required as
         part of placement, we wouldn't want to place a partial room."""
@@ -304,7 +304,7 @@ class NLongCorridor(_OrientedRoom):
 
     def render(self, world, xmap):
         # First tile
-        wall(world, '-z', SIZE, self.pos, tex=random.randint(92, 115))
+        wall(world, '-z', SIZE, self.pos, tex=504)
 
         for i in range(1, self.length):
             if self.orientation == '-x':
@@ -317,6 +317,19 @@ class NLongCorridor(_OrientedRoom):
                 wall(world, '-z', SIZE, mv(self.pos, m(0, -i, 0)), tex=self.tex)
             else:
                 raise Exception("Unknown Orientation")
+
+        #for i in range(1, 8 * self.length - 8, 2):
+        #    if self.orientation == '-x':
+        #        column(world, 'z', 3, mv(self.pos, (i, 0, 1)), tex=self.tex)
+        #        column(world, 'z', 3, mv(self.pos, (i, 7, 1)), tex=self.tex)
+        #    elif self.orientation == '+x':
+        #        column(world, 'z', 3, mv(self.pos, (-i, 0, 1)), tex=self.tex)
+        #        column(world, 'z', 3, mv(self.pos, (-i, 7, 1)), tex=self.tex)
+        #    elif self.orientation == '-y':
+        #        wall(world, '-z', SIZE, mv(self.pos, m(0, i, 0)), tex=self.tex)
+        #    elif self.orientation == '+y':
+        #        wall(world, '-z', SIZE, mv(self.pos, m(0, -i, 0)), tex=self.tex)
+
         self.light(xmap)
 
     def get_positions(self):
@@ -368,7 +381,7 @@ class Corridor2way(_OrientedRoom):
         True, # no wall / low wall
     )
 
-    def __init__(self, pos, orientation='+x', tex=2, randflags=None):
+    def __init__(self, pos, orientation='+x', tex=504, randflags=None):
         self.pos = pos
         self.orientation = orientation
         self.tex = tex
@@ -378,7 +391,7 @@ class Corridor2way(_OrientedRoom):
     def render(self, world, xmap):
         self.light(xmap)
 
-        wall(world, '-z', SIZE, self.pos, tex=random.randint(92, 115))
+        wall(world, '-z', SIZE, self.pos, tex=self.tex)
         if self._randflags[0]:
             wall(world, '+z', SIZE, self.pos, tex=self.tex)
 
@@ -400,11 +413,11 @@ class JumpCorridor3(_OrientedRoom):
             'hallway_jump': 0.01,
             'platform': 0.6,
             'platform_setpiece': 0.1,
-            'hallway': 0.6,
+            'hallway': 1.4,
             'vertical': 0.2,
         }
 
-    def __init__(self, pos, orientation='+x', tex=2, randflags=None):
+    def __init__(self, pos, orientation='+x', tex=505, randflags=None):
         self.pos = pos
         self.orientation = orientation
         self.tex = tex
@@ -602,9 +615,9 @@ class JumpCorridorVertical(_OrientedRoom):
     def get_transition_probs(cls):
         return {
             'hallway_jump': 0.2,
-            'platform': 0.3,
+            'platform': 0.5,
             'platform_setpiece': 0.1,
-            'hallway': 0.9,
+            'hallway': 1.3,
             'vertical': 0.1,
         }
 
@@ -630,7 +643,7 @@ class JumpCorridorVertical(_OrientedRoom):
                 m(0, 1, 2),
             ]
 
-    def __init__(self, pos, orientation='+x', roof=False, tex=2, randflags=None):
+    def __init__(self, pos, orientation='+x', roof=False, tex=506, randflags=None):
         self.pos = pos
         self.orientation = orientation
         self.roof = roof
@@ -799,7 +812,7 @@ class Corridor4way(_Room):
         True, # Wall: B
     )
 
-    def __init__(self, pos, orientation=None, tex=2, randflags=None):
+    def __init__(self, pos, orientation=None, tex=504, randflags=None):
         self.pos = pos
         self.tex = tex
         if randflags:
@@ -931,6 +944,24 @@ class _LargeRoom(_3X3Room):
                 mv(self.pos , m(1  , 1  , z)),
             ]
         return positions
+
+    def light(self, xmap):
+        (r, g, b) = posColor(self.pos)
+        h = 6
+        if self._height > 1:
+            h = 14
+        light = Light(
+            xyz=m(
+                SIZE_OFFSET * (self.pos[0] + 4),
+                SIZE_OFFSET * (self.pos[1] + 4),
+                SIZE_OFFSET * (self.pos[2] + h),
+            ),
+            red=r,
+            green=g,
+            blue=b,
+            radius=SIZE_OFFSET * 256,
+        )
+        xmap.ents.append(light)
 
 
 class PoleRoom(_LargeRoom):
@@ -1229,42 +1260,43 @@ class Stair(_OrientedRoom):
     def render(self, world, xmap):
         self.light(xmap)
 
+        tex = random.randint(656, 660)
         if self.orientation == '+x':
-            column(world, 'y', 8, mv(self.pos, (7, 0, 0)), tex=4)
-            column(world, 'y', 8, mv(self.pos, (6, 0, 1)), tex=4)
-            column(world, 'y', 8, mv(self.pos, (5, 0, 2)), tex=4)
-            column(world, 'y', 8, mv(self.pos, (4, 0, 3)), tex=4)
-            column(world, 'y', 8, mv(self.pos, (3, 0, 4)), tex=4)
-            column(world, 'y', 8, mv(self.pos, (2, 0, 5)), tex=4)
-            column(world, 'y', 8, mv(self.pos, (1, 0, 6)), tex=4)
-            column(world, 'y', 8, mv(self.pos, (0, 0, 7)), tex=4)
+            column(world, 'y', 8, mv(self.pos, (7, 0, 0)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (6, 0, 1)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (5, 0, 2)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (4, 0, 3)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (3, 0, 4)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (2, 0, 5)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (1, 0, 6)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (0, 0, 7)), tex=tex)
         elif self.orientation == '-x':
-            column(world, 'y', 8, mv(self.pos, (0, 0, 0)), tex=5)
-            column(world, 'y', 8, mv(self.pos, (1, 0, 1)), tex=5)
-            column(world, 'y', 8, mv(self.pos, (2, 0, 2)), tex=5)
-            column(world, 'y', 8, mv(self.pos, (3, 0, 3)), tex=5)
-            column(world, 'y', 8, mv(self.pos, (4, 0, 4)), tex=5)
-            column(world, 'y', 8, mv(self.pos, (5, 0, 5)), tex=5)
-            column(world, 'y', 8, mv(self.pos, (6, 0, 6)), tex=5)
-            column(world, 'y', 8, mv(self.pos, (7, 0, 7)), tex=5)
+            column(world, 'y', 8, mv(self.pos, (0, 0, 0)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (1, 0, 1)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (2, 0, 2)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (3, 0, 3)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (4, 0, 4)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (5, 0, 5)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (6, 0, 6)), tex=tex)
+            column(world, 'y', 8, mv(self.pos, (7, 0, 7)), tex=tex)
         elif self.orientation == '+y':
-            column(world, 'x', 8, mv(self.pos, (0, 7, 0)), tex=6)
-            column(world, 'x', 8, mv(self.pos, (0, 6, 1)), tex=6)
-            column(world, 'x', 8, mv(self.pos, (0, 5, 2)), tex=6)
-            column(world, 'x', 8, mv(self.pos, (0, 4, 3)), tex=6)
-            column(world, 'x', 8, mv(self.pos, (0, 3, 4)), tex=6)
-            column(world, 'x', 8, mv(self.pos, (0, 2, 5)), tex=6)
-            column(world, 'x', 8, mv(self.pos, (0, 1, 6)), tex=6)
-            column(world, 'x', 8, mv(self.pos, (0, 0, 7)), tex=6)
+            column(world, 'x', 8, mv(self.pos, (0, 7, 0)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 6, 1)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 5, 2)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 4, 3)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 3, 4)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 2, 5)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 1, 6)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 0, 7)), tex=tex)
         elif self.orientation == '-y':
-            column(world, 'x', 8, mv(self.pos, (0, 0, 0)), tex=7)
-            column(world, 'x', 8, mv(self.pos, (0, 1, 1)), tex=7)
-            column(world, 'x', 8, mv(self.pos, (0, 2, 2)), tex=7)
-            column(world, 'x', 8, mv(self.pos, (0, 3, 3)), tex=7)
-            column(world, 'x', 8, mv(self.pos, (0, 4, 4)), tex=7)
-            column(world, 'x', 8, mv(self.pos, (0, 5, 5)), tex=7)
-            column(world, 'x', 8, mv(self.pos, (0, 6, 6)), tex=7)
-            column(world, 'x', 8, mv(self.pos, (0, 7, 7)), tex=7)
+            column(world, 'x', 8, mv(self.pos, (0, 0, 0)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 1, 1)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 2, 2)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 3, 3)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 4, 4)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 5, 5)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 6, 6)), tex=tex)
+            column(world, 'x', 8, mv(self.pos, (0, 7, 7)), tex=tex)
 
         else:
             raise Exception("Unknown orientation %s" % self.orientation)
@@ -1388,12 +1420,16 @@ class PlusPlatform(_LargeRoom):
 
 class MultiPlatform(_LargeRoom):
     _height = 3
+    _randflags = (
+        True, # Floor
+    )
 
     def render(self, world, xmap):
         self.light(xmap)
 
         # size = 24
-        wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=random.randint(92, 115))
+        if self._randflags[0]:
+            wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=random.randint(92, 115))
 
         # Corners are up 1
         tex1 = random.randint(92, 115)
@@ -1442,6 +1478,67 @@ class MultiPlatform(_LargeRoom):
         xmap.ents.append(light)
 
 
+class FlatSpace(_LargeRoom):
+    _height = 1
+
+    def __init__(self, *arg, **kwarg):
+        super().__init__(*arg, **kwarg)
+
+    def render(self, world, xmap):
+        self.light(xmap)
+        wall_tex = random.randint(418, 423)
+        # size = 24
+        faded_wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=0.9)
+
+
+class DoricTemple(_LargeRoom):
+    _height = 2
+
+    def __init__(self, *arg, **kwarg):
+        super().__init__(*arg, **kwarg)
+
+    def render(self, world, xmap):
+        self.light(xmap)
+
+        wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=582)
+
+        wall(world, '-z', 24, mv(self.pos, (-8, -8, 13)), tex=202)
+        wall(world, '-z', 20, mv(self.pos, (-6, -6, 14)), tex=202)
+        wall(world, '-z', 16, mv(self.pos, (-4, -4, 15)), tex=202)
+
+        for p in range(-8, 0, 2):
+            column(world, 'z', 12, mv(self.pos, (p, -8, 1)), tex=134)
+            column(world, 'z', 12, mv(self.pos, (p, 15, 1)), tex=134)
+        for p in range(8, 15, 2):
+            column(world, 'z', 12, mv(self.pos, (p, -8, 1)), tex=134)
+            column(world, 'z', 12, mv(self.pos, (p, 15, 1)), tex=134)
+
+        for p in range(-8, 0, 2):
+            column(world, 'z', 12, mv(self.pos, (-8, p, 1)), tex=134)
+            column(world, 'z', 12, mv(self.pos, (15, p, 1)), tex=134)
+        for p in range(8, 15, 2):
+            column(world, 'z', 12, mv(self.pos, (-8, p, 1)), tex=134)
+            column(world, 'z', 12, mv(self.pos, (15, p, 1)), tex=134)
+
+    def light(self, xmap):
+        (r, g, b) = posColor(self.pos)
+        h = 6
+        if self._height > 1:
+            h = 14
+        light = Light(
+            xyz=m(
+                SIZE_OFFSET * (self.pos[0] + 4),
+                SIZE_OFFSET * (self.pos[1] + 4),
+                SIZE_OFFSET * (self.pos[2] + h),
+            ),
+            red=r,
+            green=g,
+            blue=b,
+            radius=SIZE_OFFSET * 256,
+        )
+        xmap.ents.append(light)
+
+
 class DigitalRoom(_LargeRoom):
     _height = 1
     _randflags = (
@@ -1461,14 +1558,14 @@ class DigitalRoom(_LargeRoom):
         if self._randflags[2]:
             prob = 0.7
 
+        wall_tex = random.randint(418, 423)
         # size = 24
-        faded_wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=random.randint(92, 115), prob=0.9)
+        faded_wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=0.9)
         if self._randflags[1]:
-            faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -1)), tex=random.randint(92, 115), prob=prob)
+            faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -1)), tex=wall_tex, prob=prob)
         else:
-            faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -2)), tex=random.randint(92, 115), prob=prob)
+            faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -2)), tex=wall_tex, prob=prob)
 
-        wall_tex = random.randint(92, 115)
         #wall_tex = 644
         faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=prob)
         faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, 1, 0)), tex=wall_tex, prob=prob)
@@ -1525,7 +1622,6 @@ class DoricTemple(_LargeRoom):
 
     def render(self, world, xmap):
         self.light(xmap)
-        prob = 0.3
 
         wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=582)
 
