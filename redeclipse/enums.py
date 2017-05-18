@@ -62,6 +62,7 @@ class TextNum(Enum):
 
 
 class WeaponType(Enum):
+    UNKNOWN = 0
     SWORD = 2
     SHOTGUN = 3
     SMG = 4

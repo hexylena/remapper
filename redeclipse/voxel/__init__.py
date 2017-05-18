@@ -8,7 +8,7 @@ import sys
 from redeclipse.objects import cube
 from redeclipse.enums import OCT
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARN)
 log = logging.getLogger(__name__)
 
 

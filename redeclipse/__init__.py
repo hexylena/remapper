@@ -45,7 +45,8 @@ class Map:
         # Write the header block
         self.meta['numents'] = len(self.ents)
         for key in self.meta:
-            if key == 'gameident':
+            if key in ('gameident', 'skybox', 'z'):
+                print(key, self.meta[key])
                 self.write_str(handle, tb(self.meta[key]))
             else:
                 self.write_int(handle, self.meta[key])
@@ -73,6 +74,7 @@ class Map:
                 raise Exception("Can't handle " + var_type)
 
         # Texmru
+        print(self.texmru)
         self.write_ushort(handle, len(self.texmru))  # nummru
         for value in self.texmru:
             self.write_ushort(handle, value)
@@ -80,6 +82,7 @@ class Map:
         # Entities
         self.write_ents(handle, self.ents)
 
+        # sys.exit()
         # Textures
         self.write_vslots(handle, self.vslots, self.chg)
 
@@ -258,6 +261,10 @@ class Map:
 
         return m
 
+    def skybox(self, sb):
+        print(sb.get_short_path())
+        # pass
+        self.meta['skybox'] = sb.get_short_path()
 
 class MapParser(object):
 
@@ -529,6 +536,7 @@ class MapParser(object):
             else:
                 # Cannot recover
                 raise Exception("Don't know how to handle map prop type %s", var_type)
+            # print(var_name_len, var_name, var_type, var_val)
 
             map_vars[var_name] = var_val
 
