@@ -1,0 +1,5 @@
+GenericMaterial = ['dirt', 'stone', 'grass', 'gravel', 'sand']
+ColumnMaterial = ['stone', 'wood', 'brick', 'treeside']
+FloorMaterial = ['dirt', 'brick', 'wood', 'stone', 'sand', 'cobble']
+WallMaterial = ['wood', 'stone', 'brick', 'cobble']
+AccentMaterial = ['gold', 'admin', 'machine', 'obsidian', 'book', 'coal', 'iron', 'mossy']
