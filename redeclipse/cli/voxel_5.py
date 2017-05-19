@@ -38,6 +38,17 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         possible_rooms = [
             p.BaseRoom,
             p.SpawnRoom,
+            p.Stair,
+            p.LongCorridor2,
+            p.DigitalRoom,
+            p.JumpCorridorVerticalCenter,
+            p.PlusPlatform,
+
+            # p.NLongCorridor,
+            # p.MultiPlatform,
+            # p.CrossingWalkways,
+            # p.FlatSpace,
+            # p.DoricTemple,
             # p.JumpCorridor3,
             # p.Corridor4way,
             # p.PoleRoom,
@@ -46,16 +57,6 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             # p.ImposingRingRoom,
             # p.ImposingBlockRoom,
             # p.JumpCorridorVertical,
-            p.Stair,
-            p.LongCorridor2,
-            # p.NLongCorridor,
-            # p.MultiPlatform,
-            p.DigitalRoom,
-            # p.CrossingWalkways,
-            p.JumpCorridorVerticalCenter,
-            p.PlusPlatform,
-            # p.FlatSpace,
-            # p.DoricTemple,
         ]
 
         choices = []
@@ -148,9 +149,13 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             r.render(v, mymap)
 
 
-    from redeclipse.aftereffects import grid, decay, gradient3
-    grid(v, size=48)
+    #from redeclipse.aftereffects import grid, decay, gradient3
+    # grid(v, size=48)
     # decay(v, gradient3)
+
+    # Emit config + textures
+    p.TEXMAN.emit_conf(mpz_out)
+    p.TEXMAN.copy_data()
 
     # Standard code to render octree to file.
     mymap.world = v.to_octree()

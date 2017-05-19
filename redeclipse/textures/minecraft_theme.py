@@ -1,0 +1,5 @@
+GenericMaterial = ['dirt', 'stone']
+ColumnMaterial = ['admin', 'stone', 'wood']
+FloorMaterial = ['dirt']
+WallMaterial = ['wood', 'stone']
+AccentMaterial = ['gold', 'admin']
