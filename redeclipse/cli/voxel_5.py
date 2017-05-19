@@ -7,6 +7,7 @@ from redeclipse.cli import parse, weighted_choice
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
+from redeclipse.skybox import MinecraftSky
 from tqdm import tqdm
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -156,6 +157,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     # Emit config + textures
     p.TEXMAN.emit_conf(mpz_out)
     p.TEXMAN.copy_data()
+    #mymap.skybox(MinecraftSky('/home/hxr/games/redeclipse-1.5.3/'))
 
     # Standard code to render octree to file.
     mymap.world = v.to_octree()

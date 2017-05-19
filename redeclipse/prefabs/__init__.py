@@ -5,6 +5,7 @@ from redeclipse.prefabs.construction_kit import wall, column, mv, \
     m, low_wall, cube_s, rectangular_prism, ring, multi_wall, rotate_a, faded_wall
 from redeclipse.textures import MinecraftThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
+from redeclipse.prefabs.distributions import TowerDistributionManager
 import random # noqa
 import copy
 random.seed(22)
@@ -13,18 +14,9 @@ _BUILTIN_SIZE = 2 ** 7
 _REAL_SIZE = 2 ** 8
 SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
 
-DEFAULT_TRANSITION_MATIX = [
-    #h  hj   p  ps   v
-    [0,  0,  0,  0,  0], # 'hallway'
-    [    0,  0,  0,  0], # 'hallway_jump'
-    [        0,  0,  0], # 'platform'
-    [            0,  0], # 'platform_setpiece'
-    [                0], # 'vertical'
-]
-
-
 TEXMAN = MinecraftThemedTextureManager()
 LIGHTMAN = PositionBasedLightManager(brightness=1.0, saturation=0.6)
+DISTMAN = TowerDistributionManager()
 
 
 class _Room:
@@ -36,14 +28,7 @@ class _Room:
     @classmethod
     def get_transition_probs(cls):
         """Probabilities of transitioning to other named room types"""
-        # Platform
-        return {
-            'platform': 0.1,
-            'platform_setpiece': 0.05,
-            'vertical': 0.5,
-            'hallway': 0.8,
-            'hallway_jump': 0.4,
-        }
+        return DISTMAN.for_class(cls)
 
     def _get_doorways(self):
         """
@@ -116,17 +101,7 @@ class _OrientedRoom(_Room):
     """A special case of base _Room, a class which has different behaviour
     based on its orientation.
     """
-
-    @classmethod
-    def get_transition_probs(cls):
-        # oriented platform / hallway
-        return {
-            'hallway': 2.3,
-            'hallway_jump': 0.8,
-            'platform_setpiece': 0.2,
-            'platform': 0.6,
-            'vertical': 1.3,
-        }
+    room_type = 'oriented'
 
     def __init__(self, pos, orientation='+x', randflags=None):
         self.pos = pos
@@ -152,18 +127,6 @@ class _3X3Room(_Room):
     """Another special case of room, though this probably does not need to be.
     AltarRoom is currently the only user."""
     room_type = 'platform_setpiece'
-
-    @classmethod
-    def get_transition_probs(cls):
-        """Probabilities of transitioning to other named room types"""
-        # Platform
-        return {
-            'platform': 0.1,
-            'platform_setpiece': 0.01,
-            'vertical': 0.3,
-            'hallway': 1.8,
-            'hallway_jump': 0.4,
-        }
 
     def __init__(self, pos, orientation=None, randflags=None):
         """Init is kept separate from rendering, because init sets self.pos,
@@ -405,16 +368,6 @@ class Corridor2way(_OrientedRoom):
 class JumpCorridor3(_OrientedRoom):
     room_type = 'hallway_jump'
 
-    @classmethod
-    def get_transition_probs(cls):
-        return {
-            'hallway_jump': 0.01,
-            'platform': 0.6,
-            'platform_setpiece': 0.1,
-            'hallway': 1.4,
-            'vertical': 0.2,
-        }
-
     def __init__(self, pos, orientation='+x', randflags=None):
         self.pos = pos
         self.orientation = orientation
@@ -610,16 +563,6 @@ class JumpCorridorVertical(_OrientedRoom):
         True, # extra section
     )
 
-    @classmethod
-    def get_transition_probs(cls):
-        return {
-            'hallway_jump': 0.2,
-            'platform': 0.5,
-            'platform_setpiece': 0.1,
-            'hallway': 1.3,
-            'vertical': 0.1,
-        }
-
     def _get_doorways(self):
         if self.orientation == '-x':
             return [
@@ -798,15 +741,20 @@ class JumpCorridorVerticalCenter(JumpCorridorVertical):
                 multi_wall(world, ('-x', '+x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, i)), tex=wall_tex)
             else:
                 for j in range(i * 8, (i + 1) * 8):
-                    ring(world, mv(self.pos, (0, 0, j)), size=8, tex=accent_tex, thickness=1)
+                    ring(world, mv(self.pos, (0, 0, j)), size=8, tex=wall_tex, thickness=1)
 
         # Red markers
         rectangular_prism(world, 4, 4, 1, (a + 2, b + 2, c), tex=accent_tex)
+
+        force = 460 * SIZE_OFFSET
+        if self.length == 2:
+            force = 700 * SIZE_OFFSET
+
         pusher_a = Pusher(
             xyz=m(a + 4, b + 4, c + 1, size=SIZE * SIZE_OFFSET),
             pitch=90,
             yaw=0,
-            force=460 * SIZE_OFFSET,
+            force=force,
             maxrad=5
         )
         xmap.ents.append(pusher_a)
@@ -814,7 +762,7 @@ class JumpCorridorVerticalCenter(JumpCorridorVertical):
     def get_positions(self):
         p = [self.pos]
         for i in range(1, self.length + 2):
-            p.append(mv(self.pos, m(0, 0, 1)))
+            p.append(mv(self.pos, m(0, 0, i)))
         return p
 
     def _get_doorways(self):
@@ -1294,18 +1242,7 @@ class AltarRoom(_3X3Room):
 
 
 class Stair(_OrientedRoom):
-    room_type = 'vertical'
-
-    @classmethod
-    def get_transition_probs(cls):
-        # stair
-        return {
-            'platform': 1.2,
-            'platform_setpiece': 0.2,
-            'hallway': 1.6,
-            'vertical': 1.0,
-            'hallway_jump': 0.2,
-        }
+    room_type = 'stair'
 
     def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')

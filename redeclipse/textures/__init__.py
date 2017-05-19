@@ -83,14 +83,14 @@ class MinecraftThemedTextureManager(ThemedTextureManager):
     def get_c(self, category):
         from redeclipse.textures import minecraft_theme as theme
         if category == 'generic':
-            return random.choice(theme.GenericMaterial)
+            return self.get(random.choice(theme.GenericMaterial))
         elif category == 'column':
-            return random.choice(theme.ColumnMaterial)
+            return self.get(random.choice(theme.ColumnMaterial))
         elif category == 'floor':
-            return random.choice(theme.FloorMaterial)
+            return self.get(random.choice(theme.FloorMaterial))
         elif category == 'wall':
-            return random.choice(theme.WallMaterial)
+            return self.get(random.choice(theme.WallMaterial))
         elif category == 'accent':
-            return random.choice(theme.AccentMaterial)
+            return self.get(random.choice(theme.AccentMaterial))
 
         return random.choice(theme.GenericMaterial)

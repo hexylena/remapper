@@ -39,3 +39,6 @@ class Skybox:
 
 class DesertSky(Skybox):
     basename = 'desert'
+
+class MinecraftSky(Skybox):
+    basename = 'minecraft'
