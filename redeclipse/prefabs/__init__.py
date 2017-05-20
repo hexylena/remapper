@@ -3,20 +3,24 @@ from redeclipse.entities.model import MapModel
 from redeclipse.entities.weapon import Grenade
 from redeclipse.prefabs.construction_kit import wall, column, mv, \
     m, low_wall, cube_s, rectangular_prism, ring, multi_wall, rotate_a, faded_wall
-from redeclipse.textures import MinecraftThemedTextureManager
+from redeclipse.textures import MinecraftThemedTextureManager, DefaultThemedTextureManager, PaperThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
-from redeclipse.prefabs.distributions import TowerDistributionManager
+from redeclipse.prefabs.distributions import TowerDistributionManager, PlatformDistributionManager
 import random # noqa
 import copy
 random.seed(22)
+
 SIZE = 8
 _BUILTIN_SIZE = 2 ** 7
 _REAL_SIZE = 2 ** 8
 SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
 
-TEXMAN = MinecraftThemedTextureManager()
-LIGHTMAN = PositionBasedLightManager(brightness=1.0, saturation=0.6)
+#TEXMAN = MinecraftThemedTextureManager()
+#TEXMAN = DefaultThemedTextureManager()
+TEXMAN = PaperThemedTextureManager()
+LIGHTMAN = PositionBasedLightManager(brightness=1.0, saturation=0.2)
 DISTMAN = TowerDistributionManager()
+#DISTMAN = PlatformDistributionManager()
 
 
 class _Room:
@@ -24,11 +28,14 @@ class _Room:
     """
     room_type = 'platform'
     tex = TEXMAN.get_c('generic')
+    _tp = None
 
-    @classmethod
-    def get_transition_probs(cls):
+    def get_transition_probs(self):
         """Probabilities of transitioning to other named room types"""
-        return DISTMAN.for_class(cls)
+        if not self._tp:
+            self._tp = DISTMAN.for_class(self)
+            print(DISTMAN.for_class(self))
+        return self._tp
 
     def _get_doorways(self):
         """
@@ -593,7 +600,7 @@ class JumpCorridorVertical(_OrientedRoom):
             self._randflags = randflags
 
     def light(self, xmap):
-        LIGHTMAN.light(xmap, mv(self.pos, m(0, 0, 1)), 1)
+        LIGHTMAN.light(xmap, mv(self.pos, m(4, 4, 1)), 1)
 
     def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')
@@ -778,6 +785,9 @@ class JumpCorridorVerticalCenter(JumpCorridorVertical):
             m(0, -1, self.length + 1),
         ]
 
+    def light(self, xmap):
+        LIGHTMAN.light(xmap, mv(self.pos, m(0.5, 0.5, 1)), 1)
+
 
 class Corridor4way(_Room):
     room_type = 'platform'
@@ -932,7 +942,7 @@ class _LargeRoom(_3X3Room):
         (r, g, b) = LIGHTMAN.hue(self.pos)
         h = 6
         if self._height > 1:
-            h = 14
+            h = 12
         light = Light(
             xyz=m(
                 SIZE_OFFSET * (self.pos[0] + 4),
@@ -1100,23 +1110,39 @@ class ImposingRingRoom(_LargeRoom):
             for i in range(2, self._height * 8, 2):
                 ring(world, mv(self.pos, (-2, -2, i)), size=12, tex=accent_tex, thickness=1)
 
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-4, 4, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-4, 2, 1)), subtract=True)
         column(world, 'z', 8 * self._height - 1, mv(self.pos, (-4, 3, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-2, 4, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-4, 4, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-4, 5, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-2, 2, 1)), subtract=True)
         column(world, 'z', 8 * self._height - 1, mv(self.pos, (-2, 3, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-2, 4, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-2, 5, 1)), subtract=True)
 
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (11, 4, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (11, 2, 1)), subtract=True)
         column(world, 'z', 8 * self._height - 1, mv(self.pos, (11, 3, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (9, 4, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (11, 4, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (11, 5, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (9, 2, 1)), subtract=True)
         column(world, 'z', 8 * self._height - 1, mv(self.pos, (9, 3, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (9, 4, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (9, 5, 1)), subtract=True)
 
         column(world, 'z', 8 * self._height - 1, mv(self.pos, (4, -4, 1)), subtract=True)
         column(world, 'z', 8 * self._height - 1, mv(self.pos, (3, -4, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (2, -4, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (5, -4, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (2, -2, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (5, -2, 1)), subtract=True)
         column(world, 'z', 8 * self._height - 1, mv(self.pos, (4, -2, 1)), subtract=True)
         column(world, 'z', 8 * self._height - 1, mv(self.pos, (3, -2, 1)), subtract=True)
 
         column(world, 'z', 8 * self._height - 1, mv(self.pos, (4, 11, 1)), subtract=True)
         column(world, 'z', 8 * self._height - 1, mv(self.pos, (3, 11, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (5, 11, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (2, 11, 1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (5, 9,  1)), subtract=True)
+        column(world, 'z', 8 * self._height - 1, mv(self.pos, (2, 9,  1)), subtract=True)
         column(world, 'z', 8 * self._height - 1, mv(self.pos, (4, 9,  1)), subtract=True)
         column(world, 'z', 8 * self._height - 1, mv(self.pos, (3, 9,  1)), subtract=True)
 
@@ -1520,24 +1546,6 @@ class DoricTemple(_LargeRoom):
             column(world, 'z', 12, mv(self.pos, (-8, p, 1)), tex=column_tex)
             column(world, 'z', 12, mv(self.pos, (15, p, 1)), tex=column_tex)
 
-    def light(self, xmap):
-        (r, g, b) = LIGHTMAN.hue(self.pos)
-        h = 6
-        if self._height > 1:
-            h = 14
-        light = Light(
-            xyz=m(
-                SIZE_OFFSET * (self.pos[0] + 4),
-                SIZE_OFFSET * (self.pos[1] + 4),
-                SIZE_OFFSET * (self.pos[2] + h),
-            ),
-            red=r,
-            green=g,
-            blue=b,
-            radius=SIZE_OFFSET * 256,
-        )
-        xmap.ents.append(light)
-
 
 class DigitalRoom(_LargeRoom):
     _height = 1
@@ -1596,21 +1604,3 @@ class DigitalRoom(_LargeRoom):
             faded_wall(world, '+y', SIZE, mv(self.pos, m(-1, 1, 1)), tex=wall_tex, prob=prob)
             faded_wall(world, '+y', SIZE, mv(self.pos, m(0, 1, 1)), tex=wall_tex, prob=prob)
             faded_wall(world, '+y', SIZE, mv(self.pos, m(1, 1, 1)), tex=wall_tex, prob=prob)
-
-    def light(self, xmap):
-        (r, g, b) = LIGHTMAN.hue(self.pos)
-        h = 6
-        if self._height > 1:
-            h = 14
-        light = Light(
-            xyz=m(
-                SIZE_OFFSET * (self.pos[0] + 4),
-                SIZE_OFFSET * (self.pos[1] + 4),
-                SIZE_OFFSET * (self.pos[2] + h),
-            ),
-            red=r,
-            green=g,
-            blue=b,
-            radius=SIZE_OFFSET * 256,
-        )
-        xmap.ents.append(light)

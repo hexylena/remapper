@@ -45,18 +45,19 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             p.JumpCorridorVerticalCenter,
             p.PlusPlatform,
 
-            # p.NLongCorridor,
+            p.NLongCorridor,
+            p.FlatSpace,
+            p.DoricTemple,
+            #p.PoleRoom,
+            p.ImposingRingRoom,
+            p.ImposingBlockRoom,
+
             # p.MultiPlatform,
             # p.CrossingWalkways,
-            # p.FlatSpace,
-            # p.DoricTemple,
+            # p.AltarRoom,
             # p.JumpCorridor3,
             # p.Corridor4way,
-            # p.PoleRoom,
             # p.Corridor2way,
-            # p.AltarRoom,
-            # p.ImposingRingRoom,
-            # p.ImposingBlockRoom,
             # p.JumpCorridorVertical,
         ]
 

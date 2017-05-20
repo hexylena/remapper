@@ -1,0 +1,5 @@
+GenericMaterial = ['paper3']
+ColumnMaterial = ['paper2']
+FloorMaterial = ['paper4']
+WallMaterial = ['paper1']
+AccentMaterial = ['paper7']
