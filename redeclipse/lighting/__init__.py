@@ -47,7 +47,7 @@ class LightManager:
         return (int(r), int(g), int(b))
 
     def get_light(self, pos, size, saturation=1.0):
-        (red, green, blue) = self.hue(pos, saturation)
+        (red, green, blue) = self.hue(pos)
 
         return Light(
             # Center the light in the unit, x&y
