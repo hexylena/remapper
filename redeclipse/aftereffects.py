@@ -73,3 +73,14 @@ def growth(world, position_function):
                             x, y, z,
                             cube.newtexcube(tex=2)
                         )
+
+
+def box(world):
+    for z in tqdm(range(world.size)):
+        for x in range(world.size):
+            for y in range(world.size):
+                if x == 0 or y == 0 or z == 0 or x == world.size - 1 or y == world.size - 1 or z == world.size - 1:
+                    world.set_point(
+                        x, y, z,
+                        cube.newtexcube(tex=2)
+                    )

@@ -6,7 +6,7 @@ GenericMaterial = [
 ]
 FloorMaterial = [
     'tex%s' % x for x in
-    chain(range(4, 9), range(92, 116), range(504, 505))
+    chain(range(4, 8), [9], range(92, 116), range(504, 505))
 ]
 
 ColumnMaterial = [

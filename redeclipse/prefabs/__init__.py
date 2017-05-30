@@ -5,8 +5,9 @@ from redeclipse.prefabs.construction_kit import wall, column, mv, \
     m, low_wall, cube_s, rectangular_prism, ring, multi_wall, rotate_a, faded_wall
 from redeclipse.textures import MinecraftThemedTextureManager, DefaultThemedTextureManager, PaperThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
-from redeclipse.prefabs.distributions import TowerDistributionManager, PlatformDistributionManager
+from redeclipse.prefabs.distributions import TowerDistributionManager, PlatformDistributionManager, UniformDistributionManager
 import random # noqa
+import math
 import copy
 random.seed(22)
 
@@ -16,11 +17,12 @@ _REAL_SIZE = 2 ** 8
 SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
 
 #TEXMAN = MinecraftThemedTextureManager()
-#TEXMAN = DefaultThemedTextureManager()
-TEXMAN = PaperThemedTextureManager()
-LIGHTMAN = PositionBasedLightManager(brightness=1.0, saturation=0.2)
-DISTMAN = TowerDistributionManager()
-#DISTMAN = PlatformDistributionManager()
+TEXMAN = DefaultThemedTextureManager()
+#TEXMAN = PaperThemedTextureManager()
+LIGHTMAN = PositionBasedLightManager(brightness=1.0, saturation=0.6)
+#DISTMAN = TowerDistributionManager()
+DISTMAN = PlatformDistributionManager()
+#DISTMAN = UniformDistributionManager()
 
 
 class _Room:
@@ -34,7 +36,6 @@ class _Room:
         """Probabilities of transitioning to other named room types"""
         if not self._tp:
             self._tp = DISTMAN.for_class(self)
-            print(DISTMAN.for_class(self))
         return self._tp
 
     def _get_doorways(self):
@@ -220,10 +221,10 @@ class TestRoom(_Room):
 class NLongCorridor(_OrientedRoom):
     room_type = 'hallway'
     _randflags = (
-        True, # roof
         True, # A
         True, # B; length=a<<1 | b
-        True, # Columns
+        True, # CoverA
+        True, # CoverB
     )
 
     def __init__(self, pos, orientation='+x', randflags=None):
@@ -234,7 +235,7 @@ class NLongCorridor(_OrientedRoom):
         if randflags:
             self._randflags = randflags
 
-        la = 1 if self._randflags[1] else 0
+        la = 1 if self._randflags[0] else 0
         lb = 1 if self._randflags[1] else 0
         self.length = 1 + (la << 1 | lb)
 
@@ -246,27 +247,61 @@ class NLongCorridor(_OrientedRoom):
 
         for i in range(1, self.length):
             if self.orientation == '-x':
-                wall(world, '-z', SIZE, mv(self.pos, m(i, 0, 0)), tex=floor_tex)
+                offset = (i, 0, 0)
             elif self.orientation == '+x':
-                wall(world, '-z', SIZE, mv(self.pos, m(-i, 0, 0)), tex=floor_tex)
+                offset = (-i, 0, 0)
             elif self.orientation == '-y':
-                wall(world, '-z', SIZE, mv(self.pos, m(0, i, 0)), tex=floor_tex)
+                offset = (0, i, 0)
             elif self.orientation == '+y':
-                wall(world, '-z', SIZE, mv(self.pos, m(0, -i, 0)), tex=floor_tex)
-            else:
-                raise Exception("Unknown Orientation")
+                offset = (0, -i, 0)
+            pos_offset = mv(self.pos, m(*offset))
+            wall(world, '-z', SIZE, pos_offset, tex=floor_tex)
 
-        #for i in range(1, 8 * self.length - 8, 2):
-        #    if self.orientation == '-x':
-        #        column(world, 'z', 3, mv(self.pos, (i, 0, 1)), tex=floor_tex)
-        #        column(world, 'z', 3, mv(self.pos, (i, 7, 1)), tex=floor_tex)
-        #    elif self.orientation == '+x':
-        #        column(world, 'z', 3, mv(self.pos, (-i, 0, 1)), tex=floor_tex)
-        #        column(world, 'z', 3, mv(self.pos, (-i, 7, 1)), tex=floor_tex)
-        #    elif self.orientation == '-y':
-        #        wall(world, '-z', SIZE, mv(self.pos, m(0, i, 0)), tex=floor_tex)
-        #    elif self.orientation == '+y':
-        #        wall(world, '-z', SIZE, mv(self.pos, m(0, -i, 0)), tex=floor_tex)
+        for i in range(0, SIZE * self.length):
+            if self.orientation == '-x':
+                real_lt = mv(self.pos, (i, 0, 1))
+                real_rt = mv(self.pos, (i, 7, 1))
+            elif self.orientation == '+x':
+                real_lt = mv(self.pos, (-i, 0, 1))
+                real_rt = mv(self.pos, (-i, 7, 1))
+            elif self.orientation == '-y':
+                real_lt = mv(self.pos, (0, i, 1))
+                real_rt = mv(self.pos, (7, i, 1))
+            elif self.orientation == '+y':
+                real_lt = mv(self.pos, (0, -i + 7, 1))
+                real_rt = mv(self.pos, (7, -i + 7, 1))
+
+            if 'x' in self.orientation:
+                real_idx = 0
+            else:
+                real_idx = 1
+
+            if self._randflags[3]:
+                y_lt = int(3 + 3 * math.sin(real_lt[real_idx]/4))
+                y_rt = int(3 + 3 * math.sin(real_rt[real_idx]/4))
+                if self._randflags[2]:
+                    column(world, 'z', y_lt, real_lt, tex=floor_tex)
+                    column(world, 'z', y_rt, real_rt, tex=floor_tex)
+                else:
+                    column(world, 'z', 1, (real_lt[0], real_lt[1], real_lt[2] + y_lt - 1), tex=floor_tex)
+                    column(world, 'z', 1, (real_rt[0], real_rt[1], real_rt[2] + y_rt - 1), tex=floor_tex)
+            # else:
+                # y_lt1 = int(3 + 3 * math.sin(real_lt[real_idx]/4))
+                # y_rt1 = int(3 + 3 * math.sin(real_rt[real_idx]/4))
+                # column(world, 'z', 1, (real_lt[0], real_lt[1], real_lt[2] + y_lt1 - 1), tex=floor_tex)
+                # column(world, 'z', 1, (real_rt[0], real_rt[1], real_rt[2] + y_rt1 - 1), tex=floor_tex)
+
+                # if self._randflags[2]:
+                    # y_lt2 = int(3 + 3 * math.sin(math.pi + (real_lt[real_idx]/4)))
+                    # y_rt2 = int(3 + 3 * math.sin(math.pi + (real_rt[real_idx]/4)))
+                    # column(world, 'z', 1, (real_lt[0], real_lt[1], real_lt[2] + y_lt2 - 1), tex=floor_tex)
+                    # column(world, 'z', 1, (real_rt[0], real_rt[1], real_rt[2] + y_rt2 - 1), tex=floor_tex)
+                # else:
+                    # y_lt2 = int(3 + 3 * math.sin(math.pi/2 + (real_lt[real_idx]/4)))
+                    # y_rt2 = int(3 + 3 * math.sin(math.pi/2 + (real_rt[real_idx]/4)))
+                    # column(world, 'z', 1, (real_lt[0], real_lt[1], real_lt[2] + y_lt2 - 1), tex=floor_tex)
+                    # column(world, 'z', 1, (real_rt[0], real_rt[1], real_rt[2] + y_rt2 - 1), tex=floor_tex)
+
 
         self.light(xmap)
 
@@ -310,35 +345,6 @@ class NLongCorridor(_OrientedRoom):
             ]
         else:
             raise Exception("Unknown Orientation")
-
-
-class LongCorridor2(NLongCorridor):
-    room_type = 'hallway'
-
-    def __init__(self, pos, orientation='+x', randflags=None):
-        self.orientation = orientation
-        self.pos = pos
-        if randflags:
-            self._randflags = randflags
-        self.length = 2
-
-    def render(self, world, xmap):
-        # First tile
-        floor_tex = TEXMAN.get_c('floor')
-        wall(world, '-z', SIZE, self.pos, tex=floor_tex)
-
-        for i in range(1, self.length):
-            if self.orientation == '-x':
-                wall(world, '-z', SIZE, mv(self.pos, m(i, 0, 0)), tex=floor_tex)
-            elif self.orientation == '+x':
-                wall(world, '-z', SIZE, mv(self.pos, m(-i, 0, 0)), tex=floor_tex)
-            elif self.orientation == '-y':
-                wall(world, '-z', SIZE, mv(self.pos, m(0, i, 0)), tex=floor_tex)
-            elif self.orientation == '+y':
-                wall(world, '-z', SIZE, mv(self.pos, m(0, -i, 0)), tex=floor_tex)
-            else:
-                raise Exception("Unknown Orientation")
-        self.light(xmap)
 
 
 class Corridor2way(_OrientedRoom):

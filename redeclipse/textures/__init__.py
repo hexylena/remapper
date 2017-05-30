@@ -52,7 +52,6 @@ class TextureManager:
         outdir = "/home/hxr/games/redeclipse-1.5.3/data/hxr/textures/"
         if not os.path.exists(outdir):
             os.makedirs(outdir)
-        print(self.atlas, self.texref)
         for idx, (tex_key, tex) in enumerate(self.atlas.items()):
             if not hasattr(tex, 'files'):
                 continue

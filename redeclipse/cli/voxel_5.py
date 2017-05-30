@@ -40,7 +40,6 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             p.BaseRoom,
             p.SpawnRoom,
             p.Stair,
-            p.LongCorridor2,
             p.DigitalRoom,
             p.JumpCorridorVerticalCenter,
             p.PlusPlatform,
@@ -48,17 +47,8 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             p.NLongCorridor,
             p.FlatSpace,
             p.DoricTemple,
-            #p.PoleRoom,
             p.ImposingRingRoom,
             p.ImposingBlockRoom,
-
-            # p.MultiPlatform,
-            # p.CrossingWalkways,
-            # p.AltarRoom,
-            # p.JumpCorridor3,
-            # p.Corridor4way,
-            # p.Corridor2way,
-            # p.JumpCorridorVertical,
         ]
 
         choices = []
@@ -111,6 +101,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
                 (position, prev_room, orientation) = upm.nonrandom_position(upm.nrp_flavour_center_hole)
             except Exception as e:
                 # If we have no more positions left, break.
+                print("Possibly run out of positions before placing all rooms. Try a different seed?")
                 print(e)
                 break
 
@@ -151,9 +142,10 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             r.render(v, mymap)
 
 
-    #from redeclipse.aftereffects import grid, decay, gradient3
+    #from redeclipse.aftereffects import grid, decay, gradient3, box
     # grid(v, size=48)
     # decay(v, gradient3)
+    #box(v)
 
     # Emit config + textures
     p.TEXMAN.emit_conf(mpz_out)

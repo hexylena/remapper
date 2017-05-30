@@ -55,9 +55,9 @@ class DefaultBumpSpecMapWorld(BaseTex):
     def conf(self, idx=0):
         conf = """setshader bumpspecmapworld
 setshaderparam specscale 0.500000 0.500000 0.500000 {0.scale}
-texture c "{0.basepath}{0.c}" 0 0 0 0.500000 // {idx}
-texture n "{0.basepath}{0.n}"
-texture s "{0.basepath}{0.s}"
+texture c "{0.basepath}/{0.c}" 0 0 0 0.500000 // {idx}
+texture n "{0.basepath}/{0.n}"
+texture s "{0.basepath}/{0.s}"
 """.format(self, idx=idx)
 
         if self.texcolor:
@@ -89,10 +89,10 @@ class DefaultBumpSpecMapParallaxWorld(BaseTex):
         if self.parallaxscale:
             conf += """setshaderparam parallaxscale %s %s %s %s\n""" % self.parallaxscale
 
-        conf += """texture c "{0.basepath}{0.c}" 0 0 0 0.500000 // {idx}
-texture n "{0.basepath}{0.n}"
-texture s "{0.basepath}{0.s}"
-texture z "{0.basepath}{0.z}"\n""".format(self, idx=idx)
+        conf += """texture c "{0.basepath}/{0.c}" 0 0 0 0.500000 // {idx}
+texture n "{0.basepath}/{0.n}"
+texture s "{0.basepath}/{0.s}"
+texture z "{0.basepath}/{0.z}"\n""".format(self, idx=idx)
 
         if self.texcolor:
             conf += "texcolor %s %s %s\n\n" % self.texcolor
@@ -128,11 +128,11 @@ class DefaultBumpSpecMapParallaxGlowWorld(BaseTex):
         if self.parallaxscale:
             conf += """setshaderparam parallaxscale %s %s %s %s\n""" % self.parallaxscale
 
-        conf += """texture c "{0.basepath}{0.c}" 0 0 0 0.500000 // {idx}
-texture n "{0.basepath}{0.n}"
-texture s "{0.basepath}{0.s}"
-texture z "{0.basepath}{0.z}"
-texture g "{0.basepath}{0.g}"\n""".format(self, idx=idx)
+        conf += """texture c "{0.basepath}/{0.c}" 0 0 0 0.500000 // {idx}
+texture n "{0.basepath}/{0.n}"
+texture s "{0.basepath}/{0.s}"
+texture z "{0.basepath}/{0.z}"
+texture g "{0.basepath}/{0.g}"\n""".format(self, idx=idx)
 
         if self.texcolor:
             conf += "texcolor %s %s %s\n\n" % self.texcolor
