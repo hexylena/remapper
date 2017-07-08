@@ -103,3 +103,8 @@ class PaperThemedTextureManager(ThemedTextureManager):
     from redeclipse.textures import paper, paper_theme
     textures = paper
     theme = paper_theme
+
+class PrimaryThemedTextureManager(ThemedTextureManager):
+    from redeclipse.textures import primary, primary_theme
+    textures = primary
+    theme = primary_theme

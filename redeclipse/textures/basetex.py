@@ -12,6 +12,9 @@ class BaseTex:
     # texture n "trak/trak6/tile3_nm.png"
     # texture s "trak/trak6/tile3_gloss.jpg"
     # texcolor 0.750000 0.250000 0.125000
+    def get_name(self):
+        return self.__class__
+
     def files(self):
         return []
 
@@ -21,25 +24,43 @@ class Sky(BaseTex):
     def conf(self, **kwargs):
         return """
 setshader stdworld
-texture c "textures/sky.png" 0 0 0 {0.scale} // 0
-""".format(self)
+texture c "textures/sky.png" 0 0 0 {0.scale} // 0 {name}
+""".format(self, name=self.get_name())
 
 class Default(BaseTex):
     scale = 1
     def conf(self, **kwargs):
         return """
 setshader stdworld
-texture c "textures/default.png" 0 0 0 {0.scale} // 1
-""".format(self)
+texture c "textures/default.png" 0 0 0 {0.scale} // 1 {name}
+""".format(self, name=self.get_name())
+
+
+class SimpleColourTex(BaseTex):
+    basepath = "hxr/textures"
+    srcpath = "data/hxr"
+    r = 1
+    g = 0
+    b = 1
+    def conf(self, idx=0, **kwargs):
+        return """
+setshader stdworld
+texture c "{0.basepath}/empty.png" 0 0 0 1 // {idx} {name}
+texcolor {0.r} {0.g} {0.b}
+""".format(self, idx=idx, name=self.get_name())
+
+    def files(self):
+        yield 'empty.png'
+
 
 class SimpleTex(BaseTex):
     c = None
 
-    def conf(self, **kwargs):
+    def conf(self, idx=0, **kwargs):
         return """
 setshader stdworld
-texture c "{0.basepath}/{0.c}" 0 0 0 {0.scale} // 1
-""".format(self)
+texture c "{0.basepath}/{0.c}" 0 0 0 {0.scale} // {idx} {name}
+""".format(self, idx=idx, name=self.get_name())
 
     def files(self):
         yield self.c
@@ -55,10 +76,10 @@ class DefaultBumpSpecMapWorld(BaseTex):
     def conf(self, idx=0):
         conf = """setshader bumpspecmapworld
 setshaderparam specscale 0.500000 0.500000 0.500000 {0.scale}
-texture c "{0.basepath}/{0.c}" 0 0 0 0.500000 // {idx}
+texture c "{0.basepath}/{0.c}" 0 0 0 0.500000 // {idx} {name}
 texture n "{0.basepath}/{0.n}"
 texture s "{0.basepath}/{0.s}"
-""".format(self, idx=idx)
+""".format(self, idx=idx, name=self.get_name())
 
         if self.texcolor:
             conf += "texcolor %s %s %s" % self.texcolor
@@ -89,10 +110,10 @@ class DefaultBumpSpecMapParallaxWorld(BaseTex):
         if self.parallaxscale:
             conf += """setshaderparam parallaxscale %s %s %s %s\n""" % self.parallaxscale
 
-        conf += """texture c "{0.basepath}/{0.c}" 0 0 0 0.500000 // {idx}
+        conf += """texture c "{0.basepath}/{0.c}" 0 0 0 0.500000 // {idx} {name}
 texture n "{0.basepath}/{0.n}"
 texture s "{0.basepath}/{0.s}"
-texture z "{0.basepath}/{0.z}"\n""".format(self, idx=idx)
+texture z "{0.basepath}/{0.z}"\n""".format(self, idx=idx, name=self.get_name())
 
         if self.texcolor:
             conf += "texcolor %s %s %s\n\n" % self.texcolor
@@ -128,11 +149,11 @@ class DefaultBumpSpecMapParallaxGlowWorld(BaseTex):
         if self.parallaxscale:
             conf += """setshaderparam parallaxscale %s %s %s %s\n""" % self.parallaxscale
 
-        conf += """texture c "{0.basepath}/{0.c}" 0 0 0 0.500000 // {idx}
+        conf += """texture c "{0.basepath}/{0.c}" 0 0 0 0.500000 // {idx} {name}
 texture n "{0.basepath}/{0.n}"
 texture s "{0.basepath}/{0.s}"
 texture z "{0.basepath}/{0.z}"
-texture g "{0.basepath}/{0.g}"\n""".format(self, idx=idx)
+texture g "{0.basepath}/{0.g}"\n""".format(self, idx=idx, name=self.get_name())
 
         if self.texcolor:
             conf += "texcolor %s %s %s\n\n" % self.texcolor

@@ -1,0 +1,5 @@
+GenericMaterial = ['gray']
+ColumnMaterial = ['white']
+FloorMaterial = ['black']
+WallMaterial = ['gray']
+AccentMaterial = ['red']

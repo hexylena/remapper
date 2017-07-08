@@ -3,7 +3,9 @@ from redeclipse.entities.model import MapModel
 from redeclipse.entities.weapon import Grenade
 from redeclipse.prefabs.construction_kit import wall, column, mv, \
     m, low_wall, cube_s, rectangular_prism, ring, multi_wall, rotate_a, faded_wall
-from redeclipse.textures import MinecraftThemedTextureManager, DefaultThemedTextureManager, PaperThemedTextureManager
+from redeclipse.textures import MinecraftThemedTextureManager, \
+    DefaultThemedTextureManager, PaperThemedTextureManager, \
+    PrimaryThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
 from redeclipse.prefabs.distributions import TowerDistributionManager, PlatformDistributionManager, UniformDistributionManager
 import random # noqa
@@ -16,13 +18,14 @@ _BUILTIN_SIZE = 2 ** 7
 _REAL_SIZE = 2 ** 8
 SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
 
-#TEXMAN = MinecraftThemedTextureManager()
-TEXMAN = DefaultThemedTextureManager()
-#TEXMAN = PaperThemedTextureManager()
+# TEXMAN = MinecraftThemedTextureManager()
+# TEXMAN = DefaultThemedTextureManager()
+# TEXMAN = PaperThemedTextureManager()
+TEXMAN = PrimaryThemedTextureManager()
 LIGHTMAN = PositionBasedLightManager(brightness=1.0, saturation=0.6)
-#DISTMAN = TowerDistributionManager()
-DISTMAN = PlatformDistributionManager()
-#DISTMAN = UniformDistributionManager()
+DISTMAN = TowerDistributionManager()
+# DISTMAN = PlatformDistributionManager()
+# DISTMAN = UniformDistributionManager()
 
 
 class _Room:
