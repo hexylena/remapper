@@ -1,5 +1,4 @@
 import math
-import sys
 import random
 import copy
 from redeclipse.cli import weighted_choice
@@ -25,6 +24,12 @@ class UnusedPositionManager:
         This informs which orientation we should place the next piece in, in
         order to have it line up. If the door is in the X axis previously, the
         next piece placed should also be in the X axis
+
+        :param used: array of used positions
+        :type used: list
+
+        :param p: previous room
+        :type p: ???
         """
         for u in used:
             # For a set of "used" positions, only ONE block should be directly
@@ -57,7 +62,10 @@ class UnusedPositionManager:
         return all([x >= lowest and x < self.world_size - 8 for x in position])
 
     def preregister_rooms(self, *rooms):
-        # Register positions occupied by this room
+        """
+        Register positions occupied by this room, but don't *actually*
+        do it, only attempt to do it in a temporary manner.
+        """
         tmp_occupied = copy.deepcopy(self.occupied)
         for room in rooms:
             used = room.get_positions()
@@ -70,7 +78,9 @@ class UnusedPositionManager:
         return True
 
     def register_room(self, room):
-        # Register positions occupied by this room
+        """
+        Register positions occupied by this room
+        """
         used = room.get_positions()
         # First, we need to check that ALL of those positions are
         # unoccupied.
@@ -101,18 +111,64 @@ class UnusedPositionManager:
             raise Exception("No more space!")
 
     def nrp_flavour_center_hole(self, x, y, z):
+        """
+        A 'flavour' which avoids placing rooms in the center
+
+        :param x: x position
+        :type x: int
+        :param y: y position
+        :type y: int
+        :param z: z position
+        :type z: int
+
+        :returns: a float which should be applied as the probability of
+                  chosing this position
+        :rtype: float
+        """
         tmpx = abs(x - 128)
         tmpy = abs(y - 128)
         return math.pow(tmpx, 5) + math.pow(tmpy, 5)
 
     def nrp_flavour_vertical(self, x, y, z):
+        """
+        A 'flavour' which strongly encourages verticality
+
+        :param x: x position
+        :type x: int
+        :param y: y position
+        :type y: int
+        :param z: z position
+        :type z: int
+
+        :returns: a float which should be applied as the probability of
+                  chosing this position
+        :rtype: float
+        """
         return math.pow(z, 5)
 
     def nrp_flavour_plain(self, x, y, z):
+        """
+        The base flavour which has no preferences
+
+        :param x: x position
+        :type x: int
+        :param y: y position
+        :type y: int
+        :param z: z position
+        :type z: int
+
+        :returns: a float which should be applied as the probability of
+                  chosing this position
+        :rtype: float
+        """
         return 1
 
     def nonrandom_position(self, flavour_function):
-        """Non-randomly select doorway to use"""
+        """Non-randomly select doorway to use based on the flavour function.
+
+        :param flavour_function: A function from this class (or a custom one)
+        :type flavour_function: function
+        """
         choices = [
             (idx, flavour_function(*posD[0]))
             for idx, posD in enumerate(self.unoccupied)
