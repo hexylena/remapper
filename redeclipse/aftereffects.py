@@ -4,7 +4,6 @@ from tqdm import tqdm
 import math
 from redeclipse.objects import cube
 import logging
-logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 

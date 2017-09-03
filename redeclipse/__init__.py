@@ -8,7 +8,6 @@ from redeclipse.entities import Entity
 from tqdm import tqdm
 import simplejson as json
 import logging
-logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 MAXSTRLEN = 512

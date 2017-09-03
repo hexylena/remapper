@@ -1,5 +1,9 @@
 from redeclipse.objects import cube
 import random
+from redeclipse.prefabs.orientations import SELF, SOUTH, NORTH, WEST, EAST, ABOVE, BELOW
+from redeclipse.prefabs.vector import FineVector
+
+ROOM_SIZE = 8
 
 
 def mv(a, b):
@@ -27,23 +31,6 @@ def mi(*args):
     )
 
 
-def m(*args, size=8):
-    if len(args) == 2:
-        p0 = args[0][0]
-        p1 = args[0][1]
-        p2 = args[0][2]
-    else:
-        p0 = args[0]
-        p1 = args[1]
-        p2 = args[2]
-
-    return (
-        p0 * size,
-        p1 * size,
-        p2 * size,
-    )
-
-
 def column_points(size, direction):
     for i in range(size):
         if direction in ('-x', '+x', 'x'):
@@ -66,17 +53,17 @@ def wall_points(size, direction, limit_j=100, limit_i=100):
                 continue
 
             if direction == '-z':
-                yield (i, j, 0)
+                yield FineVector(i, j, 0)
             elif direction == '+z':
-                yield (i, j, size - 1)
+                yield FineVector(i, j, size - 1)
             elif direction == '-y':
-                yield (i, 0, j)
+                yield FineVector(i, 0, j)
             elif direction == '+y':
-                yield (i, size - 1, j)
+                yield FineVector(i, size - 1, j)
             elif direction == '-x':
-                yield (0, i, j)
+                yield FineVector(0, i, j)
             elif direction == '+x':
-                yield (size - 1, i, j)
+                yield FineVector(size - 1, i, j)
 
 
 def multi_wall(world, directions, size, pos, tex=2):
@@ -90,6 +77,83 @@ def wall(world, direction, size, pos, tex=2):
             *mv(point, pos),
             cube.newtexcube(tex=tex)
         )
+
+class ConstructionKitMixin(object):
+    def x_ceiling(self, world, offset, tex=2):
+        # First, rotate the offset
+        offset = offset.rotate(self.orientation)
+        # And then re-add it to self.pos
+        local_position = self.pos + offset
+
+        for point in wall_points(ROOM_SIZE, '+z'):
+            world.set_pointv(
+                point + local_position,
+                cube.newtexcube(tex=tex)
+            )
+
+    def x_floor(self, world, offset, tex=2):
+        # First, rotate the offset
+        offset = offset.rotate(self.orientation)
+        # And then re-add it to self.pos
+        local_position = self.pos + offset
+
+        for point in wall_points(ROOM_SIZE, '-z'):
+            world.set_pointv(
+                point + local_position,
+                cube.newtexcube(tex=tex)
+            )
+
+    def x_wall(self, world, offset, face, tex=2):
+        # First, rotate the offset
+        offset = offset.rotate(self.orientation)
+        # And then re-add it to self.pos
+        local_position = self.pos + offset
+        real_face = None
+        if self.orientation == '+x':
+            if face == NORTH:
+                real_face = '-x'
+            elif face == SOUTH:
+                real_face = '+x'
+            elif face == EAST:
+                real_face = '+y'
+            elif face == WEST:
+                real_face = '-y'
+        elif self.orientation == '-x':
+            if face == NORTH:
+                real_face = '+x'
+            elif face == SOUTH:
+                real_face = '-x'
+            elif face == EAST:
+                real_face = '-y'
+            elif face == WEST:
+                real_face = '+y'
+        elif self.orientation == '+y':
+            if face == NORTH:
+                real_face = '-y'
+            elif face == SOUTH:
+                real_face = '+y'
+            elif face == EAST:
+                real_face = '+x'
+            elif face == WEST:
+                real_face = '-x'
+        elif self.orientation == '-y':
+            if face == NORTH:
+                real_face = '+y'
+            elif face == SOUTH:
+                real_face = '-y'
+            elif face == EAST:
+                real_face = '-x'
+            elif face == WEST:
+                real_face = '+x'
+        else:
+            raise Exception()
+        print('face %s => orientation %s => real_face %s' % (face, self.orientation, real_face))
+
+        for point in wall_points(ROOM_SIZE, real_face):
+            world.set_pointv(
+                point + local_position,
+                cube.newtexcube(tex=tex)
+            )
 
 
 def faded_wall(world, direction, size, pos, tex=2, prob=0.7):

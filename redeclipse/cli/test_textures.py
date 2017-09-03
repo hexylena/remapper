@@ -9,7 +9,6 @@ from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
 from redeclipse.skybox import MinecraftSky
 from tqdm import tqdm
-logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 

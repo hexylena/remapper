@@ -8,7 +8,6 @@ from tqdm import tqdm
 import argparse
 import random
 import logging
-logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 

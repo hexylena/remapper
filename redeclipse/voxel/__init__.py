@@ -8,7 +8,6 @@ import sys
 from redeclipse.objects import cube
 from redeclipse.enums import OCT
 import logging
-logging.basicConfig(level=logging.WARN)
 log = logging.getLogger(__name__)
 
 
@@ -25,6 +24,12 @@ class VoxelWorld:
         if z > self.heighest_point:
             self.heighest_point = z
         self.world[x, y, z] = data
+
+    def set_pointv(self, xyz, data):
+        log.debug("set_point %s", xyz)
+        if xyz.z > self.heighest_point:
+            self.heighest_point = xyz.z
+        self.world[tuple(xyz)] = data
 
     def del_point(self, x, y, z):
         log.debug("del_point (%d, %d, %d)", x, y, z)

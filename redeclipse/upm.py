@@ -2,6 +2,7 @@ import math
 import random
 import copy
 from redeclipse.cli import weighted_choice
+import logging
 
 
 class UnusedPositionManager:
@@ -84,9 +85,10 @@ class UnusedPositionManager:
         used = room.get_positions()
         # First, we need to check that ALL of those positions are
         # unoccupied.
+        logging.info("Registering %s which occupies %s", room.__class__.__name__, '|'.join(map(str, used)))
         for position in used:
             if position in self.occupied:
-                raise Exception("Occupado %s %s %s" % position)
+                raise Exception("Occupado %s" % position)
         # Otheriwse, all positions are fine to use.
 
         self.occupied = self.occupied.union(used)
