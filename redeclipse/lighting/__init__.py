@@ -1,6 +1,9 @@
-import noise
+"""Light manager"""
 import colorsys
 import random
+
+import noise
+
 from redeclipse.entities import Light
 from redeclipse.prefabs.vector import CoarseVector, FineVector
 from redeclipse.prefabs.orientations import TILE_CENTER, HALF_HEIGHT
@@ -16,23 +19,29 @@ class LightManager:
         self.brightness = brightness
         self.saturation = saturation
 
-    def light(self, xmap, position, size):
+    def light(self, xmap, position, colour_override=None, autocenter=True):
         if random.random() > self.brightness:
             return
 
-        light = self.get_light(position, saturation=self.saturation)
+        if autocenter:
+            pos = position + TILE_CENTER + HALF_HEIGHT
+        else:
+            pos = position.fine()
+
+        if colour_override:
+            (red, green, blue) = colour_override
+        else:
+            (red, green, blue) = self.hue(pos)
+
+        light = self.get_light(pos, red, green, blue)
         xmap.ents.append(light)
 
     def hue(self, pos):
         return (255, 255, 255)
 
-    def get_light(self, pos, saturation=1.0):
-        (red, green, blue) = self.hue(pos)
-        assert isinstance(pos, CoarseVector)
-
+    def get_light(self, position, red, green, blue):
         return Light(
-            # Center the light in the unit, x&y
-            xyz=pos + TILE_CENTER + HALF_HEIGHT,
+            xyz=position,
             # Colours
             red=red,
             green=green,
@@ -56,14 +65,14 @@ class PositionBasedLightManager(LightManager):
             return int(abs(noise.pnoise3(*nums, base=base)) * 255)
 
         # Now we generate our colour:
-        r = kleur(nums, 10)
-        g = kleur(nums, 0)
-        b = kleur(nums, 43)
+        red = kleur(nums, 10)
+        grn = kleur(nums, 0)
+        blu = kleur(nums, 43)
 
         # RGB isn't great, because it means low values of RGB are
         # low luminance. So we convert to HSV to get pure hue
-        (h, s, v) = colorsys.rgb_to_hsv(r, g, b)
+        (hue, _, _) = colorsys.rgb_to_hsv(red, grn, blu)
         # We then peg S and V to high and only retain hue
-        (r, g, b) = colorsys.hsv_to_rgb(h, self.saturation, 255)
+        (red, grn, blu) = colorsys.hsv_to_rgb(hue, self.saturation, 255)
         # This should give us a bright colour on a continuous range
-        return (int(r), int(g), int(b))
+        return (int(red), int(grn), int(blu))

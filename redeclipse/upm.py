@@ -38,15 +38,15 @@ class UnusedPositionManager:
             if u[1] == p[1]:
                 # If the Y position is the same, must be in X direction
                 if u[0] < p[0]:
-                    return '-x'
-                else:
                     return '+x'
+                else:
+                    return '-x'
             elif u[0] == p[0]:
                 # If the X position is the same, must be in Y direction
                 if u[1] < p[1]:
-                    return '-y'
-                else:
                     return '+y'
+                else:
+                    return '-y'
             # NO SUPPORT for joining parts on a z-axis, joins must be X/Y
             # elif u[0] == p[0] and u[1] == p[1]:
                 # if u[2] < p[2]:
@@ -59,14 +59,15 @@ class UnusedPositionManager:
         """Is the position within the bounds of the map"""
         lowest = 0
         if self.mirror:
-            lowest = 8
-        return all([x >= lowest and x < self.world_size - 8 for x in position])
+            lowest = 1
+        return all([x >= lowest and x < 31 for x in position])
 
     def preregister_rooms(self, *rooms):
         """
         Register positions occupied by this room, but don't *actually*
         do it, only attempt to do it in a temporary manner.
         """
+        logging.info("Prereg: %s", '|'.join([x.__class__.__name__ for x in rooms]))
         tmp_occupied = copy.deepcopy(self.occupied)
         for room in rooms:
             used = room.get_positions()
@@ -87,6 +88,7 @@ class UnusedPositionManager:
         # unoccupied.
         logging.info("Registering %s which occupies %s", room.__class__.__name__, '|'.join(map(str, used)))
         for position in used:
+            print(position, self.occupied, position in self.occupied)
             if position in self.occupied:
                 raise Exception("Occupado %s" % position)
         # Otheriwse, all positions are fine to use.
@@ -95,9 +97,14 @@ class UnusedPositionManager:
         # Remove occupied positions from possibilities
         self.unoccupied = [(p, r, o) for (p, r, o) in self.unoccupied if p not in used]
 
+        # logging.info("  OCC: %s", list(map(str, self.occupied)))
+        # logging.info("UNOCC: %s", list(map(str, self.unoccupied)))
+
         # Get doorways
         doors = room.get_doorways()
+        # logging.info("DOORS: %s", list(map(str, doors)))
         for position in doors:
+            # logging.info("  pos: %s %s", position, self.is_legal(position))
             # If that door position is not occupied by something else
             if position not in self.occupied and self.is_legal(position):
                 # Get the orientation to the previous room

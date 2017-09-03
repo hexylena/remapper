@@ -24,3 +24,17 @@ SOUTH_FINE = NORTH_FINE.rotate(180)
 WEST_FINE = NORTH_FINE.rotate(270)
 ABOVE_FINE = FineVector(0, 0, 1)
 BELOW_FINE = FineVector(0, 0, -1)
+
+VEC_ORIENT_MAP = {
+    '+x': NORTH,
+    '-x': SOUTH,
+    '+y': EAST,
+    '-y': WEST,
+    '+z': ABOVE,
+    '-z': BELOW,
+}
+
+VEC_ORIENT_MAP_INV = {
+    v: k
+    for (k, v) in VEC_ORIENT_MAP.items()
+}

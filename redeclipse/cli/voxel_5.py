@@ -7,7 +7,9 @@ from redeclipse.cli import parse, weighted_choice
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
-from redeclipse.skybox import MinecraftSky
+#from redeclipse.skybox import MinecraftSky
+from redeclipse.prefabs import StartingPosition
+from redeclipse.prefabs.vector import CoarseVector
 from tqdm import tqdm
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -17,7 +19,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     random.seed(seed)
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
-    room_counts = size
+    room_counts = 32
 
     def mirror(d):
         if isinstance(d, dict):
@@ -27,7 +29,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
                 kwargs['orientation'] = kwargs['orientation'].replace('+', '-')
             return kwargs
         else:
-            return (
+            return CoarseVector(
                 room_counts - d[0],
                 room_counts - d[1],
                 d[2]
@@ -68,7 +70,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
 
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.
-    starting_position = p.m(4, 4, 3)
+    starting_position = StartingPosition
     # We use the spawn room as our base starting room
     b = p.SpawnRoom(pos=starting_position, orientation="+y")
     b_m = p.SpawnRoom(pos=mirror(starting_position), orientation="-y")
@@ -95,6 +97,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         while True:
             # Continually try and place rooms until we hit 200.
             if room_count >= rooms:
+                logging.info("Placed enough rooms")
                 break
             # Pick a random position for this notional room to go
             try:

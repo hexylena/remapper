@@ -9,7 +9,7 @@ class MapModel(Entity):
                  scale=0, flags=0, colour=0, palette=0, palindex=0, spinyaw=0,
                  spinpitch=0, spinroll=0, links=None, reserved=None):
 
-        self.o = ivec3(*xyz)
+        self.o = ivec3(*(xyz * 4))
         self.type = EntType.ET_MAPMODEL
         self.attrs = [
             type, yaw, pitch, roll, blend, scale, flags, colour, palette,

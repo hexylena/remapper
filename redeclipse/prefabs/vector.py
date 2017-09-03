@@ -13,6 +13,16 @@ def rotate_yaw(angle, orientation):
 
 
 class BaseVector(object):
+
+    def __hash__(self):
+        return 0 << 31 & self.x << 20 & self.y << 10 & self.z
+
+    def __eq__(self, other):
+        return isinstance(other, BaseVector) and \
+            self.x == other.x and \
+            self.y == other.y and \
+            self.z == other.z
+
     def __init__(self, x, y, z):
         self.x = int(x)
         self.y = int(y)
@@ -99,6 +109,30 @@ class BaseVector(object):
 
 
 class FineVector(BaseVector):
+
+    def __hash__(self):
+        return 1 << 31 & self.x << 20 & self.y << 10 & self.z
+
+    def __eq__(self, other):
+        if isinstance(other, CoarseVector):
+            # If the other one is coarse, convert the other to fine so they're
+            # the same.
+            tmp = other.fine()
+            return \
+                self.x == tmp.x and \
+                self.y == tmp.y and \
+                self.z == tmp.z
+
+        elif isinstance(other, FineVector):
+            # Otherwise just compare as-is
+            return \
+                self.x == other.x and \
+                self.y == other.y and \
+                self.z == other.z
+
+        else:
+            return False
+
     def __add__(self, other):
         if isinstance(other, CoarseVector):
             return FineVector(
@@ -140,16 +174,7 @@ class FineVector(BaseVector):
 
     def __repr__(self):
         rp = super().__repr__()
-        if rp == 'BV(1, 0, 0)':
-            return 'FV(NORTH)'
-        elif rp == 'BV(-1, 0, 0)':
-            return 'FV(SOUTH)'
-        elif rp == 'BV(0, 1, 0)':
-            return 'FV(EAST)'
-        elif rp == 'BV(0, -1, 0)':
-            return 'FV(WEST)'
         return 'FV(%s)' % rp
-
 
     def rotate(self, deg):
         rotation = super().rotate(deg)
@@ -159,8 +184,33 @@ class FineVector(BaseVector):
             rotation.z
         )
 
+    def fine(self):
+        return self
+
 
 class CoarseVector(BaseVector):
+
+    def __hash__(self):
+        return 2 << 31 & self.x << 20 & self.y << 10 & self.z
+
+    def __eq__(self, other):
+        if isinstance(other, CoarseVector):
+            # If we're both coarse, compare as-is
+            return \
+                self.x == other.x and \
+                self.y == other.y and \
+                self.z == other.z
+        elif isinstance(other, FineVector):
+            # If the other one is fine, convert ourselves to find so we can
+            # compare
+            tmp = self.fine()
+            return \
+                tmp.x == other.x and \
+                tmp.y == other.y and \
+                tmp.z == other.z
+        else:
+            return False
+
     def __add__(self, other):
         if isinstance(other, CoarseVector):
             return CoarseVector(
@@ -202,14 +252,6 @@ class CoarseVector(BaseVector):
 
     def __repr__(self):
         rp = super().__repr__()
-        if rp == 'BV(1, 0, 0)':
-            return 'CV(NORTH)'
-        elif rp == 'BV(-1, 0, 0)':
-            return 'CV(SOUTH)'
-        elif rp == 'BV(0, 1, 0)':
-            return 'CV(EAST)'
-        elif rp == 'BV(0, -1, 0)':
-            return 'CV(WEST)'
         return 'CV(%s)' % rp
 
     def rotate(self, deg):
@@ -221,4 +263,9 @@ class CoarseVector(BaseVector):
         )
 
     def fine(self):
-        return self * 8
+        newvec = self * 8
+        return FineVector(
+            newvec.x,
+            newvec.y,
+            newvec.z
+        )

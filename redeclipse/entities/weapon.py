@@ -8,7 +8,7 @@ class Weapon(Entity):
     def __init__(self, xyz, type=0, flags=0, modes=0, muts=0, id=0,
                  links=None, reserved=None):
 
-        self.o = ivec3(*xyz)
+        self.o = ivec3(*(xyz * 4))
         self.type = EntType.ET_WEAPON
         self.attr_annotations = [
             'type', 'flags', 'modes', 'muts', 'id'
@@ -25,7 +25,7 @@ class Grenade(Entity):
     def __init__(self, xyz, flags=0, modes=0, muts=0, id=0,
                  links=None, reserved=None):
 
-        self.o = ivec3(*xyz)
+        self.o = ivec3(*(xyz * 4))
         self.type = EntType.ET_WEAPON
         self.attr_annotations = [
             'type', 'flags', 'modes', 'muts', 'id'
