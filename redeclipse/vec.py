@@ -1,4 +1,7 @@
 class ivec2:
+    """
+    2D integer vector class
+    """
 
     def __init__(self, x, y):
         self.x = x
@@ -32,6 +35,10 @@ class vec2:
 
 
 class vec3:
+    """
+    3D vector class
+    """
+
     def __init__(self, x, y, z):
         self.x = x
         self.y = y
@@ -49,6 +56,9 @@ class vec3:
 
 
 class ivec3:
+    """
+    3D integer vector class
+    """
 
     def __init__(self, x, y, z):
         self.x = x
@@ -120,6 +130,10 @@ class ivec3:
 
 
 def cross(a, b):
+    """
+    cross product of two ivec3/ivec
+    """
+
     if isinstance(a, ivec3):
         return ivec3(
             a.y*b.z-a.z*b.y,

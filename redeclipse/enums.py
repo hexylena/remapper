@@ -1,6 +1,9 @@
 from enum import Enum
 
 class EntType(Enum):
+    """
+    Redeclipse Entities
+    """
     ET_EMPTY = 0
     ET_LIGHT = 1
     ET_MAPMODEL = 2
@@ -22,11 +25,17 @@ class EntType(Enum):
 
 
 class Faces(Enum):
+    """
+    Redeclipse cube face types
+    """
     F_EMPTY = 0
     F_SOLID = 0x80808080
 
 
 class VTYPE(Enum):
+    """
+    Redeclipse texturing stuff?
+    """
     VSLOT_SHPARAM = 0
     VSLOT_SCALE = 1
     VSLOT_ROTATION = 2
@@ -41,6 +50,9 @@ class VTYPE(Enum):
 
 
 class OCT(Enum):
+    """
+    octree magic numbers
+    """
     OCTSAV_CHILDREN = 0
     OCTSAV_EMPTY = 1
     OCTSAV_SOLID = 2
@@ -49,6 +61,9 @@ class OCT(Enum):
 
 
 class OctLayers(Enum):
+    """
+    ???
+    """
     LAYER_TOP = (1<<5)
     LAYER_BOTTOM = (1<<6)
     LAYER_DUP = (1<<7)
@@ -57,11 +72,20 @@ class OctLayers(Enum):
 
 
 class TextNum(Enum):
+    """
+    ???
+    """
     DEFAULT_SKY = 0
     DEFAULT_GEOM = 1
 
 
 class WeaponType(Enum):
+    """
+    Weapon Magic Numbers
+
+    0 is unknown, this was added for compatibility but ... probably
+    shouldn't be here. / is probably incorrect.
+    """
     UNKNOWN = 0
     SWORD = 2
     SHOTGUN = 3

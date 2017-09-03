@@ -12,6 +12,8 @@ Welcome to RedEclipse Map Library's documentation!
 
    map_format
    cfg_format
+   modules
+
 
 
 
