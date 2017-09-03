@@ -105,3 +105,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+inspiration
+redeclipse/textures/data
+texture_pack
