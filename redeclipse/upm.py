@@ -88,7 +88,6 @@ class UnusedPositionManager:
         # unoccupied.
         logging.info("Registering %s which occupies %s", room.__class__.__name__, '|'.join(map(str, used)))
         for position in used:
-            print(position, self.occupied, position in self.occupied)
             if position in self.occupied:
                 raise Exception("Occupado %s" % position)
         # Otheriwse, all positions are fine to use.

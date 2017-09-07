@@ -99,10 +99,12 @@ class DefaultThemedTextureManager(ThemedTextureManager):
     textures = dull
     theme = dull_theme
 
+
 class PaperThemedTextureManager(ThemedTextureManager):
     from redeclipse.textures import paper, paper_theme
     textures = paper
     theme = paper_theme
+
 
 class PrimaryThemedTextureManager(ThemedTextureManager):
     from redeclipse.textures import primary, primary_theme

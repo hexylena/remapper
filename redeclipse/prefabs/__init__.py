@@ -2,12 +2,22 @@ from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
 from redeclipse.entities.weapon import Grenade
 from redeclipse.prefabs.construction_kit import wall, column, mv, \
-    m, low_wall, cube_s, rectangular_prism, ring, multi_wall, rotate_a, faded_wall
+    low_wall, cube_s, rectangular_prism, ring, multi_wall, rotate_a, faded_wall
 from redeclipse.textures import MinecraftThemedTextureManager, \
     DefaultThemedTextureManager, PaperThemedTextureManager, \
     PrimaryThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
 from redeclipse.prefabs.distributions import TowerDistributionManager, PlatformDistributionManager, UniformDistributionManager
+from redeclipse.prefabs.construction_kit import ConstructionKitMixin
+from redeclipse.prefabs.vector import CoarseVector, FineVector, rotate_yaw, AbsoluteVector
+from redeclipse.prefabs.orientations import SELF, \
+    SOUTH, NORTH, WEST, EAST, \
+    ABOVE, BELOW, \
+    SOUTH_FINE, NORTH_FINE, WEST_FINE, EAST_FINE, \
+    ABOVE_FINE, BELOW_FINE, \
+    NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST, \
+    TILE_CENTER, HALF_HEIGHT
+
 import random # noqa
 import math
 import copy
@@ -23,17 +33,27 @@ SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
 # TEXMAN = PaperThemedTextureManager()
 TEXMAN = PrimaryThemedTextureManager()
 LIGHTMAN = PositionBasedLightManager(brightness=1.0, saturation=0.6)
-DISTMAN = TowerDistributionManager()
+# DISTMAN = TowerDistributionManager()
 # DISTMAN = PlatformDistributionManager()
-# DISTMAN = UniformDistributionManager()
+DISTMAN = UniformDistributionManager()
 
 
-class _Room:
+StartingPosition = CoarseVector(4, 4, 3)
+
+# Room is an object, but is also inherits from CKM which inherits from object,
+# so we just inherit from CKM
+class _Room(ConstructionKitMixin):
     """Base 'room' class which all other room types inherit from
     """
-    room_type = 'platform'
+    room_type = 'oriented'
     tex = TEXMAN.get_c('generic')
     _tp = None
+
+    def __init__(self, pos, orientation='+x', randflags=None):
+        self.pos = CoarseVector(*pos)
+        self.orientation = orientation
+        if randflags:
+            self._randflags = randflags
 
     def get_transition_probs(self):
         """Probabilities of transitioning to other named room types"""
@@ -46,18 +66,11 @@ class _Room:
         Return the set of possible doorways as offsets to self.pos. DO NOT include self.pos
         """
         return [
-            m(-1, 0, 0),
-            m(0, -1, 0),
-            m(1, 0, 0),
-            m(0, 1, 0)
+            NORTH,
+            SOUTH,
+            EAST,
+            WEST
         ]
-
-    def get_offset(self):
-        """get_offset is used to obtain the shift required with non 1x1 units
-        """
-        # This should be inverse of FIRST get_doorways entry.
-        return self._get_doorways()[0]
-        # return mi(self._get_doorways()[0])
 
     def get_doorways(self):
         """The get_doorways function that most things actually use, which applies the offset.
@@ -66,13 +79,24 @@ class _Room:
         your doorways. Everyone will call this and have access to shifted
         values.
         """
+        # log.debug('doors', self.orientation, self._get_doorways(), [
+            # self.pos + q.rotate(self.orientation) for q in self._get_doorways()
+        # ])
         return [
-            mv(self.pos, q) for q in self._get_doorways()
+            self.pos + q.rotate(self.orientation) for q in self._get_doorways()
         ]
+
+    def _get_positions(self):
+        return [SELF]
 
     def get_positions(self):
         """Positions occupied by this unit"""
-        return [self.pos]
+        # print('pos', self.orientation, self._get_positions(), [
+            # p.rotate(self.orientation) + self.pos for p in self._get_positions()
+        # ])
+        return [
+            self.pos + p.rotate(self.orientation) for p in self._get_positions()
+        ]
 
     @classmethod
     def randOpts(cls, prev):
@@ -99,39 +123,10 @@ class _Room:
 
     def light(self, xmap):
         """Function which applies light entities to the unit."""
-        # If there is self.size, use that. Otherwise use default of 8.
-        if hasattr(self, 'size'):
-            size = self.size
-        else:
-            size = SIZE
+        LIGHTMAN.light(xmap, self.pos)
 
-        LIGHTMAN.light(xmap, self.pos, size)
-
-
-class _OrientedRoom(_Room):
-    """A special case of base _Room, a class which has different behaviour
-    based on its orientation.
-    """
-    room_type = 'oriented'
-
-    def __init__(self, pos, orientation='+x', randflags=None):
-        self.pos = pos
-        self.orientation = orientation
-        if randflags:
-            self._randflags = randflags
-
-    def _get_doorways(self):
-        """Doorways out of two axes"""
-        if self.orientation in ('+x', '-x'):
-            return [
-                m(-1, 0, 0),
-                m(1, 0, 0),
-            ]
-        else:
-            return [
-                m(0, 1, 0),
-                m(0, -1, 0)
-            ]
+    def render(self, world, xmap):
+        self.light(xmap)
 
 
 class _3X3Room(_Room):
@@ -139,89 +134,87 @@ class _3X3Room(_Room):
     AltarRoom is currently the only user."""
     room_type = 'platform_setpiece'
 
-    def __init__(self, pos, orientation=None, randflags=None):
+    def __init__(self, pos, orientation='+x', randflags=None):
         """Init is kept separate from rendering, because init sets self.pos,
         and we use that when calling self.get_positions(), which is required as
         part of placement, we wouldn't want to place a partial room."""
-        self.pos = pos
+        self.pos = CoarseVector(*pos)
         self.tex = TEXMAN.get_c('floor')
         self.orientation = orientation
 
     def _get_doorways(self):
         return [
-            m(-2, 0, 0),
-            m(2, 0, 0),
-            m(0, -2, 0),
-            m(0, 2, 0),
+            NORTH * 2,
+            SOUTH * 2,
+            EAST * 2,
+            WEST * 2,
         ]
 
-    def get_positions(self):
+    def _get_positions(self):
         return [
-            mv(self.pos, m(-1, -1, 0)),
-            mv(self.pos, m(-1, 0, 0)),
-            mv(self.pos, m(-1, 1, 0)),
-            mv(self.pos, m(0, -1, 0)),
-            mv(self.pos, m(0, 0, 0)),
-            mv(self.pos, m(0, 1, 0)),
-            mv(self.pos, m(1, -1, 0)),
-            mv(self.pos, m(1, 0, 0)),
-            mv(self.pos, m(1, 1, 0)),
+            NORTHWEST,
+            NORTH,
+            NORTHEAST,
+            WEST,
+            SELF,
+            EAST,
+            SOUTHWEST,
+            SOUTH,
+            SOUTHEAST,
 
             # Do not place things above us
-            mv(self.pos, m(-1, -1, 1)),
-            mv(self.pos, m(-1, 0, 1)),
-            mv(self.pos, m(-1, 1, 1)),
-            mv(self.pos, m(0, -1, 1)),
-            mv(self.pos, m(0, 0, 1)),
-            mv(self.pos, m(0, 1, 1)),
-            mv(self.pos, m(1, -1, 1)),
-            mv(self.pos, m(1, 0, 1)),
-            mv(self.pos, m(1, 1, 1)),
+            ABOVE + NORTHWEST,
+            ABOVE + NORTH,
+            ABOVE + NORTHEAST,
+            ABOVE + WEST,
+            ABOVE + SELF,
+            ABOVE + EAST,
+            ABOVE + SOUTHWEST,
+            ABOVE + SOUTH,
+            ABOVE + SOUTHEAST,
         ]
 
 
 class BaseRoom(_Room):
     """First real 'room' class."""
 
-    def __init__(self, pos, orientation=None, randflags=None):
+    def __init__(self, pos, orientation='+x', randflags=None):
         """Init is kept separate from rendering, because init sets self.pos,
         and we use that when calling self.get_positions(), which is required as
         part of placement, we wouldn't want to place a partial room."""
-        self.pos = pos
+        self.pos = CoarseVector(*pos)
         self.orientation = orientation
         if randflags:
             self._randflags = randflags
 
     def render(self, world, xmap):
+        super().render(world, xmap)
         tex = TEXMAN.get_c('floor')
 
-        wall(world, '-z', SIZE, self.pos, tex=tex)
-        wall(world, '+z', SIZE, self.pos, tex=tex)
-        self.light(xmap)
+        self.x_floor(world, SELF, tex=tex)
+        self.x_ceiling(world, SELF, tex=tex)
 
 
 class TestRoom(_Room):
-    def __init__(self, pos, orientation=None, randflags=None):
+    def __init__(self, pos, orientation='+x', randflags=None):
         """Init is kept separate from rendering, because init sets self.pos,
         and we use that when calling self.get_positions(), which is required as
         part of placement, we wouldn't want to place a partial room."""
-        self.pos = pos
+        self.pos = CoarseVector(*pos)
         self.orientation = orientation
         if randflags:
             self._randflags = randflags
 
     def render(self, world, xmap):
+        self.x_floor(world, SELF, tex=TEXMAN.get_c('accent'))
+
         g = Grenade(
-            xyz=m(
-                SIZE_OFFSET * (self.pos[0] + SIZE / 2),
-                SIZE_OFFSET * (self.pos[1] + SIZE / 2),
-                SIZE_OFFSET * (self.pos[2] + 1),
-            )
+            xyz=self.pos + TILE_CENTER + ABOVE_FINE
         )
         xmap.ents.append(g)
 
 
-class NLongCorridor(_OrientedRoom):
+class NLongCorridor(_Room):
     room_type = 'hallway'
     _randflags = (
         True, # A
@@ -232,9 +225,7 @@ class NLongCorridor(_OrientedRoom):
 
     def __init__(self, pos, orientation='+x', randflags=None):
         self.orientation = orientation
-        self.pos = pos
-        # self.pos = mv(pos, self.get_offset())
-        # print(pos, '+', self.get_offset(), '(' , self.orientation,') =>', self.pos, '==', self.get_positions(), self.get_doorways())
+        self.pos = CoarseVector(*pos)
         if randflags:
             self._randflags = randflags
 
@@ -246,111 +237,51 @@ class NLongCorridor(_OrientedRoom):
         # First tile
         floor_tex = TEXMAN.get_c('floor')
         wall_tex = TEXMAN.get_c('wall')
-        wall(world, '-z', SIZE, self.pos, tex=floor_tex)
+
+        self.x_floor(world, SELF, tex=floor_tex)
 
         for i in range(1, self.length):
-            if self.orientation == '-x':
-                offset = (i, 0, 0)
-            elif self.orientation == '+x':
-                offset = (-i, 0, 0)
-            elif self.orientation == '-y':
-                offset = (0, i, 0)
-            elif self.orientation == '+y':
-                offset = (0, -i, 0)
-            pos_offset = mv(self.pos, m(*offset))
-            wall(world, '-z', SIZE, pos_offset, tex=floor_tex)
+            # Add a floor south of us.
+            self.x_floor(world, NORTH * i, tex=floor_tex)
 
-        for i in range(0, SIZE * self.length):
-            if self.orientation == '-x':
-                real_lt = mv(self.pos, (i, 0, 1))
-                real_rt = mv(self.pos, (i, 7, 1))
-            elif self.orientation == '+x':
-                real_lt = mv(self.pos, (-i, 0, 1))
-                real_rt = mv(self.pos, (-i, 7, 1))
-            elif self.orientation == '-y':
-                real_lt = mv(self.pos, (0, i, 1))
-                real_rt = mv(self.pos, (7, i, 1))
-            elif self.orientation == '+y':
-                real_lt = mv(self.pos, (0, -i + 7, 1))
-                real_rt = mv(self.pos, (7, -i + 7, 1))
+        # for i in range(0, SIZE * self.length):
+            # real_lt = self.pos + FineVector(i, 0, 1).rotate(self.orientation)
+            # real_rt = self.pos + FineVector(i, 7, 1).rotate(self.orientation)
 
-            if 'x' in self.orientation:
-                real_idx = 0
-            else:
-                real_idx = 1
-
-            if self._randflags[3]:
-                y_lt = int(3 + 3 * math.sin(real_lt[real_idx]/4))
-                y_rt = int(3 + 3 * math.sin(real_rt[real_idx]/4))
-                if self._randflags[2]:
-                    column(world, 'z', y_lt, real_lt, tex=floor_tex)
-                    column(world, 'z', y_rt, real_rt, tex=floor_tex)
-                else:
-                    column(world, 'z', 1, (real_lt[0], real_lt[1], real_lt[2] + y_lt - 1), tex=floor_tex)
-                    column(world, 'z', 1, (real_rt[0], real_rt[1], real_rt[2] + y_rt - 1), tex=floor_tex)
+            # if 'x' in self.orientation:
+                # real_idx = 0
             # else:
-                # y_lt1 = int(3 + 3 * math.sin(real_lt[real_idx]/4))
-                # y_rt1 = int(3 + 3 * math.sin(real_rt[real_idx]/4))
-                # column(world, 'z', 1, (real_lt[0], real_lt[1], real_lt[2] + y_lt1 - 1), tex=floor_tex)
-                # column(world, 'z', 1, (real_rt[0], real_rt[1], real_rt[2] + y_rt1 - 1), tex=floor_tex)
+                # real_idx = 1
 
+            # if self._randflags[3]:
+                # y_lt = int(3 + 3 * math.sin(real_lt[real_idx]/4))
+                # y_rt = int(3 + 3 * math.sin(real_rt[real_idx]/4))
                 # if self._randflags[2]:
-                    # y_lt2 = int(3 + 3 * math.sin(math.pi + (real_lt[real_idx]/4)))
-                    # y_rt2 = int(3 + 3 * math.sin(math.pi + (real_rt[real_idx]/4)))
-                    # column(world, 'z', 1, (real_lt[0], real_lt[1], real_lt[2] + y_lt2 - 1), tex=floor_tex)
-                    # column(world, 'z', 1, (real_rt[0], real_rt[1], real_rt[2] + y_rt2 - 1), tex=floor_tex)
+                    # column(world, 'z', y_lt, real_lt, tex=floor_tex)
+                    # column(world, 'z', y_rt, real_rt, tex=floor_tex)
                 # else:
-                    # y_lt2 = int(3 + 3 * math.sin(math.pi/2 + (real_lt[real_idx]/4)))
-                    # y_rt2 = int(3 + 3 * math.sin(math.pi/2 + (real_rt[real_idx]/4)))
-                    # column(world, 'z', 1, (real_lt[0], real_lt[1], real_lt[2] + y_lt2 - 1), tex=floor_tex)
-                    # column(world, 'z', 1, (real_rt[0], real_rt[1], real_rt[2] + y_rt2 - 1), tex=floor_tex)
-
+                    # column(world, 'z', 1, (real_lt[0], real_lt[1], real_lt[2] + y_lt - 1), tex=floor_tex)
+                    # column(world, 'z', 1, (real_rt[0], real_rt[1], real_rt[2] + y_rt - 1), tex=floor_tex)
 
         self.light(xmap)
 
-    def get_positions(self):
-        positions = [self.pos]
+    def _get_positions(self):
+        positions = [SELF]
 
         # Same logic as init
         for i in range(1, self.length):
-            if self.orientation == '-x':
-                positions.append(mv(self.pos, m(i, 0, 0)))
-            elif self.orientation == '+x':
-                positions.append(mv(self.pos, m(-i, 0, 0)))
-            elif self.orientation == '-y':
-                positions.append(mv(self.pos, m(0, i, 0)))
-            elif self.orientation == '+y':
-                positions.append(mv(self.pos, m(0, -i, 0)))
-            else:
-                raise Exception("Unknown Orientation")
+            positions.append(NORTH * i)
+
         return positions
 
     def _get_doorways(self):
-        if self.orientation == '+x':
-            return [
-                m(1, 0, 0),
-                m(-self.length, 0, 0),
-            ]
-        elif self.orientation == '-x':
-            return [
-                m(-1, 0, 0),
-                m(self.length, 0, 0),
-            ]
-        elif self.orientation == '+y':
-            return [
-                m(0, 1, 0),
-                m(0, -self.length, 0),
-            ]
-        elif self.orientation == '-y':
-            return [
-                m(0, -1, 0),
-                m(0, self.length, 0),
-            ]
-        else:
-            raise Exception("Unknown Orientation")
+        return [
+            SOUTH,
+            NORTH * self.length
+        ]
 
 
-class Corridor2way(_OrientedRoom):
+class Corridor2way(_Room):
     room_type = 'hallway'
     _randflags = (
         True, # roof
@@ -358,7 +289,7 @@ class Corridor2way(_OrientedRoom):
     )
 
     def __init__(self, pos, orientation='+x', randflags=None):
-        self.pos = pos
+        self.pos = CoarseVector(*pos)
         self.orientation = orientation
         if randflags:
             self._randflags = randflags
@@ -368,248 +299,98 @@ class Corridor2way(_OrientedRoom):
         floor_tex = TEXMAN.get_c('floor')
         wall_tex = TEXMAN.get_c('wall')
 
-        wall(world, '-z', SIZE, self.pos, tex=floor_tex)
+        self.x_floor(world, SELF, tex=floor_tex)
         if self._randflags[0]:
-            wall(world, '+z', SIZE, self.pos, tex=floor_tex)
+            self.x_ceiling(world, SELF, tex=floor_tex)
 
         if self._randflags[1]:
-            if self.orientation in ('+x', '-x'):
-                wall(world, '+y', 2, self.pos, tex=wall_tex)
-                wall(world, '-y', 2, self.pos, tex=wall_tex)
-            else:
-                wall(world, '+x', 2, self.pos, tex=wall_tex)
-                wall(world, '-x', 2, self.pos, tex=wall_tex)
+            # TODO: low wall (2 high)
+            self.x_low_wall(world, SELF + ABOVE_FINE, EAST)
+            self.x_low_wall(world, SELF + ABOVE_FINE, WEST)
 
+    def _get_doorways(self):
+        return [
+            SOUTH,
+            NORTH + NORTH
+        ]
 
-class JumpCorridor3(_OrientedRoom):
+class JumpCorridor3(_Room):
     room_type = 'hallway_jump'
 
     def __init__(self, pos, orientation='+x', randflags=None):
-        self.pos = pos
+        self.pos = CoarseVector(*pos)
         self.orientation = orientation
         if randflags:
             self._randflags = randflags
 
     def light(self, xmap):
-        if hasattr(self, 'size'):
-            size = self.size
-        else:
-            size = SIZE
-
-        poss = self.get_positions()
-        LIGHTMAN.light(xmap, poss[0], size)
-        LIGHTMAN.light(xmap, poss[2], size)
+        all_positions = self.get_positions()
+        # Light the first and last positions
+        LIGHTMAN.light(xmap, all_positions[0])
+        LIGHTMAN.light(xmap, all_positions[-1])
 
     def render(self, world, xmap):
-        wall(world, '-z', SIZE, self.pos, tex=TEXMAN.get_c('floor'))
         pusher_a = None
         pusher_b = None
         self.light(xmap)
         floor_tex = TEXMAN.get_c('floor')
         wall_tex = TEXMAN.get_c('wall')
+        accent_tex = TEXMAN.get_c('accent')
 
         (a, b, c) = self.pos
-        if self.orientation == '-x':
-            wall(world, '-z', SIZE, mv(self.pos, m(2, 0, 0)), tex=floor_tex)
-            rectangular_prism(world, 2, 4, 1, (a + 6, b + 2, c), tex=wall_tex)
-            pusher_a = Pusher(
-                xyz=m(
-                    SIZE_OFFSET * (self.pos[0] + 7),
-                    SIZE_OFFSET * (self.pos[1] + 4),
-                    SIZE_OFFSET * (self.pos[2] + 1),
-                ),
-                maxrad=15 * SIZE_OFFSET,
-                yaw=270,
-                force=175 * SIZE_OFFSET,
-            )
-        elif self.orientation == '+x':
-            wall(world, '-z', SIZE, mv(self.pos, m(-2, 0, 0)), tex=floor_tex)
-            rectangular_prism(world, 2, 4, 1, (a, b + 2, c), tex=wall_tex)
-            pusher_a = Pusher(
-                xyz=m(
-                    SIZE_OFFSET * (self.pos[0] + 1),
-                    SIZE_OFFSET * (self.pos[1] + 4),
-                    SIZE_OFFSET * (self.pos[2] + 1),
-                ),
-                maxrad=15 * SIZE_OFFSET,
-                yaw=90,
-                force=175 * SIZE_OFFSET,
-            )
-        elif self.orientation == '-y':
-            wall(world, '-z', SIZE, mv(self.pos, m(0, 2, 0)), tex=floor_tex)
-            rectangular_prism(world, 4, 2, 1, (a + 2, b + 6, c), tex=wall_tex)
-            pusher_a = Pusher(
-                xyz=m(
-                    SIZE_OFFSET * (self.pos[0] + 4),
-                    SIZE_OFFSET * (self.pos[1] + 7),
-                    SIZE_OFFSET * (self.pos[2] + 1),
-                ),
-                maxrad=15 * SIZE_OFFSET,
-                yaw=0,
-                force=175 * SIZE_OFFSET,
-            )
-        elif self.orientation == '+y':
-            wall(world, '-z', SIZE, mv(self.pos, m(0, -2, 0)), tex=floor_tex)
-            rectangular_prism(world, 4, 2, 1, (a + 2, b, c), tex=wall_tex)
-            pusher_a = Pusher(
-                xyz=m(
-                    SIZE_OFFSET * (self.pos[0] + 4),
-                    SIZE_OFFSET * (self.pos[1] + 1),
-                    SIZE_OFFSET * (self.pos[2] + 1),
-                ),
-                maxrad=15 * SIZE_OFFSET,
-                yaw=180,
-                force=175 * SIZE_OFFSET,
-            )
 
-        if self.orientation in ('+x', '-x'):
-            low_wall(world, '+y', SIZE, self.pos, tex=wall_tex)
-            low_wall(world, '-y', SIZE, self.pos, tex=wall_tex)
-            if self.orientation == '-x':
-                low_wall(world, '+y', SIZE, mv(self.pos, m(2, 0, 0)), tex=wall_tex)
-                low_wall(world, '-y', SIZE, mv(self.pos, m(2, 0, 0)), tex=wall_tex)
-                (a, b, c) = mv(self.pos, m(2, 0, 0))
-                rectangular_prism(world, 2, 4, 1, (a, b + 2, c), tex=wall_tex)
-                pusher_b = Pusher(
-                    xyz=m(
-                        SIZE_OFFSET * (a + 1),
-                        SIZE_OFFSET * (b + 4),
-                        SIZE_OFFSET * (c + 1),
-                    ),
-                    maxrad=15 * SIZE_OFFSET,
-                    yaw=90,
-                    force=175 * SIZE_OFFSET,
-                )
-            else:
-                low_wall(world, '+y', SIZE, mv(self.pos, m(-2, 0, 0)), tex=wall_tex)
-                low_wall(world, '-y', SIZE, mv(self.pos, m(-2, 0, 0)), tex=wall_tex)
-                (a, b, c) = mv(self.pos, m(-2, 0, 0))
-                rectangular_prism(world, 2, 4, 1, (a + 6, b + 2, c), tex=wall_tex)
-                pusher_b = Pusher(
-                    xyz=m(
-                        SIZE_OFFSET * (a + 7),
-                        SIZE_OFFSET * (b + 4),
-                        SIZE_OFFSET * (c + 1),
-                    ),
-                    maxrad=15 * SIZE_OFFSET,
-                    yaw=270,
-                    force=175 * SIZE_OFFSET,
-                )
-        else:
-            low_wall(world, '+x', SIZE, self.pos, tex=wall_tex)
-            low_wall(world, '-x', SIZE, self.pos, tex=wall_tex)
+        pusher_a = Pusher(
+            xyz=self.pos + FineVector(7, 4, 1).rotate(self.orientation) + self.x_get_adjustment(),
+            maxrad=15 * SIZE_OFFSET,
+            yaw=rotate_yaw(270, self.orientation),
+            force=175 * SIZE_OFFSET,
+        )
 
-            if self.orientation == '-y':
-                low_wall(world, '+x', SIZE, mv(self.pos, m(0, 2, 0)), tex=wall_tex)
-                low_wall(world, '-x', SIZE, mv(self.pos, m(0, 2, 0)), tex=wall_tex)
-                (a, b, c) = mv(self.pos, m(0, 2, 0))
-                rectangular_prism(world, 4, 2, 1, (a + 2, b, c), tex=wall_tex)
-                pusher_b = Pusher(
-                    xyz=m(
-                        SIZE_OFFSET * (a + 4),
-                        SIZE_OFFSET * (b + 1),
-                        SIZE_OFFSET * (c + 1),
-                    ),
-                    maxrad=15 * SIZE_OFFSET,
-                    yaw=180,
-                    force=175 * SIZE_OFFSET,
-                )
-            else:
-                low_wall(world, '+x', SIZE, mv(self.pos, m(0, -2, 0)), tex=wall_tex)
-                low_wall(world, '-x', SIZE, mv(self.pos, m(0, -2, 0)), tex=wall_tex)
-                (a, b, c) = mv(self.pos, m(0, -2, 0))
-                rectangular_prism(world, 4, 2, 1, (a + 2, b + 6, c), tex=wall_tex)
-                pusher_b = Pusher(
-                    xyz=m(
-                        SIZE_OFFSET * (a + 4),
-                        SIZE_OFFSET * (b + 7),
-                        SIZE_OFFSET * (c + 1),
-                    ),
-                    maxrad=15 * SIZE_OFFSET,
-                    yaw=0,
-                    force=175 * SIZE_OFFSET,
-                )
-
+        pusher_b = Pusher(
+            xyz=self.pos + (NORTH + NORTH + FineVector(1, 4, 1)).rotate(self.orientation) + self.x_get_adjustment(),
+            maxrad=15 * SIZE_OFFSET,
+            yaw=rotate_yaw(90, self.orientation),
+            force=175 * SIZE_OFFSET,
+        )
         xmap.ents.append(pusher_a)
         xmap.ents.append(pusher_b)
 
-    def get_positions(self):
-        positions = [self.pos]
-        for i in range(1, 3):
-            if self.orientation == '-x':
-                positions.append(mv(self.pos, m(i, 0, 0)))
-            elif self.orientation == '+x':
-                positions.append(mv(self.pos, m(-i, 0, 0)))
-            elif self.orientation == '-y':
-                positions.append(mv(self.pos, m(0, i, 0)))
-            elif self.orientation == '+y':
-                positions.append(mv(self.pos, m(0, -i, 0)))
-            else:
-                raise Exception("Unknown Orientation")
+        self.x_floor(world, SELF, tex=floor_tex)
+        self.x_floor(world, SELF + NORTH + NORTH, tex=floor_tex)
+
+        self.x_low_wall(world, SELF + ABOVE_FINE, EAST, tex=wall_tex)
+        # self.x_low_wall(world, SELF + ABOVE_FINE, WEST, tex=wall_tex)
+        self.x_low_wall(world, SELF + NORTH + NORTH + ABOVE_FINE, EAST, tex=wall_tex)
+        # self.x_low_wall(world, SELF + NORTH + NORTH + ABOVE_FINE, WEST, tex=wall_tex)
+
+        self.x_rectangular_prism(world, FineVector(6, 2, 0), AbsoluteVector(2, 4, 1), tex=accent_tex)
+        self.x_rectangular_prism(world, NORTH + NORTH + FineVector(0, 2, 0), AbsoluteVector(2, 4, 1), tex=accent_tex)
+
+    def _get_positions(self):
+        positions = []
+        for i in range(3):
+            positions.append(NORTH * i)
         return positions
 
     def _get_doorways(self):
-        if self.orientation == '+x':
-            return [
-                m(1, 0, 0),
-                m(-3, 0, 0),
-            ]
-        elif self.orientation == '-x':
-            return [
-                m(-1, 0, 0),
-                m(3, 0, 0),
-            ]
-        elif self.orientation == '+y':
-            return [
-                m(0, 1, 0),
-                m(0, -3, 0),
-            ]
-        elif self.orientation == '-y':
-            return [
-                m(0, -1, 0),
-                m(0, 3, 0),
-            ]
-        else:
-            raise Exception("Unknown Orientation")
+        return [
+            SOUTH,
+            NORTH * 3
+        ]
 
 
-class JumpCorridorVertical(_OrientedRoom):
+class JumpCorridorVertical(_Room):
     room_type = 'vertical'
     _randflags = (
         True, # extra section
     )
 
-    def _get_doorways(self):
-        if self.orientation == '-x':
-            return [
-                m(1, 0, 0),
-                m(-1, 0, 2),
-            ]
-        elif self.orientation == '+x':
-            return [
-                m(-1, 0, 0),
-                m(1, 0, 2),
-            ]
-        if self.orientation == '-y':
-            return [
-                m(0, 1, 0),
-                m(0, -1, 2),
-            ]
-        if self.orientation == '+y':
-            return [
-                m(0, -1, 0),
-                m(0, 1, 2),
-            ]
-
     def __init__(self, pos, orientation='+x', roof=False, randflags=None):
-        self.pos = pos
+        self.pos = CoarseVector(*pos)
         self.orientation = orientation
         self.roof = roof
         if randflags:
             self._randflags = randflags
-
-    def light(self, xmap):
-        LIGHTMAN.light(xmap, mv(self.pos, m(4, 4, 1)), 1)
 
     def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')
@@ -617,110 +398,56 @@ class JumpCorridorVertical(_OrientedRoom):
         accent_tex = TEXMAN.get_c('accent')
         column_tex = TEXMAN.get_c('column')
 
-        wall(world, '-z', SIZE, self.pos, tex=floor_tex)
-        #wall(world, '+z', SIZE, mv(self.pos, m(0, 0, 2)), tex=floor_tex)
+        self.x_floor(world, SELF, tex=floor_tex)
+        self.x_ceiling(world, SELF + ABOVE + ABOVE, tex=floor_tex)
         self.light(xmap)
 
-        (a, b, c) = self.pos
-        if self.orientation == '-x':
-            #Walls
-            multi_wall(world, ('+x', '+y', '-y'), SIZE, self.pos, tex=wall_tex)
-            multi_wall(world, ('-x', '+x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, 1)), tex=wall_tex)
-            multi_wall(world, ('+x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, 2)), tex=wall_tex)
-            column(world, 'y', 8, mv(self.pos, m(0, 0, 2)), tex=column_tex)
-            # Red markers
-            rectangular_prism(world, 2, 4, 1, (a + 4, b + 2, c), tex=accent_tex)
-            rectangular_prism(world, 1, 4, 2, (a + 7, b + 2, c + 12), tex=accent_tex)
-            pusher_a = Pusher(
-                xyz=m(a + 5, b + 4, c + 1, size=SIZE * SIZE_OFFSET),
-                pitch=74,
-                yaw=270,
-                force=400 * SIZE_OFFSET,
-            )
-
-            pusher_b = Pusher(
-                xyz=m(a + 6, b + 4, c + 15 + (2 if SIZE_OFFSET == 0.5 else 0), size=SIZE * SIZE_OFFSET),
-                pitch=40,
-                yaw=90,
-                force=200 * SIZE_OFFSET,
-            )
-        elif self.orientation == '+x':
-            #Walls
-            multi_wall(world, ('-x', '+y', '-y'), SIZE, self.pos, tex=wall_tex)
-            multi_wall(world, ('-x', '+x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, 1)), tex=wall_tex)
-            multi_wall(world, ('-x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, 2)), tex=wall_tex)
-            column(world, 'y', 8, mv(self.pos, m(7/8, 0, 2)), tex=column_tex)
-            # Red markers
-            rectangular_prism(world, 2, 4, 1, (a + 2, b + 2, c), tex=accent_tex)
-            rectangular_prism(world, 1, 4, 2, (a, b + 2, c + 12), tex=accent_tex)
-
-            pusher_a = Pusher(
-                xyz=m(a + 3, b + 4, c + 1, size=SIZE * SIZE_OFFSET),
-                pitch=74,
-                yaw=90,
-                force=400 * SIZE_OFFSET,
-            )
-
-            pusher_b = Pusher(
-                xyz=m(a + 2, b + 4, c + 15 + (2 if SIZE_OFFSET == 0.5 else 0), size=SIZE * SIZE_OFFSET),
-                pitch=40,
-                yaw=270,
-                force=200 * SIZE_OFFSET,
-            )
-        elif self.orientation == '-y':
-            #Walls
-            multi_wall(world, ('+y', '+x', '-x'), SIZE, self.pos, tex=wall_tex)
-            multi_wall(world, ('-y', '+y', '+x', '-x'), SIZE, mv(self.pos, m(0, 0, 1)), tex=wall_tex)
-            multi_wall(world, ('+y', '+x', '-x'), SIZE, mv(self.pos, m(0, 0, 2)), tex=wall_tex)
-            column(world, 'x', 8, mv(self.pos, m(0, 0, 2)), tex=column_tex)
-            # Red markers
-            rectangular_prism(world, 4, 2, 1, (a + 2, b + 4, c), tex=accent_tex)
-            rectangular_prism(world, 4, 1, 2, (a + 2, b + 7, c + 12), tex=accent_tex)
-            pusher_a = Pusher(
-                xyz=m(a + 4, b + 5, c + 1, size=SIZE * SIZE_OFFSET),
-                pitch=74,
-                yaw=0,
-                force=400 * SIZE_OFFSET,
-            )
-
-            pusher_b = Pusher(
-                xyz=m(a + 4, b + 6, c + 15 + (2 if SIZE_OFFSET == 0.5 else 0), size=SIZE * SIZE_OFFSET),
-                pitch=40,
-                yaw=180,
-                force=200 * SIZE_OFFSET,
-            )
-        elif self.orientation == '+y':
-            #Walls
-            multi_wall(world, ('-y', '+x', '-x'), SIZE, self.pos, tex=wall_tex)
-            multi_wall(world, ('-y', '+y', '+x', '-x'), SIZE, mv(self.pos, m(0, 0, 1)), tex=wall_tex)
-            multi_wall(world, ('-y', '+x', '-x'), SIZE, mv(self.pos, m(0, 0, 2)), tex=wall_tex)
-            column(world, 'x', 8, mv(self.pos, m(7/8, 0, 2)), tex=column_tex)
-            # Red markers
-            rectangular_prism(world, 4, 2, 1, (a + 2, b + 2, c), tex=accent_tex)
-            rectangular_prism(world, 4, 1, 2, (a + 2, b, c + 12), tex=accent_tex)
-
-            pusher_a = Pusher(
-                xyz=m(a + 4, b + 3, c + 1, size=SIZE * SIZE_OFFSET),
-                pitch=74,
-                yaw=180,
-                force=400 * SIZE_OFFSET,
-            )
-
-            pusher_b = Pusher(
-                xyz=m(a + 4, b + 2, c + 15 + (2 if SIZE_OFFSET == 0.5 else 0), size=SIZE * SIZE_OFFSET),
-                pitch=40,
-                yaw=0,
-                force=200 * SIZE_OFFSET,
-            )
-
+        pusher_a = Pusher(
+            xyz=self.pos + FineVector(5, 4, 1).rotate(self.orientation) + self.x_get_adjustment(),
+            pitch=74,
+            yaw=rotate_yaw(270, self.orientation),
+            force=400 * SIZE_OFFSET,
+        )
         xmap.ents.append(pusher_a)
+
+        pusher_b = Pusher(
+            xyz=self.pos + FineVector(6, 4, 17).rotate(self.orientation) + self.x_get_adjustment(),
+            pitch=40,
+            yaw=rotate_yaw(90, self.orientation),
+            force=200 * SIZE_OFFSET,
+        )
         xmap.ents.append(pusher_b)
 
-    def get_positions(self):
+        (a, b, c) = self.pos
+
+        self.x_wall(world, SELF, face=SOUTH, tex=wall_tex)
+        self.x_wall(world, SELF, face=EAST, tex=wall_tex)
+        self.x_wall(world, SELF, face=WEST, tex=wall_tex)
+
+        self.x_wall(world, SELF + ABOVE, face=NORTH, tex=wall_tex)
+        self.x_wall(world, SELF + ABOVE, face=SOUTH, tex=wall_tex)
+        self.x_wall(world, SELF + ABOVE, face=EAST, tex=wall_tex)
+        self.x_wall(world, SELF + ABOVE, face=WEST, tex=wall_tex)
+
+        self.x_wall(world, SELF + ABOVE + ABOVE, face=SOUTH, tex=wall_tex)
+        self.x_wall(world, SELF + ABOVE + ABOVE, face=EAST, tex=wall_tex)
+        self.x_wall(world, SELF + ABOVE + ABOVE, face=WEST, tex=wall_tex)
+
+        self.x_rectangular_prism(world, FineVector(4, 2, 0), AbsoluteVector(2, 4, 1), tex=accent_tex)
+        self.x_rectangular_prism(world, FineVector(7, 2, 12), AbsoluteVector(1, 4, 2), tex=accent_tex)
+        self.x_rectangular_prism(world, FineVector(0, 1, 0) + ABOVE + ABOVE, AbsoluteVector(1, 6, 1), tex=accent_tex)
+
+    def _get_positions(self):
         return [
-            self.pos,
-            mv(self.pos, m(0, 0, 1)),
-            mv(self.pos, m(0, 0, 2)),
+            SELF,
+            SELF + ABOVE,
+            SELF + ABOVE + ABOVE,
+        ]
+
+    def _get_doorways(self):
+        return [
+            SOUTH,
+            SOUTH + ABOVE + ABOVE
         ]
 
 
@@ -728,11 +455,10 @@ class JumpCorridorVerticalCenter(JumpCorridorVertical):
     length = 1
     _randflags = (
         True, # Tall
-        True, # Rings
     )
 
     def __init__(self, pos, orientation='+x', roof=False, tex=506, randflags=None):
-        self.pos = pos
+        self.pos = CoarseVector(*pos)
         self.orientation = orientation
         self.roof = roof
         self.tex = tex
@@ -747,55 +473,51 @@ class JumpCorridorVerticalCenter(JumpCorridorVertical):
         accent_tex = TEXMAN.get_c('accent')
         column_tex = TEXMAN.get_c('column')
 
-        wall(world, '-z', SIZE, self.pos, tex=floor_tex)
+        self.x_floor(world, SELF, tex=floor_tex)
         self.light(xmap)
 
         (a, b, c) = self.pos
         #Walls
         for i in range(1, self.length + 1):
-            if self._randflags[1]:
-                multi_wall(world, ('-x', '+x', '+y', '-y'), SIZE, mv(self.pos, m(0, 0, i)), tex=wall_tex)
-            else:
-                for j in range(i * 8, (i + 1) * 8):
-                    ring(world, mv(self.pos, (0, 0, j)), size=8, tex=wall_tex, thickness=1)
+            self.x_wall(world, SELF + (ABOVE * i), face=NORTH, tex=wall_tex)
+            self.x_wall(world, SELF + (ABOVE * i), face=SOUTH, tex=wall_tex)
+            self.x_wall(world, SELF + (ABOVE * i), face=EAST, tex=wall_tex)
+            self.x_wall(world, SELF + (ABOVE * i), face=WEST, tex=wall_tex)
 
         # Red markers
-        rectangular_prism(world, 4, 4, 1, (a + 2, b + 2, c), tex=accent_tex)
+        self.x_rectangular_prism(world, FineVector(2, 2, 0), AbsoluteVector(4, 4, 1), tex=accent_tex)
 
         force = 460 * SIZE_OFFSET
         if self.length == 2:
             force = 700 * SIZE_OFFSET
 
         pusher_a = Pusher(
-            xyz=m(a + 4, b + 4, c + 1, size=SIZE * SIZE_OFFSET),
+            xyz=self.pos + FineVector(4, 4, 1).rotate(self.orientation) + self.x_get_adjustment(),
             pitch=90,
-            yaw=0,
+            maxrad=5,
+            yaw=rotate_yaw(0, self.orientation),
             force=force,
-            maxrad=5
         )
         xmap.ents.append(pusher_a)
 
-    def get_positions(self):
-        p = [self.pos]
-        for i in range(1, self.length + 2):
-            p.append(mv(self.pos, m(0, 0, i)))
-        return p
+    def _get_positions(self):
+        positions = []
+        for i in range(self.length + 2):
+            positions.append(ABOVE * i)
+        return positions
 
     def _get_doorways(self):
         return [
-            m(1, 0, 0),
-            m(-1, 0, 0),
-            m(0, 1, 0),
-            m(0, -1, 0),
+            NORTH,
+            SOUTH,
+            EAST,
+            WEST,
 
-            m(1, 0, self.length + 1),
-            m(-1, 0, self.length + 1),
-            m(0, 1, self.length + 1),
-            m(0, -1, self.length + 1),
+            NORTH + ABOVE * (self.length + 1),
+            SOUTH + ABOVE * (self.length + 1),
+            EAST + ABOVE * (self.length + 1),
+            WEST + ABOVE * (self.length + 1),
         ]
-
-    def light(self, xmap):
-        LIGHTMAN.light(xmap, mv(self.pos, m(0.5, 0.5, 1)), 1)
 
 
 class Corridor4way(_Room):
@@ -806,8 +528,9 @@ class Corridor4way(_Room):
         True, # Wall: B
     )
 
-    def __init__(self, pos, orientation=None, randflags=None):
-        self.pos = pos
+    def __init__(self, pos, orientation='+x', randflags=None):
+        self.orientation = orientation
+        self.pos = CoarseVector(*pos)
         if randflags:
             self._randflags = randflags
 
@@ -817,36 +540,35 @@ class Corridor4way(_Room):
         accent_tex = TEXMAN.get_c('accent')
         column_tex = TEXMAN.get_c('column')
 
-        wall(world, '-z', SIZE, self.pos, tex=floor_tex)
+        self.x_floor(world, SELF, tex=floor_tex)
         if self._randflags[0]:
-            wall(world, '+z', SIZE, self.pos)
+            self.x_ceiling(world, SELF, tex=floor_tex)
 
         if not self._randflags[1] and not self._randflags[2]:
             pass
         elif self._randflags[1] and not self._randflags[2]:
-            column(world, 'z', 8, mv(self.pos, (0, 0, 0)), tex=floor_tex)
-            column(world, 'z', 8, mv(self.pos, (0, SIZE - 1, 0)), tex=floor_tex)
-            column(world, 'z', 8, mv(self.pos, (SIZE - 1, 0, 0)), tex=floor_tex)
-            column(world, 'z', 8, mv(self.pos, (SIZE - 1, SIZE - 1, 0)), tex=floor_tex)
+            self.x_rectangular_prism(world, FineVector(0, 0, 0), AbsoluteVector(1, 1, 8), tex=floor_tex)
+            self.x_rectangular_prism(world, FineVector(0, 7, 0), AbsoluteVector(1, 1, 8), tex=floor_tex)
+            self.x_rectangular_prism(world, FineVector(7, 0, 0), AbsoluteVector(1, 1, 8), tex=floor_tex)
+            self.x_rectangular_prism(world, FineVector(7, 7, 0), AbsoluteVector(1, 1, 8), tex=floor_tex)
         elif not self._randflags[1] and self._randflags[2]:
-            column(world, 'z', 2, mv(self.pos, (0, 0, 0)), tex=floor_tex)
-            column(world, 'z', 2, mv(self.pos, (0, SIZE - 1, 0)), tex=floor_tex)
-            column(world, 'z', 2, mv(self.pos, (SIZE - 1, 0, 0)), tex=floor_tex)
-            column(world, 'z', 2, mv(self.pos, (SIZE - 1, SIZE - 1, 0)), tex=floor_tex)
+            self.x_rectangular_prism(world, FineVector(0, 0, 0), AbsoluteVector(1, 1, 2), tex=floor_tex)
+            self.x_rectangular_prism(world, FineVector(0, 7, 0), AbsoluteVector(1, 1, 2), tex=floor_tex)
+            self.x_rectangular_prism(world, FineVector(7, 0, 0), AbsoluteVector(1, 1, 2), tex=floor_tex)
+            self.x_rectangular_prism(world, FineVector(7, 7, 0), AbsoluteVector(1, 1, 2), tex=floor_tex)
         else:
             pass
-            # TODO
 
         self.light(xmap)
 
-class SpawnRoom(_OrientedRoom):
+class SpawnRoom(_Room):
     room_type = 'platform_setpiece'
     _randflags = (
         True, # Two sides open
     )
 
     def __init__(self, pos, roof=None, orientation='+x', randflags=None):
-        self.pos = pos
+        self.pos = CoarseVector(*pos)
         self.orientation = orientation
         if randflags:
             self._randflags = randflags
@@ -855,115 +577,74 @@ class SpawnRoom(_OrientedRoom):
         floor_tex = TEXMAN.get_c('floor')
         wall_tex = TEXMAN.get_c('wall')
         accent_tex = TEXMAN.get_c('accent')
-        column_tex = TEXMAN.get_c('column')
 
-        wall(world, '-z', SIZE, self.pos, tex=floor_tex)
-        wall(world, '+z', SIZE, self.pos, tex=floor_tex)
+        # Floor and ceiling
+        self.x_floor(world, SELF, tex=floor_tex)
+        self.x_ceiling(world, SELF, tex=floor_tex)
 
-        if self.orientation == '+x':
-            if not self._randflags[0]:
-                wall(world, '-x', SIZE, self.pos)
-            wall(world, '+y', SIZE, self.pos, tex=wall_tex)
-            wall(world, '-y', SIZE, self.pos, tex=wall_tex)
-        elif self.orientation == '-x':
-            if not self._randflags[0]:
-                wall(world, '+x', SIZE, self.pos)
-            wall(world, '+y', SIZE, self.pos, tex=wall_tex)
-            wall(world, '-y', SIZE, self.pos, tex=wall_tex)
-        elif self.orientation == '+y':
-            if not self._randflags[0]:
-                wall(world, '-y', SIZE, self.pos)
-            wall(world, '+x', SIZE, self.pos, tex=wall_tex)
-            wall(world, '-x', SIZE, self.pos, tex=wall_tex)
-        elif self.orientation == '-y':
-            if not self._randflags[0]:
-                wall(world, '+y', SIZE, self.pos)
-            wall(world, '+x', SIZE, self.pos, tex=wall_tex)
-            wall(world, '-x', SIZE, self.pos, tex=wall_tex)
-        else:
-            raise Exception("Unknown orientation %s" % self.orientation)
+        # Sometimes we add a 'back' to it
+        if not self._randflags[0]:
+            self.x_wall(world, SELF, face=SELF, tex=accent_tex)
 
-        spawn = PlayerSpawn(
-            xyz=m(
-                SIZE_OFFSET * (self.pos[0] + SIZE / 2),
-                SIZE_OFFSET * (self.pos[1] + SIZE / 2),
-                SIZE_OFFSET * (self.pos[2] + 1),
-            )
-        )
-        xmap.ents.append(spawn)
-        light = Light(
-            xyz=m(
-                SIZE_OFFSET * (self.pos[0] + SIZE / 2),
-                SIZE_OFFSET * (self.pos[1] + SIZE / 2),
-                SIZE_OFFSET * (self.pos[2] + 6),
-            )
-        )
-        xmap.ents.append(light)
+        # Always add at least two walls for cover
+        self.x_wall(world, SELF, face=EAST, tex=wall_tex)
+        self.x_wall(world, SELF, face=WEST, tex=wall_tex)
+
+        xmap.ents.append(PlayerSpawn(
+            xyz=self.pos + TILE_CENTER + FineVector(0, 0, 1)
+        ))
+
+        self.light(xmap)
 
     def _get_doorways(self):
-        if self.orientation == '+x':
-            return [m(1, 0, 0)]
-        elif self.orientation == '-x':
-            return [m(-1, 0, 0)]
-        if self.orientation == '+y':
-            return [m(0, 1, 0)]
-        elif self.orientation == '-y':
-            return [m(0, -1, 0)]
+        doors = [NORTH]
+        if self._randflags[0]:
+            doors += [SOUTH]
+        return doors
 
 class _LargeRoom(_3X3Room):
     _height = 1
 
-    def __init__(self, pos, roof=False, orientation=None, randflags=None):
+    def __init__(self, pos, roof=False, orientation='+x', randflags=None):
         # Push the position
         self.orientation = orientation
         # We (arbitrarily) define pos as the middle of one side.
-        self.pos = pos
+        self.pos = CoarseVector(*pos)
         # We move it once, in orientation in order to re-center the room?
         if self.orientation == '+x':
-            self.pos = mv(self.pos, m(-1, 0, 0))
+            self.pos = self.pos + SOUTH
         elif self.orientation == '-x':
-            self.pos = mv(self.pos, m(1, 0, 0))
+            self.pos = self.pos + NORTH
         elif self.orientation == '+y':
-            self.pos = mv(self.pos, m(0, -1, 0))
+            self.pos = self.pos + WEST
         elif self.orientation == '-y':
-            self.pos = mv(self.pos, m(0, 1, 0))
+            self.pos = self.pos + EAST
         # For bigger rooms, we have to shift them such that the previous_posision matches a doorway.
         if randflags:
             self._randflags = randflags
 
-    def get_positions(self):
+    def _get_positions(self):
         positions = []
         for z in range(self._height):
             positions += [
-                mv(self.pos , m(-1 , -1 , z)),
-                mv(self.pos , m(-1 , 0  , z)),
-                mv(self.pos , m(-1 , 1  , z)),
-                mv(self.pos , m(0  , -1 , z)),
-                mv(self.pos , m(0  , 0  , z)),
-                mv(self.pos , m(0  , 1  , z)),
-                mv(self.pos , m(1  , -1 , z)),
-                mv(self.pos , m(1  , 0  , z)),
-                mv(self.pos , m(1  , 1  , z)),
+                (ABOVE * z) + NORTHWEST,
+                (ABOVE * z) + NORTH,
+                (ABOVE * z) + NORTHEAST,
+                (ABOVE * z) + WEST,
+                (ABOVE * z) + SELF,
+                (ABOVE * z) + EAST,
+                (ABOVE * z) + SOUTHWEST,
+                (ABOVE * z) + SOUTH,
+                (ABOVE * z) + SOUTHEAST,
             ]
         return positions
 
     def light(self, xmap):
-        (r, g, b) = LIGHTMAN.hue(self.pos)
         h = 6
         if self._height > 1:
             h = 12
-        light = Light(
-            xyz=m(
-                SIZE_OFFSET * (self.pos[0] + 4),
-                SIZE_OFFSET * (self.pos[1] + 4),
-                SIZE_OFFSET * (self.pos[2] + h),
-            ),
-            red=r,
-            green=g,
-            blue=b,
-            radius=SIZE_OFFSET * 256,
-        )
-        xmap.ents.append(light)
+        position = self.pos + NORTH + TILE_CENTER + FineVector(0, 0, h)
+        LIGHTMAN.light(xmap, position.rotate(self.orientation))
 
 
 class PoleRoom(_LargeRoom):
@@ -986,36 +667,31 @@ class PoleRoom(_LargeRoom):
 
         self.light(xmap)
         # size = 24
-        wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=floor_tex)
+        self.x_floor(world, SOUTHWEST, tex=floor_tex, size=24)
+
         if self._randflags[1]:
-            wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, self._height)), tex=floor_tex)
+            self.x_ceiling(world, SOUTHWEST + ABOVE, tex=floor_tex, size=24)
 
         for i in range(-8, 15):
             for j in range(-8, 15):
                 if random.random() < 0.05:
+                    if 2 <= i <= 4 and 3 <= j <= 5:
+                        # Do not occupy same space as light.
+                        continue
+
                     if False and self._randflags[0]:
-                        column(
-                            world, 'z',
-                            random.randint(0, 8 * self._height),
-                            mv(self.pos, (i, j, 0)),
-                            tex=TEXMAN.get_c('column')
-                        )
+                        self.x_rectangular_prism(world, FineVector(i, j, 0) + ABOVE_FINE,
+                                                 AbsoluteVector(1, 1, 8 * self._height),
+                                                 tex=TEXMAN.get_c('column'))
                     else:
                         offset = random.randint(1, 8 * self._height / 2)
-                        column(
-                            world, 'z',
-                            (8 * self._height) - (2 * offset),
-                            mv(self.pos, (i, j, offset)),
-                            tex=TEXMAN.get_c('column')
-                        )
+                        self.x_rectangular_prism(world, FineVector(i, j, 0) + (ABOVE_FINE * offset),
+                                                 AbsoluteVector(1, 1, (8 * self._height) - (2 * offset)),
+                                                 tex=TEXMAN.get_c('column'))
 
     def light(self, xmap):
         light = Light(
-            xyz=m(
-                SIZE_OFFSET * (self.pos[0] + 3),
-                SIZE_OFFSET * (self.pos[1] + 4),
-                SIZE_OFFSET * (self.pos[2] + 7),
-            ),
+            xyz=self.pos + FineVector(3, 4, 10),
             red=255,
             green=255,
             blue=255,
@@ -1042,28 +718,27 @@ class ImposingBlockRoom(_LargeRoom):
 
         self.light(xmap)
         # size = 24
-        wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=floor_tex)
+        self.x_floor(world, SOUTHWEST, tex=floor_tex, size=24)
+
         if self._randflags[0]:
-            wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, self._height)), tex=floor_tex)
+            self.x_ceiling(world, SOUTHWEST + (ABOVE * (self._height - 1)), tex=floor_tex, size=24)
 
         if self._randflags[2]:
-            cube_s(world, random.randint(4,7), mv(self.pos, (7, 7, 0)), tex=TEXMAN.get_c('generic'))
-            cube_s(world, random.randint(4,7), mv(self.pos, (-5, 7, 0)), tex=TEXMAN.get_c('generic'))
-            cube_s(world, random.randint(4,7), mv(self.pos, (7, -5, 0)), tex=TEXMAN.get_c('generic'))
-            cube_s(world, random.randint(4,7), mv(self.pos, (-5, -5, 0)), tex=TEXMAN.get_c('generic'))
+            q = lambda: random.randint(4, 7)
+            self.x_rectangular_prism(world, FineVector(7, 7, 0), AbsoluteVector(q(), q(), q()), tex=TEXMAN.get_c('generic'))
+            self.x_rectangular_prism(world, FineVector(-5, 7, 0), AbsoluteVector(q(), q(), q()), tex=TEXMAN.get_c('generic'))
+            self.x_rectangular_prism(world, FineVector(7, -5, 0), AbsoluteVector(q(), q(), q()), tex=TEXMAN.get_c('generic'))
+            self.x_rectangular_prism(world, FineVector(-5, -5, 0), AbsoluteVector(q(), q(), q()), tex=TEXMAN.get_c('generic'))
         else:
-            cube_s(world, 6, mv(self.pos, (7, 7, 0)), tex=TEXMAN.get_c('generic'))
-            cube_s(world, 6, mv(self.pos, (-5, 7, 0)), tex=TEXMAN.get_c('generic'))
-            cube_s(world, 6, mv(self.pos, (7, -5, 0)), tex=TEXMAN.get_c('generic'))
-            cube_s(world, 6, mv(self.pos, (-5, -5, 0)), tex=TEXMAN.get_c('generic'))
+            v = AbsoluteVector(6, 6, 6)
+            self.x_rectangular_prism(world, FineVector(7, 7, 0), v, tex=TEXMAN.get_c('generic'))
+            self.x_rectangular_prism(world, FineVector(-5, 7, 0), v, tex=TEXMAN.get_c('generic'))
+            self.x_rectangular_prism(world, FineVector(7, -5, 0), v, tex=TEXMAN.get_c('generic'))
+            self.x_rectangular_prism(world, FineVector(-5, -5, 0), v, tex=TEXMAN.get_c('generic'))
 
     def light(self, xmap):
         light = Light(
-            xyz=m(
-                SIZE_OFFSET * (self.pos[0] + 3),
-                SIZE_OFFSET * (self.pos[1] + 4),
-                SIZE_OFFSET * (self.pos[2] + 7),
-            ),
+            xyz=self.pos + FineVector(3, 4, 7),
             red=255,
             green=255,
             blue=255,
@@ -1095,79 +770,37 @@ class ImposingRingRoom(_LargeRoom):
         self.light(xmap)
 
         # size = 24
-        wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=floor_tex)
+        self.x_floor(world, SOUTHWEST, tex=floor_tex, size=24)
         if self._randflags[0]:
-            wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, self._height)), tex=floor_tex)
+            self.x_ceiling(world, SOUTHWEST + (ABOVE * (self._height - 1)), tex=floor_tex, size=24)
 
-        column(world, 'z', 8 * self._height, mv(self.pos, (15, 15, 0)), tex=column_tex)
-        column(world, 'z', 8 * self._height, mv(self.pos, (-8, 15, 0)), tex=column_tex)
-        column(world, 'z', 8 * self._height, mv(self.pos, (15, -8, 0)), tex=column_tex)
-        column(world, 'z', 8 * self._height, mv(self.pos, (-8, -8, 0)), tex=column_tex)
+        self.x_rectangular_prism(world, FineVector(15, 15, 1), AbsoluteVector(1, 1, (8 * self._height) - 2), tex=column_tex)
+        self.x_rectangular_prism(world, FineVector(-8, 15, 1), AbsoluteVector(1, 1, (8 * self._height) - 2), tex=column_tex)
+        self.x_rectangular_prism(world, FineVector(15, -8, 1), AbsoluteVector(1, 1, (8 * self._height) - 2), tex=column_tex)
+        self.x_rectangular_prism(world, FineVector(-8, -8, 1), AbsoluteVector(1, 1, (8 * self._height) - 2), tex=column_tex)
 
         if self._randflags[3]:
-            column(world, 'z', 8 * self._height, mv(self.pos, (2, 3, 0)), tex=column_tex)
-            column(world, 'z', 8 * self._height, mv(self.pos, (4, 2, 0)), tex=column_tex)
-            column(world, 'z', 8 * self._height, mv(self.pos, (3, 5, 0)), tex=column_tex)
-            column(world, 'z', 8 * self._height, mv(self.pos, (5, 4, 0)), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(2, 3, 1), AbsoluteVector(1, 1, (8 * self._height) - 2), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(4, 2, 1), AbsoluteVector(1, 1, (8 * self._height) - 2), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(3, 5, 1), AbsoluteVector(1, 1, (8 * self._height) - 2), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(5, 4, 1), AbsoluteVector(1, 1, (8 * self._height) - 2), tex=column_tex)
 
-        for i in range(1, self._height * 8, 2):
-            ring(world, mv(self.pos, (-4, -4, i)), size=16, tex=accent_tex, thickness=1)
+        for i in range(1, self._height * 8 - 1, 2):
+            self.x_ring(world, FineVector(-4, -4, i), 16, tex=accent_tex)
             if not self._randflags[2] and self._randflags[4]:
-                ring(world, mv(self.pos, (-2, -2, i)), size=12, tex=accent_tex, thickness=1)
+                self.x_ring(world, FineVector(-2, -2, i), 12, tex=accent_tex)
 
         if self._randflags[2] and self._randflags[4]:
-            for i in range(2, self._height * 8, 2):
-                ring(world, mv(self.pos, (-2, -2, i)), size=12, tex=accent_tex, thickness=1)
+            for i in range(2, self._height * 8 - 1, 2):
+                self.x_ring(world, FineVector(-2, -2, i), 12, tex=accent_tex)
 
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-4, 2, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-4, 3, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-4, 4, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-4, 5, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-2, 2, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-2, 3, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-2, 4, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (-2, 5, 1)), subtract=True)
-
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (11, 2, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (11, 3, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (11, 4, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (11, 5, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (9, 2, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (9, 3, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (9, 4, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (9, 5, 1)), subtract=True)
-
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (4, -4, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (3, -4, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (2, -4, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (5, -4, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (2, -2, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (5, -2, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (4, -2, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (3, -2, 1)), subtract=True)
-
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (4, 11, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (3, 11, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (5, 11, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (2, 11, 1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (5, 9,  1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (2, 9,  1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (4, 9,  1)), subtract=True)
-        column(world, 'z', 8 * self._height - 1, mv(self.pos, (3, 9,  1)), subtract=True)
+        self.x_rectangular_prism(world, FineVector(-4, 2, 1), AbsoluteVector(3, 4, 8 * self._height - 2), subtract=True)
+        self.x_rectangular_prism(world, FineVector(2, -4, 1), AbsoluteVector(4, 3, 8 * self._height - 2), subtract=True)
+        self.x_rectangular_prism(world, FineVector(10, 2, 1), AbsoluteVector(3, 4, 8 * self._height - 2), subtract=True)
+        self.x_rectangular_prism(world, FineVector(2, 10, 1), AbsoluteVector(4, 3, 8 * self._height - 2), subtract=True)
 
     def light(self, xmap):
-        light = Light(
-            xyz=m(
-                SIZE_OFFSET * (self.pos[0] + 4),
-                SIZE_OFFSET * (self.pos[1] + 4),
-                SIZE_OFFSET * (self.pos[2] + 4),
-            ),
-            red=255,
-            green=255,
-            blue=255,
-            radius=SIZE_OFFSET * 128,
-        )
-        xmap.ents.append(light)
+        LIGHTMAN.light(xmap, self.pos + NORTH + HALF_HEIGHT + TILE_CENTER)
 
 
 class AltarRoom(_3X3Room):
@@ -1177,23 +810,10 @@ class AltarRoom(_3X3Room):
         True, # Columns
     )
 
-    def __init__(self, pos, roof=False, orientation=None, randflags=None):
-        # Push the position
-        self.orientation = orientation
-        # We (arbitrarily) define pos as the middle of one side.
-        self.pos = pos
-        # We move it once, in orientation in order to re-center the room?
-        if self.orientation == '+x':
-            self.pos = mv(self.pos, m(-1, 0, 0))
-        elif self.orientation == '-x':
-            self.pos = mv(self.pos, m(1, 0, 0))
-        elif self.orientation == '+y':
-            self.pos = mv(self.pos, m(0, -1, 0))
-        elif self.orientation == '-y':
-            self.pos = mv(self.pos, m(0, 1, 0))
-        # For bigger rooms, we have to shift them such that the previous_posision matches a doorway.
-        if randflags:
-            self._randflags = randflags
+    def __init__(self, *arg, **kwarg):
+        super().__init__(*arg, **kwarg)
+        if self._randflags[1]:
+            self._height = 2
 
     def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')
@@ -1203,80 +823,54 @@ class AltarRoom(_3X3Room):
 
         self.light(xmap)
         # size = 24
-        wall(world, '-z', SIZE, self.pos, tex=floor_tex)
-        # 4 corners
-        wall(world, '-z', SIZE, mv(self.pos, m(1, 1, 0)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m(1, -1, 0)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m(-1, 1, 0)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m(-1, -1, 0)), tex=floor_tex)
-        # 4 middle pieces
-        wall(world, '-z', SIZE, mv(self.pos, m(1, 0, 0)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 0)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m(0, 1, 0)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m(0, -1, 0)), tex=floor_tex)
+        self.x_floor(world, SOUTHWEST, tex=floor_tex, size=24)
 
         if self._randflags[2]:
-            column(world, 'z', 8, mv(self.pos, (15, 15, 0)), tex=column_tex)
-            column(world, 'z', 8, mv(self.pos, (-8, 15, 0)), tex=column_tex)
-            column(world, 'z', 8, mv(self.pos, (15, -8, 0)), tex=column_tex)
-            column(world, 'z', 8, mv(self.pos, (-8, -8, 0)), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(15, 15, 1), AbsoluteVector(1, 1, (8 * self._height) - 2), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(-8, 15, 1), AbsoluteVector(1, 1, (8 * self._height) - 2), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(15, -8, 1), AbsoluteVector(1, 1, (8 * self._height) - 2), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(-8, -8, 1), AbsoluteVector(1, 1, (8 * self._height) - 2), tex=column_tex)
 
-        wall(world, '-z', 16, mv(self.pos, (-4, -4, 1)), tex=floor_tex)
-        wall(world, '-z', 12, mv(self.pos, (-2, -2, 2)), tex=floor_tex)
+        self.x_floor(world, SOUTHWEST + FineVector(4, 4, 1), tex=accent_tex, size=16)
+        self.x_floor(world, SOUTHWEST + FineVector(5, 5, 2), tex=floor_tex, size=14)
 
         if self._randflags[1]:
-            ring(world, mv(self.pos, (-4, -4, 7)), size=16, tex=accent_tex, thickness=2)
+            self.x_ring(world, FineVector(-4, -4, 7), 16, tex=accent_tex)
+            self.x_ring(world, FineVector(-6, -6, 7), 20, tex=accent_tex)
 
         if self._randflags[0]:
             tree = MapModel(
-                xyz=m(
-                    SIZE_OFFSET * (self.pos[0] + 4),
-                    SIZE_OFFSET * (self.pos[1] + 4),
-                    SIZE_OFFSET * (self.pos[2] + 3),
-                ),
+                xyz=self.pos + FineVector(4, 4, 3).rotate(self.orientation),
                 yaw=rotate_a(270, self.orientation),
                 type=124
             )
             xmap.ents.append(tree)
 
-    def get_positions(self):
+    def _get_positions(self):
         return [
-            mv(self.pos , m(-1 , -1 , 0)) ,
-            mv(self.pos , m(-1 , 0  , 0)) ,
-            mv(self.pos , m(-1 , 1  , 0)) ,
-            mv(self.pos , m(0  , -1 , 0)) ,
-            mv(self.pos , m(0  , 0  , 0)) ,
-            mv(self.pos , m(0  , 1  , 0)) ,
-            mv(self.pos , m(1  , -1 , 0)) ,
-            mv(self.pos , m(1  , 0  , 0)) ,
-            mv(self.pos , m(1  , 1  , 0)) ,
-            mv(self.pos , m(-1 , -1 , 1)) ,
-            mv(self.pos , m(-1 , 0  , 1)) ,
-            mv(self.pos , m(-1 , 1  , 1)) ,
-            mv(self.pos , m(0  , -1 , 1)) ,
-            mv(self.pos , m(0  , 0  , 1)) ,
-            mv(self.pos , m(0  , 1  , 1)) ,
-            mv(self.pos , m(1  , -1 , 1)) ,
-            mv(self.pos , m(1  , 0  , 1)) ,
-            mv(self.pos , m(1  , 1  , 1)) ,
+            ABOVE + NORTHWEST,
+            ABOVE + NORTH,
+            ABOVE + NORTHEAST,
+            ABOVE + WEST,
+            ABOVE + SELF,
+            ABOVE + EAST,
+            ABOVE + SOUTHWEST,
+            ABOVE + SOUTH,
+            ABOVE + SOUTHEAST,
+
+            ABOVE + ABOVE + NORTHWEST,
+            ABOVE + ABOVE + NORTH,
+            ABOVE + ABOVE + NORTHEAST,
+            ABOVE + ABOVE + WEST,
+            ABOVE + ABOVE + SELF,
+            ABOVE + ABOVE + EAST,
+            ABOVE + ABOVE + SOUTHWEST,
+            ABOVE + ABOVE + SOUTH,
+            ABOVE + ABOVE + SOUTHEAST,
         ]
 
-    def light(self, xmap):
-        light = Light(
-            xyz=m(
-                SIZE_OFFSET * (self.pos[0] + 12),
-                SIZE_OFFSET * (self.pos[1] + 12),
-                SIZE_OFFSET * (self.pos[2] + 7),
-            ),
-            red=255,
-            green=255,
-            blue=255,
-            radius=SIZE_OFFSET * 196,
-        )
-        xmap.ents.append(light)
 
-
-class Stair(_OrientedRoom):
+class Stair(_Room):
     room_type = 'stair'
 
     def render(self, world, xmap):
@@ -1284,140 +878,86 @@ class Stair(_OrientedRoom):
 
         self.light(xmap)
 
-        if self.orientation == '+x':
-            column(world, 'y', 8, mv(self.pos, (7, 0, 0)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (6, 0, 1)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (5, 0, 2)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (4, 0, 3)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (3, 0, 4)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (2, 0, 5)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (1, 0, 6)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (0, 0, 7)), tex=floor_tex)
-        elif self.orientation == '-x':
-            column(world, 'y', 8, mv(self.pos, (0, 0, 0)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (1, 0, 1)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (2, 0, 2)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (3, 0, 3)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (4, 0, 4)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (5, 0, 5)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (6, 0, 6)), tex=floor_tex)
-            column(world, 'y', 8, mv(self.pos, (7, 0, 7)), tex=floor_tex)
-        elif self.orientation == '+y':
-            column(world, 'x', 8, mv(self.pos, (0, 7, 0)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 6, 1)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 5, 2)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 4, 3)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 3, 4)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 2, 5)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 1, 6)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 0, 7)), tex=floor_tex)
-        elif self.orientation == '-y':
-            column(world, 'x', 8, mv(self.pos, (0, 0, 0)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 1, 1)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 2, 2)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 3, 3)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 4, 4)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 5, 5)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 6, 6)), tex=floor_tex)
-            column(world, 'x', 8, mv(self.pos, (0, 7, 7)), tex=floor_tex)
-
-        else:
-            raise Exception("Unknown orientation %s" % self.orientation)
+        self.x_rectangular_prism(world, FineVector(0, 0, 0), AbsoluteVector(1, 8, 1), tex=floor_tex)
+        self.x_rectangular_prism(world, FineVector(1, 0, 1), AbsoluteVector(1, 8, 1), tex=floor_tex)
+        self.x_rectangular_prism(world, FineVector(2, 0, 2), AbsoluteVector(1, 8, 1), tex=floor_tex)
+        self.x_rectangular_prism(world, FineVector(3, 0, 3), AbsoluteVector(1, 8, 1), tex=floor_tex)
+        self.x_rectangular_prism(world, FineVector(4, 0, 4), AbsoluteVector(1, 8, 1), tex=floor_tex)
+        self.x_rectangular_prism(world, FineVector(5, 0, 5), AbsoluteVector(1, 8, 1), tex=floor_tex)
+        self.x_rectangular_prism(world, FineVector(6, 0, 6), AbsoluteVector(1, 8, 1), tex=floor_tex)
+        self.x_rectangular_prism(world, FineVector(7, 0, 7), AbsoluteVector(1, 8, 1), tex=floor_tex)
 
     def _get_doorways(self):
-        if self.orientation == '+x':
-            return [
-                m(-1, 0, 1),
-                m(1, 0, 0),
-            ]
-        elif self.orientation == '-x':
-            return [
-                m(1, 0, 1),
-                m(-1, 0, 0),
-            ]
-        elif self.orientation == '+y':
-            return [
-                m(0, 1, 0),
-                m(0, -1, 1),
-            ]
-        elif self.orientation == '-y':
-            return [
-                m(0, 1, 1),
-                m(0, -1, 0),
-            ]
-        return []
+        return [SOUTH, NORTH + ABOVE]
 
-    def get_positions(self):
-        return [
-            self.pos, # Self
-            mv(self.pos, m(0, 0, 1)) # Above self
-        ]
+    def _get_positions(self):
+        return [SELF, ABOVE]
 
 
-class CrossingWalkways(_LargeRoom):
-    _height = 2
-    _randflags = (
-        True, # 2 or 3 units tall
-    )
+# class CrossingWalkways(_LargeRoom):
+    # _height = 2
+    # _randflags = (
+        # True, # 2 or 3 units tall
+    # )
 
-    def __init__(self, *arg, **kwarg):
-        super().__init__(*arg, **kwarg)
-        if self._randflags[0]:
-            self._height = 3
+    # def __init__(self, *arg, **kwarg):
+        # super().__init__(*arg, **kwarg)
+        # if self._randflags[0]:
+            # self._height = 3
 
-    def render(self, world, xmap):
-        floor_tex = TEXMAN.get_c('floor')
-        wall_tex = TEXMAN.get_c('wall')
-        accent_tex = TEXMAN.get_c('accent')
-        column_tex = TEXMAN.get_c('column')
+    # def render(self, world, xmap):
+        # floor_tex = TEXMAN.get_c('floor')
+        # wall_tex = TEXMAN.get_c('wall')
+        # accent_tex = TEXMAN.get_c('accent')
+        # column_tex = TEXMAN.get_c('column')
 
-        self.light(xmap)
-        # Corners are up 1
+        # self.light(xmap)
+        # # Corners are up 1
 
-        wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 0)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m( 0, 0, 0)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m( 1, 0, 0)), tex=floor_tex)
+        # wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 0)), tex=floor_tex)
+        # wall(world, '-z', SIZE, mv(self.pos, m( 0, 0, 0)), tex=floor_tex)
+        # wall(world, '-z', SIZE, mv(self.pos, m( 1, 0, 0)), tex=floor_tex)
 
-        wall(world, '-z', SIZE, mv(self.pos, m(0, -1, 1)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m(0,  0, 1)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m(0,  1, 1)), tex=floor_tex)
+        # wall(world, '-z', SIZE, mv(self.pos, m(0, -1, 1)), tex=floor_tex)
+        # wall(world, '-z', SIZE, mv(self.pos, m(0,  0, 1)), tex=floor_tex)
+        # wall(world, '-z', SIZE, mv(self.pos, m(0,  1, 1)), tex=floor_tex)
 
-        if self._randflags[0]:
-            wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 2)), tex=floor_tex)
-            wall(world, '-z', SIZE, mv(self.pos, m( 0, 0, 2)), tex=floor_tex)
-            wall(world, '-z', SIZE, mv(self.pos, m( 1, 0, 2)), tex=floor_tex)
+        # if self._randflags[0]:
+            # wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 2)), tex=floor_tex)
+            # wall(world, '-z', SIZE, mv(self.pos, m( 0, 0, 2)), tex=floor_tex)
+            # wall(world, '-z', SIZE, mv(self.pos, m( 1, 0, 2)), tex=floor_tex)
 
-    def _get_doorways(self):
-        doors = [
-            m(-2, 0, 0),
-            m(2, 0, 0),
-            m(0, -2, 1),
-            m(0, 2, 1),
-        ]
+    # def _get_doorways(self):
+        # return [
+            # SOUTH + SOUTH,
+            # NORTH + NORTH,
+            # EAST + EAST + ABOVE,
+            # WEST + WEST + ABOVE,
+        # ]
 
-        if self._randflags[0]:
-            doors += [
-                m(-2, 0, 2),
-                m(2, 0, 2),
-            ]
-        return doors
+        # if self._randflags[0]:
+            # doors += [
+                # SOUTH + SOUTH + ABOVE + ABOVE,
+                # NORTH + NORTH + ABOVE + ABOVE,
+            # ]
+        # return doors
 
-    def light(self, xmap):
-        (r, g, b) = LIGHTMAN.hue(self.pos)
+    # def light(self, xmap):
+        # (r, g, b) = LIGHTMAN.hue(self.pos)
 
-        for i in range(6, self._height * 8, 8):
-            light = Light(
-                xyz=m(
-                    SIZE_OFFSET * (self.pos[0] + 4),
-                    SIZE_OFFSET * (self.pos[1] + 4),
-                    SIZE_OFFSET * (self.pos[2] + i),
-                ),
-                red=r,
-                green=g,
-                blue=b,
-                radius=SIZE_OFFSET * 256,
-            )
-            xmap.ents.append(light)
+        # for i in range(6, self._height * 8, 8):
+            # light = Light(
+                # xyz=m(
+                    # SIZE_OFFSET * (self.pos[0] + 4),
+                    # SIZE_OFFSET * (self.pos[1] + 4),
+                    # SIZE_OFFSET * (self.pos[2] + i),
+                # ),
+                # red=r,
+                # green=g,
+                # blue=b,
+                # radius=SIZE_OFFSET * 256,
+            # )
+            # xmap.ents.append(light)
 
 
 class PlusPlatform(_LargeRoom):
@@ -1426,24 +966,21 @@ class PlusPlatform(_LargeRoom):
 
     def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')
-        wall_tex = TEXMAN.get_c('wall')
-        accent_tex = TEXMAN.get_c('accent')
-        column_tex = TEXMAN.get_c('column')
 
         self.light(xmap)
 
-        wall(world, '-z', SIZE, mv(self.pos, m(0, 0, 0)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m(1, 0, 0)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 0)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m(0, 1, 0)), tex=floor_tex)
-        wall(world, '-z', SIZE, mv(self.pos, m(0, -1, 0)), tex=floor_tex)
+        self.x_floor(world, SELF, tex=floor_tex)
+        self.x_floor(world, NORTH, tex=floor_tex)
+        self.x_floor(world, SOUTH, tex=floor_tex)
+        self.x_floor(world, EAST, tex=floor_tex)
+        self.x_floor(world, WEST, tex=floor_tex)
 
     def _get_doorways(self):
         return [
-            m(-2, 0, 0),
-            m(2, 0, 0),
-            m(0, -2, 0),
-            m(0, 2, 0),
+            NORTH * 2,
+            SOUTH * 2,
+            EAST * 2,
+            WEST * 2
         ]
 
 
@@ -1455,161 +992,146 @@ class MultiPlatform(_LargeRoom):
 
     def render(self, world, xmap):
         self.light(xmap)
-
-        # size = 24
-        if self._randflags[0]:
-            wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=TEXMAN.get_c('floor'))
-
-        # Corners are up 1
         tex1 = TEXMAN.get_c('floor')
         tex2 = TEXMAN.get_c('floor')
 
-        wall(world, '-z', SIZE, mv(self.pos, m(1, 1, 0.50)), tex=tex1)
-        wall(world, '-z', SIZE, mv(self.pos, m(-1, -1, 0.50)), tex=tex1)
-        wall(world, '-z', SIZE, mv(self.pos, m(1, -1, 1)), tex=tex2)
-        wall(world, '-z', SIZE, mv(self.pos, m(-1, 1, 1)), tex=tex2)
+        if self._randflags[0]:
+            self.x_floor(world, SOUTHWEST, tex=tex1, size=24)
 
-        wall(world, '-z', SIZE, mv(self.pos, m(1, 0, 1.5)), tex=tex1)
-        wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 1.50)), tex=tex1)
+        # Corners are up 1
+        self.x_floor(world, NORTHEAST + HALF_HEIGHT, tex=tex1)
+        self.x_floor(world, SOUTHWEST + HALF_HEIGHT, tex=tex1)
 
-        wall(world, '-z', SIZE, mv(self.pos, m(0, 1, 2)), tex=tex2)
-        wall(world, '-z', SIZE, mv(self.pos, m(0, -1, 2)), tex=tex2)
+        self.x_floor(world, NORTHWEST + ABOVE, tex=tex2)
+        self.x_floor(world, SOUTHEAST + ABOVE, tex=tex2)
+
+        self.x_floor(world, NORTH + ABOVE + HALF_HEIGHT, tex=tex1)
+        self.x_floor(world, SOUTH + ABOVE + HALF_HEIGHT, tex=tex1)
+
+        self.x_floor(world, WEST + ABOVE + ABOVE, tex=tex2)
+        self.x_floor(world, EAST + ABOVE + ABOVE, tex=tex2)
 
     def _get_doorways(self):
         return [
-            m(-2, 0, 0),
-            m(2, 0, 0),
-            m(0, -2, 0),
-            m(0, 2, 0),
+            # four center sides
+            SOUTH + SOUTH,
+            NORTH + NORTH,
+            EAST + EAST,
+            WEST + WEST,
 
-            m(2, -1, 1),
-            m(1, -2, 1),
+            # First real above, ignoring half height ones.
+            NORTHWEST + NORTH + ABOVE,
+            NORTHWEST + WEST + ABOVE,
+            SOUTHEAST + SOUTH + ABOVE,
+            SOUTHEAST + EAST + ABOVE,
 
-            m(-1, 2, 1),
-            m(-2, 1, 1),
-
-            m(0, -2, 2),
-            m(0, 2, 2),
+            WEST + WEST + ABOVE + ABOVE,
+            EAST + EAST + ABOVE + ABOVE,
         ]
 
     def light(self, xmap):
-        light = Light(
-            xyz=m(
-                SIZE_OFFSET * (self.pos[0] + 4),
-                SIZE_OFFSET * (self.pos[1] + 4),
-                SIZE_OFFSET * (self.pos[2] + 16),
-            ),
-            red=255,
-            green=255,
-            blue=255,
-            radius=SIZE_OFFSET * 256,
-        )
-        xmap.ents.append(light)
+        position = self.pos + TILE_CENTER + FineVector(0, 0, 16)
+        LIGHTMAN.light(xmap, position)
 
 
 class FlatSpace(_LargeRoom):
     _height = 1
 
-    def __init__(self, *arg, **kwarg):
-        super().__init__(*arg, **kwarg)
-
     def render(self, world, xmap):
-        wall_tex = TEXMAN.get_c('wall')
-
         self.light(xmap)
-        # size = 24
-        faded_wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=0.9)
-
-
-class DoricTemple(_LargeRoom):
-    _height = 2
-
-    def __init__(self, *arg, **kwarg):
-        super().__init__(*arg, **kwarg)
-
-    def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')
-        wall_tex = TEXMAN.get_c('wall')
-        accent_tex = TEXMAN.get_c('accent')
-        column_tex = TEXMAN.get_c('column')
-
-        self.light(xmap)
-
-        wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=floor_tex)
-
-        wall(world, '-z', 24, mv(self.pos, (-8, -8, 13)), tex=floor_tex)
-        wall(world, '-z', 20, mv(self.pos, (-6, -6, 14)), tex=accent_tex)
-        wall(world, '-z', 16, mv(self.pos, (-4, -4, 15)), tex=floor_tex)
-
-        for p in range(-8, 0, 2):
-            column(world, 'z', 12, mv(self.pos, (p, -8, 1)), tex=column_tex)
-            column(world, 'z', 12, mv(self.pos, (p, 15, 1)), tex=column_tex)
-        for p in range(8, 15, 2):
-            column(world, 'z', 12, mv(self.pos, (p, -8, 1)), tex=column_tex)
-            column(world, 'z', 12, mv(self.pos, (p, 15, 1)), tex=column_tex)
-
-        for p in range(-8, 0, 2):
-            column(world, 'z', 12, mv(self.pos, (-8, p, 1)), tex=column_tex)
-            column(world, 'z', 12, mv(self.pos, (15, p, 1)), tex=column_tex)
-        for p in range(8, 15, 2):
-            column(world, 'z', 12, mv(self.pos, (-8, p, 1)), tex=column_tex)
-            column(world, 'z', 12, mv(self.pos, (15, p, 1)), tex=column_tex)
+        self.x_floor(world, SOUTHWEST, tex=floor_tex, size=24)
 
 
-class DigitalRoom(_LargeRoom):
-    _height = 1
-    _randflags = (
-        True, # Roof
-        True, # Tall
-        True, # Density Low / High
-    )
+# class DoricTemple(_LargeRoom):
+    # _height = 2
 
-    def __init__(self, *arg, **kwarg):
-        super().__init__(*arg, **kwarg)
-        if self._randflags[1]:
-            self._height = 2
+    # def __init__(self, *arg, **kwarg):
+        # super().__init__(*arg, **kwarg)
 
-    def render(self, world, xmap):
-        self.light(xmap)
-        prob = 0.3
-        if self._randflags[2]:
-            prob = 0.7
+    # def render(self, world, xmap):
+        # floor_tex = TEXMAN.get_c('floor')
+        # wall_tex = TEXMAN.get_c('wall')
+        # accent_tex = TEXMAN.get_c('accent')
+        # column_tex = TEXMAN.get_c('column')
 
-        wall_tex = TEXMAN.get_c('wall')
-        ceil_tex = TEXMAN.get_c('wall')
+        # self.light(xmap)
 
-        # size = 24
-        faded_wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=ceil_tex, prob=0.9)
-        if self._randflags[1]:
-            faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -1)), tex=ceil_tex, prob=prob)
-        else:
-            faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -2)), tex=ceil_tex, prob=prob)
+        # wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=floor_tex)
 
-        #wall_tex = 644
-        faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=prob)
-        faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, 1, 0)), tex=wall_tex, prob=prob)
-        if self._randflags[1]:
-            faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, -1, 1)), tex=wall_tex, prob=prob)
-            faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, 0, 1)), tex=wall_tex, prob=prob)
-            faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, 1, 1)), tex=wall_tex, prob=prob)
+        # wall(world, '-z', 24, mv(self.pos, (-8, -8, 13)), tex=floor_tex)
+        # wall(world, '-z', 20, mv(self.pos, (-6, -6, 14)), tex=accent_tex)
+        # wall(world, '-z', 16, mv(self.pos, (-4, -4, 15)), tex=floor_tex)
 
-        faded_wall(world, '+x', SIZE, mv(self.pos, m(1, -1, 0)), tex=wall_tex, prob=prob)
-        faded_wall(world, '+x', SIZE, mv(self.pos, m(1, 1, 0)), tex=wall_tex, prob=prob)
-        if self._randflags[1]:
-            faded_wall(world, '+x', SIZE, mv(self.pos, m(1, -1, 1)), tex=wall_tex, prob=prob)
-            faded_wall(world, '+x', SIZE, mv(self.pos, m(1, 0, 1)), tex=wall_tex, prob=prob)
-            faded_wall(world, '+x', SIZE, mv(self.pos, m(1, 1, 1)), tex=wall_tex, prob=prob)
+        # for p in range(-8, 0, 2):
+            # column(world, 'z', 12, mv(self.pos, (p, -8, 1)), tex=column_tex)
+            # column(world, 'z', 12, mv(self.pos, (p, 15, 1)), tex=column_tex)
+        # for p in range(8, 15, 2):
+            # column(world, 'z', 12, mv(self.pos, (p, -8, 1)), tex=column_tex)
+            # column(world, 'z', 12, mv(self.pos, (p, 15, 1)), tex=column_tex)
 
-        faded_wall(world, '-y', SIZE, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=prob)
-        faded_wall(world, '-y', SIZE, mv(self.pos, m(1, -1, 0)), tex=wall_tex, prob=prob)
-        if self._randflags[1]:
-            faded_wall(world, '-y', SIZE, mv(self.pos, m(-1, -1, 1)), tex=wall_tex, prob=prob)
-            faded_wall(world, '-y', SIZE, mv(self.pos, m(0, -1, 1)), tex=wall_tex, prob=prob)
-            faded_wall(world, '-y', SIZE, mv(self.pos, m(1, -1, 1)), tex=wall_tex, prob=prob)
+        # for p in range(-8, 0, 2):
+            # column(world, 'z', 12, mv(self.pos, (-8, p, 1)), tex=column_tex)
+            # column(world, 'z', 12, mv(self.pos, (15, p, 1)), tex=column_tex)
+        # for p in range(8, 15, 2):
+            # column(world, 'z', 12, mv(self.pos, (-8, p, 1)), tex=column_tex)
+            # column(world, 'z', 12, mv(self.pos, (15, p, 1)), tex=column_tex)
 
-        faded_wall(world, '+y', SIZE, mv(self.pos, m(-1, 1, 0)), tex=wall_tex, prob=prob)
-        faded_wall(world, '+y', SIZE, mv(self.pos, m(1, 1, 0)), tex=wall_tex, prob=prob)
-        if self._randflags[1]:
-            faded_wall(world, '+y', SIZE, mv(self.pos, m(-1, 1, 1)), tex=wall_tex, prob=prob)
-            faded_wall(world, '+y', SIZE, mv(self.pos, m(0, 1, 1)), tex=wall_tex, prob=prob)
-            faded_wall(world, '+y', SIZE, mv(self.pos, m(1, 1, 1)), tex=wall_tex, prob=prob)
+
+# class DigitalRoom(_LargeRoom):
+    # _height = 1
+    # _randflags = (
+        # True, # Roof
+        # True, # Tall
+        # True, # Density Low / High
+    # )
+
+    # def __init__(self, *arg, **kwarg):
+        # super().__init__(*arg, **kwarg)
+        # if self._randflags[1]:
+            # self._height = 2
+
+    # def render(self, world, xmap):
+        # self.light(xmap)
+        # prob = 0.3
+        # if self._randflags[2]:
+            # prob = 0.7
+
+        # wall_tex = TEXMAN.get_c('wall')
+        # ceil_tex = TEXMAN.get_c('wall')
+
+        # # size = 24
+        # faded_wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=ceil_tex, prob=0.9)
+        # if self._randflags[1]:
+            # faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -1)), tex=ceil_tex, prob=prob)
+        # else:
+            # faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -2)), tex=ceil_tex, prob=prob)
+
+        # #wall_tex = 644
+        # faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=prob)
+        # faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, 1, 0)), tex=wall_tex, prob=prob)
+        # if self._randflags[1]:
+            # faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, -1, 1)), tex=wall_tex, prob=prob)
+            # faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, 0, 1)), tex=wall_tex, prob=prob)
+            # faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, 1, 1)), tex=wall_tex, prob=prob)
+
+        # faded_wall(world, '+x', SIZE, mv(self.pos, m(1, -1, 0)), tex=wall_tex, prob=prob)
+        # faded_wall(world, '+x', SIZE, mv(self.pos, m(1, 1, 0)), tex=wall_tex, prob=prob)
+        # if self._randflags[1]:
+            # faded_wall(world, '+x', SIZE, mv(self.pos, m(1, -1, 1)), tex=wall_tex, prob=prob)
+            # faded_wall(world, '+x', SIZE, mv(self.pos, m(1, 0, 1)), tex=wall_tex, prob=prob)
+            # faded_wall(world, '+x', SIZE, mv(self.pos, m(1, 1, 1)), tex=wall_tex, prob=prob)
+
+        # faded_wall(world, '-y', SIZE, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=prob)
+        # faded_wall(world, '-y', SIZE, mv(self.pos, m(1, -1, 0)), tex=wall_tex, prob=prob)
+        # if self._randflags[1]:
+            # faded_wall(world, '-y', SIZE, mv(self.pos, m(-1, -1, 1)), tex=wall_tex, prob=prob)
+            # faded_wall(world, '-y', SIZE, mv(self.pos, m(0, -1, 1)), tex=wall_tex, prob=prob)
+            # faded_wall(world, '-y', SIZE, mv(self.pos, m(1, -1, 1)), tex=wall_tex, prob=prob)
+
+        # faded_wall(world, '+y', SIZE, mv(self.pos, m(-1, 1, 0)), tex=wall_tex, prob=prob)
+        # faded_wall(world, '+y', SIZE, mv(self.pos, m(1, 1, 0)), tex=wall_tex, prob=prob)
+        # if self._randflags[1]:
+            # faded_wall(world, '+y', SIZE, mv(self.pos, m(-1, 1, 1)), tex=wall_tex, prob=prob)
+            # faded_wall(world, '+y', SIZE, mv(self.pos, m(0, 1, 1)), tex=wall_tex, prob=prob)
+            # faded_wall(world, '+y', SIZE, mv(self.pos, m(1, 1, 1)), tex=wall_tex, prob=prob)

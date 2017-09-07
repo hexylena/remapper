@@ -9,7 +9,7 @@ from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
 #from redeclipse.skybox import MinecraftSky
 from redeclipse.prefabs import StartingPosition
-from redeclipse.prefabs.vector import CoarseVector
+from redeclipse.prefabs.vector import CoarseVector, FineVector
 from tqdm import tqdm
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -19,67 +19,40 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     random.seed(seed)
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
-    room_counts = 32
-
-    def mirror(d):
-        if isinstance(d, dict):
-            if '-' in kwargs['orientation']:
-                kwargs['orientation'] = kwargs['orientation'].replace('-', '+')
-            else:
-                kwargs['orientation'] = kwargs['orientation'].replace('+', '-')
-            return kwargs
-        else:
-            return CoarseVector(
-                room_counts - d[0],
-                room_counts - d[1],
-                d[2]
-            )
-
-    def random_room(connecting_room):
-        """Pick out a random room based on the connecting room and the
-        transition probabilities of that room."""
-        possible_rooms = [
-            p.BaseRoom,
-            p.SpawnRoom,
-            p.JumpCorridor3,
-            p.JumpCorridorVertical,
-            #p.Stair,
-            #p.DigitalRoom,
-            #p.JumpCorridorVerticalCenter,
-            #p.PlusPlatform,
-
-            p.NLongCorridor,
-            #p.FlatSpace,
-            #p.DoricTemple,
-            #p.ImposingRingRoom,
-            #p.ImposingBlockRoom,
-        ]
-
-        choices = []
-        probs = connecting_room.get_transition_probs()
-        for room in possible_rooms:
-            # Append to our possibilities
-            choices.append((
-                # The room, and the probability of getting that type of room
-                # based on the current room type
-                room, probs.get(room.room_type, 0.1)
-            ))
-
-        return weighted_choice(choices)
-
-    # Initialize
     upm = UnusedPositionManager(size, mirror=True)
 
-    # Insert a starting room. We move it vertically downward from center since
-    # we have no way to build stairs downwards yet.
-    starting_position = StartingPosition
-    # We use the spawn room as our base starting room
-    orientations = ['+x', '+y', '-x', '-y']
+    Room = p.AltarRoom
 
-    for i in range(32):
-        b = p.SpawnRoom(pos=CoarseVector(i, i, i), orientation=orientations[i % 4])
-        upm.register_room(b)
-        b.render(v, mymap)
+    kwargs = Room.randOpts(None)
+    n = Room(pos=CoarseVector(8 + 5, 8, 8), orientation='+x', **kwargs)
+    kwargs = Room.randOpts(None)
+    s = Room(pos=CoarseVector(8 - 5, 8, 8), orientation='-x', **kwargs)
+    kwargs = Room.randOpts(None)
+    e = Room(pos=CoarseVector(8, 8 + 5, 8), orientation='+y', **kwargs)
+    kwargs = Room.randOpts(None)
+    w = Room(pos=CoarseVector(8, 8 - 5, 8), orientation='-y', **kwargs)
+
+    upm.register_room(n)
+    upm.register_room(s)
+    upm.register_room(e)
+    upm.register_room(w)
+
+    s = p.SpawnRoom(pos=CoarseVector(8 + 2, 8, 8), orientation='+x', randflags=[True])
+    upm.register_room(s)
+    s.render(v, mymap)
+    n.render(v, mymap)
+    s.render(v, mymap)
+    e.render(v, mymap)
+    w.render(v, mymap)
+
+    from redeclipse.objects import cube
+    for i in range(8):
+        for j in range(8):
+            v.set_pointv(
+                CoarseVector(8 + 5, 8, 12) + FineVector(i, j, 0),
+                cube.newtexcube(tex=1)
+            )
+
 
     sunlight = Sunlight(
         red=128,
@@ -89,10 +62,9 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     )
     mymap.ents.append(sunlight)
 
-    if debug:
-        for (pos, typ, ori) in upm.unoccupied:
-            r = p.TestRoom(pos, orientation='+x')
-            r.render(v, mymap)
+    for (pos, typ, ori) in upm.unoccupied:
+        r = p.TestRoom(pos, orientation='+x')
+        r.render(v, mymap)
 
     # Emit config + textures
     p.TEXMAN.emit_conf(mpz_out)

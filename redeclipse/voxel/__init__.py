@@ -36,6 +36,11 @@ class VoxelWorld:
         if (x, y, z) in self.world:
             del self.world[x, y, z]
 
+    def del_pointv(self, xyz):
+        (x, y, z) = xyz
+        if (x, y, z) in self.world:
+            del self.world[x, y, z]
+
     def get_point(self, x, y, z):
         if (x, y, z) in self.world:
             return self.world[x, y, z]

@@ -102,10 +102,40 @@ class BaseVector(object):
 
         theta = pi * deg / 180
         return BaseVector(
-            self.x * cos(theta) - self.y * sin(theta),
-            self.x * sin(theta) + self.y * cos(theta),
+            round(self.x * cos(theta) - self.y * sin(theta)),
+            round(self.x * sin(theta) + self.y * cos(theta)),
             self.z
         )
+
+
+class AbsoluteVector(BaseVector):
+
+    def rotate(self, deg):
+        if deg == '+x':
+            deg = 0
+        elif deg == '-x':
+            deg = 180
+        elif deg == '+y':
+            deg = 90
+        elif deg == '-y':
+            deg = 270
+
+        deg %= 360
+
+        if deg == 0:
+            return AbsoluteVector(self.x, self.y, self.z)
+        elif deg == 90:
+            return AbsoluteVector(-self.y, self.x, self.z)
+        elif deg == 180:
+            return AbsoluteVector(-self.x, -self.y, self.z)
+        elif deg == 270:
+            return AbsoluteVector(self.y, -self.x, self.z)
+        else:
+            raise ValueError("Degree must be a multiple of 90.")
+
+    def __repr__(self):
+        rp = super().__repr__()
+        return 'AV(%s)' % rp
 
 
 class FineVector(BaseVector):
@@ -269,3 +299,4 @@ class CoarseVector(BaseVector):
             newvec.y,
             newvec.z
         )
+

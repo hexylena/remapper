@@ -1,7 +1,8 @@
 from redeclipse.objects import cube
+import math
 import random
-from redeclipse.prefabs.orientations import SELF, SOUTH, NORTH, WEST, EAST, ABOVE, BELOW
-from redeclipse.prefabs.vector import FineVector
+from redeclipse.prefabs.orientations import SELF, SOUTH, NORTH, WEST, EAST, ABOVE, BELOW, VEC_ORIENT_MAP_INV
+from redeclipse.prefabs.vector import FineVector, CoarseVector, AbsoluteVector
 
 ROOM_SIZE = 8
 
@@ -34,20 +35,34 @@ def mi(*args):
 def column_points(size, direction):
     for i in range(size):
         if direction in ('-x', '+x', 'x'):
-            yield (i, 0, 0)
+            yield FineVector(i, 0, 0)
         elif direction in ('-y', '+y', 'y'):
-            yield (0, i, 0)
+            yield FineVector(0, i, 0)
         elif direction in ('-z', '+z', 'z'):
-            yield (0, 0, i)
+            yield FineVector(0, 0, i)
 
 
 def wall_points(size, direction, limit_j=100, limit_i=100):
-    for i in range(size):
+    if size > 0:
+        i_lower_bound = 0
+        i_upper_bound = size
+    else:
+        i_lower_bound = size
+        i_upper_bound = 0
+
+    for i in range(i_lower_bound, i_upper_bound):
         # Allow partial_j walls
         if i > limit_i:
             continue
 
-        for j in range(size):
+        if size > 0:
+            j_lower_bound = 0
+            j_upper_bound = size
+        else:
+            j_lower_bound = size
+            j_upper_bound = 0
+
+        for j in range(j_lower_bound, j_upper_bound):
             # Allow partial_j walls
             if j > limit_j:
                 continue
@@ -82,7 +97,8 @@ class ConstructionKitMixin(object):
 
     def x_column(self, world, offset, direction, length, tex=2):
         offset = offset.rotate(self.orientation)
-        local_position = self.pos + offset
+        adjustment = self.x_get_adjustment()
+        local_position = self.pos + offset + adjustment
         # Then get the orientation, rotated, and converted to ±xyz
         orient = VEC_ORIENT_MAP_INV[direction.rotate(self.orientation)]
         for point in column_points(length, orient):
@@ -92,26 +108,10 @@ class ConstructionKitMixin(object):
             )
 
     def x_ceiling(self, world, offset, tex=2, size=ROOM_SIZE):
-        # First, rotate the offset
-        offset = offset.rotate(self.orientation)
-        # And then re-add it to self.pos
-        local_position = self.pos + offset
-
-        for point in wall_points(size, '+z'):
-            world.set_pointv(
-                point + local_position,
-                cube.newtexcube(tex=tex)
-            )
+        return self.x_rectangular_prism(world, offset + FineVector(0, 0, 7), AbsoluteVector(size, size, 1), tex=tex)
 
     def x_floor(self, world, offset, tex=2, size=ROOM_SIZE):
-        offset = offset.rotate(self.orientation)
-        local_position = self.pos + offset
-
-        for point in wall_points(size, '-z'):
-            world.set_pointv(
-                point + local_position,
-                cube.newtexcube(tex=tex)
-            )
+        return self.x_rectangular_prism(world, offset, AbsoluteVector(size, size, 1), tex=tex)
 
     def x_wall(self, world, offset, face, tex=2):
         offset = offset.rotate(self.orientation)
@@ -125,22 +125,53 @@ class ConstructionKitMixin(object):
                 cube.newtexcube(tex=tex)
             )
 
-    def x_rectangular_prism(world, offset, x, y, z, tex=2):
-        offset = offset.rotate(self.orientation)
-        local_position = self.pos + offset
+    def x_get_adjustment(self):
+        if self.orientation == '+x':
+            return CoarseVector(0, 0, 0)
+        elif self.orientation == '-x':
+            return CoarseVector(1, 1, 0)
+        elif self.orientation == '+y':
+            return CoarseVector(1, 0, 0)
+        elif self.orientation == '-y':
+            return CoarseVector(0, 1, 0)
 
-        for point in cube_points(x, y, z):
-            world.set_pointv(
-                point + local_position,
-                cube.newtexcube(tex=tex)
-            )
+    def x_ring(self, world, offset, size, tex=2):
+        # world, FineVector(-2, -2, i), 12, tex=accent_tex)
+        self.x_rectangular_prism(world, offset, AbsoluteVector(1, size - 1, 1), tex=tex)
+        self.x_rectangular_prism(world, offset, AbsoluteVector(size - 1, 1, 1), tex=tex)
+        self.x_rectangular_prism(world, offset + FineVector(0, size - 1, 0), AbsoluteVector(size, 1, 1), tex=tex)
+        self.x_rectangular_prism(world, offset + FineVector(size - 1, 0, 0), AbsoluteVector(1, size, 1), tex=tex)
+
+    def x_rectangular_prism(self, world, offset, xyz, tex=2, subtract=False):
+        offset = offset.rotate(self.orientation)
+        xyz = xyz.rotate(self.orientation)
+        # We need to offset self.pos with an adjustment vector. Because
+        # reasons. Awful awful reasons.
+        adjustment = self.x_get_adjustment()
+
+        local_position = self.pos + adjustment + offset
+        print('self', self.pos.fine(), 'off', offset.fine(),
+              'locl', local_position.fine(), 'dims', xyz)
+
+        for point in cube_points(xyz.x, xyz.y, xyz.z):
+            if subtract:
+                world.del_pointv(
+                    point + local_position
+                )
+            else:
+                world.set_pointv(
+                    point + local_position,
+                    cube.newtexcube(tex=tex)
+                )
 
     def x_low_wall(self, world, offset, face, tex=2):
         offset = offset.rotate(self.orientation)
         local_position = self.pos + offset
         real_face = self.x_get_face(face)
 
-        for point in wall_points(ROOM_SIZE, real_face, limit_j=height):
+        for point in wall_points(ROOM_SIZE, real_face, limit_j=2):
+            if point.z == 0:
+                print('\t>', point + local_position)
             world.set_pointv(
                 point + local_position,
                 cube.newtexcube(tex=tex)
@@ -216,25 +247,39 @@ def column(world, direction, size, pos, tex=2, subtract=False):
             )
 
 
-def cube_points(*args):
+def cube_points(x, y, z):
     """
     call with a single number for a cube, or x, y, z for a rectangular prism
     """
-    if len(args) == 1:
-        x = args[0]
-        y = args[0]
-        z = args[0]
+    if x > 0:
+        x_lower_bound = 0
+        x_upper_bound = x
     else:
-        (x, y, z) = args
+        x_lower_bound = x
+        x_upper_bound = 0
 
-    for i in range(x):
-        for j in range(y):
-            for k in range(z):
-                yield (i, j, k)
+    if y > 0:
+        y_lower_bound = 0
+        y_upper_bound = y
+    else:
+        y_lower_bound = y
+        y_upper_bound = 0
+
+    if z > 0:
+        z_lower_bound = 0
+        z_upper_bound = z
+    else:
+        z_lower_bound = z
+        z_upper_bound = 0
+
+    for i in range(x_lower_bound, x_upper_bound):
+        for j in range(y_lower_bound, y_upper_bound):
+            for k in range(z_lower_bound, z_upper_bound):
+                yield FineVector(i, j, k)
 
 
 def cube_s(world, size, pos, tex=2):
-    for point in cube_points(size):
+    for point in cube_points(size, size, size):
         world.set_point(
             *mv(point, pos),
             cube.newtexcube(tex=tex)

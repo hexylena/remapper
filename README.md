@@ -53,8 +53,8 @@ A couple of scripts are shipped with this library:
 
 Script                   | Purpose
 -----------              | ----
-`redeclipse_iso`         | Reads and writes a map, completely unchanged. They *should* be bit-for-bit identical.
-`redeclipse_to_json`     | Converts map to a JSON representation which can be operated on by other tools.
+`redeclipse_iso`         | Reads and writes a map, completely unchanged. They *should* be bit-for-bit identical. Mostly used in debugging serialization/deserialization issues.
+`redeclipse_to_json`     | Converts map to a JSON representation which can be operated on by other tools. (Mostly a demo of the theoretical possibilities, not terribly useful.)
 `redeclipse_from_json`   | Deserializes map back into binary representation (WIP).
 `redeclipse_add_trees`   | Randomly add trees entities at z=512, across x, y in (0, 1024). Used mostly during my testing.
 `redeclipse_cfg_gen`     | Given a directory, build a config file to allow using those textures.
