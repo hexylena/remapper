@@ -8,7 +8,7 @@ from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
 #from redeclipse.skybox import MinecraftSky
-from redeclipse.prefabs import StartingPosition
+from redeclipse.prefabs import STARTING_POSITION
 from redeclipse.prefabs.vector import CoarseVector
 from tqdm import tqdm
 logging.basicConfig(level=logging.INFO)
@@ -76,10 +76,9 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
 
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.
-    starting_position = StartingPosition
     # We use the spawn room as our base starting room
-    b = p.SpawnRoom(pos=starting_position, orientation="+y")
-    b_m = p.SpawnRoom(pos=mirror(starting_position), orientation="-y")
+    b = p.SpawnRoom(pos=STARTING_POSITION, orientation="+y")
+    b_m = p.SpawnRoom(pos=mirror(STARTING_POSITION), orientation="-y")
     # Register our new room
     upm.register_room(b)
     upm.register_room(b_m)

@@ -8,7 +8,7 @@ from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
 #from redeclipse.skybox import MinecraftSky
-from redeclipse.prefabs import StartingPosition
+from redeclipse.prefabs import STARTING_POSITION
 from redeclipse.prefabs.vector import CoarseVector, FineVector
 from tqdm import tqdm
 logging.basicConfig(level=logging.INFO)
@@ -37,9 +37,9 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     upm.register_room(e)
     upm.register_room(w)
 
-    s = p.SpawnRoom(pos=CoarseVector(8 + 2, 8, 8), orientation='+x', randflags=[True])
-    upm.register_room(s)
-    s.render(v, mymap)
+    sp = p.SpawnRoom(pos=CoarseVector(8 + 2, 8, 8), orientation='+x', randflags=[True])
+    upm.register_room(sp)
+    sp.render(v, mymap)
     n.render(v, mymap)
     s.render(v, mymap)
     e.render(v, mymap)
@@ -87,4 +87,3 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_true', help="Debugging")
     args = parser.parse_args()
     main(**vars(args))
-

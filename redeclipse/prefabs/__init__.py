@@ -2,21 +2,18 @@ from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
 from redeclipse.entities.weapon import Grenade
 from redeclipse.prefabs.construction_kit import wall, column, mv, \
-    low_wall, cube_s, rectangular_prism, ring, multi_wall, rotate_a, faded_wall
-from redeclipse.textures import MinecraftThemedTextureManager, \
-    DefaultThemedTextureManager, PaperThemedTextureManager, \
-    PrimaryThemedTextureManager
+    low_wall, cube_s, rectangular_prism, ring, rotate_a, faded_wall
+from redeclipse.textures import PrimaryThemedTextureManager
+# MinecraftThemedTextureManager, DefaultThemedTextureManager, PaperThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
-from redeclipse.prefabs.distributions import TowerDistributionManager, PlatformDistributionManager, UniformDistributionManager
+from redeclipse.prefabs.distributions import UniformDistributionManager
+# TowerDistributionManager, PlatformDistributionManager
 from redeclipse.prefabs.construction_kit import ConstructionKitMixin
 from redeclipse.prefabs.vector import CoarseVector, FineVector, rotate_yaw, AbsoluteVector
 from redeclipse.prefabs.orientations import SELF, \
-    SOUTH, NORTH, WEST, EAST, \
-    ABOVE, BELOW, \
-    SOUTH_FINE, NORTH_FINE, WEST_FINE, EAST_FINE, \
-    ABOVE_FINE, BELOW_FINE, \
-    NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST, \
-    TILE_CENTER, HALF_HEIGHT
+    SOUTH, NORTH, WEST, EAST, ABOVE, \
+    ABOVE_FINE, NORTHWEST, \
+    NORTHEAST, SOUTHWEST, SOUTHEAST, TILE_CENTER, HALF_HEIGHT
 
 import random # noqa
 import math
@@ -38,7 +35,7 @@ LIGHTMAN = PositionBasedLightManager(brightness=1.0, saturation=0.6)
 DISTMAN = UniformDistributionManager()
 
 
-StartingPosition = CoarseVector(4, 4, 3)
+STARTING_POSITION = CoarseVector(4, 4, 3)
 
 # Room is an object, but is also inherits from CKM which inherits from object,
 # so we just inherit from CKM
@@ -236,8 +233,6 @@ class NLongCorridor(_Room):
     def render(self, world, xmap):
         # First tile
         floor_tex = TEXMAN.get_c('floor')
-        wall_tex = TEXMAN.get_c('wall')
-
         self.x_floor(world, SELF, tex=floor_tex)
 
         for i in range(1, self.length):
@@ -313,6 +308,7 @@ class Corridor2way(_Room):
             SOUTH,
             NORTH + NORTH
         ]
+
 
 class JumpCorridor3(_Room):
     room_type = 'hallway_jump'
@@ -561,6 +557,7 @@ class Corridor4way(_Room):
 
         self.light(xmap)
 
+
 class SpawnRoom(_Room):
     room_type = 'platform_setpiece'
     _randflags = (
@@ -601,6 +598,7 @@ class SpawnRoom(_Room):
         if self._randflags[0]:
             doors += [SOUTH]
         return doors
+
 
 class _LargeRoom(_3X3Room):
     _height = 1
@@ -894,70 +892,55 @@ class Stair(_Room):
         return [SELF, ABOVE]
 
 
-# class CrossingWalkways(_LargeRoom):
-    # _height = 2
-    # _randflags = (
-        # True, # 2 or 3 units tall
-    # )
+class CrossingWalkways(_LargeRoom):
+    _height = 2
+    _randflags = (
+        True, # 2 or 3 units tall
+    )
 
-    # def __init__(self, *arg, **kwarg):
-        # super().__init__(*arg, **kwarg)
-        # if self._randflags[0]:
-            # self._height = 3
+    def __init__(self, *arg, **kwarg):
+        super().__init__(*arg, **kwarg)
+        if self._randflags[0]:
+            self._height = 3
 
-    # def render(self, world, xmap):
-        # floor_tex = TEXMAN.get_c('floor')
-        # wall_tex = TEXMAN.get_c('wall')
-        # accent_tex = TEXMAN.get_c('accent')
-        # column_tex = TEXMAN.get_c('column')
+    def render(self, world, xmap):
+        floor_tex = TEXMAN.get_c('floor')
+        wall_tex = TEXMAN.get_c('wall')
 
-        # self.light(xmap)
-        # # Corners are up 1
+        self.light(xmap)
+        # Corners are up 1
 
-        # wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 0)), tex=floor_tex)
-        # wall(world, '-z', SIZE, mv(self.pos, m( 0, 0, 0)), tex=floor_tex)
-        # wall(world, '-z', SIZE, mv(self.pos, m( 1, 0, 0)), tex=floor_tex)
+        self.x_floor(world, NORTH, tex=floor_tex)
+        self.x_floor(world, SELF, tex=floor_tex)
+        self.x_floor(world, SOUTH, tex=floor_tex)
 
-        # wall(world, '-z', SIZE, mv(self.pos, m(0, -1, 1)), tex=floor_tex)
-        # wall(world, '-z', SIZE, mv(self.pos, m(0,  0, 1)), tex=floor_tex)
-        # wall(world, '-z', SIZE, mv(self.pos, m(0,  1, 1)), tex=floor_tex)
+        self.x_floor(world, EAST + ABOVE, tex=floor_tex)
+        self.x_floor(world, SELF + ABOVE, tex=floor_tex)
+        self.x_floor(world, WEST + ABOVE, tex=floor_tex)
 
-        # if self._randflags[0]:
-            # wall(world, '-z', SIZE, mv(self.pos, m(-1, 0, 2)), tex=floor_tex)
-            # wall(world, '-z', SIZE, mv(self.pos, m( 0, 0, 2)), tex=floor_tex)
-            # wall(world, '-z', SIZE, mv(self.pos, m( 1, 0, 2)), tex=floor_tex)
+        if self._randflags[0]:
+            self.x_floor(world, NORTH + ABOVE + ABOVE, tex=floor_tex)
+            self.x_floor(world, SELF + ABOVE + ABOVE, tex=floor_tex)
+            self.x_floor(world, SOUTH + ABOVE + ABOVE, tex=floor_tex)
 
-    # def _get_doorways(self):
-        # return [
-            # SOUTH + SOUTH,
-            # NORTH + NORTH,
-            # EAST + EAST + ABOVE,
-            # WEST + WEST + ABOVE,
-        # ]
+    def _get_doorways(self):
+        doors = [
+            SOUTH + SOUTH,
+            NORTH + NORTH,
+            EAST + EAST + ABOVE,
+            WEST + WEST + ABOVE,
+        ]
 
-        # if self._randflags[0]:
-            # doors += [
-                # SOUTH + SOUTH + ABOVE + ABOVE,
-                # NORTH + NORTH + ABOVE + ABOVE,
-            # ]
-        # return doors
+        if self._randflags[0]:
+            doors += [
+                SOUTH + SOUTH + ABOVE + ABOVE,
+                NORTH + NORTH + ABOVE + ABOVE,
+            ]
+        return doors
 
-    # def light(self, xmap):
-        # (r, g, b) = LIGHTMAN.hue(self.pos)
-
-        # for i in range(6, self._height * 8, 8):
-            # light = Light(
-                # xyz=m(
-                    # SIZE_OFFSET * (self.pos[0] + 4),
-                    # SIZE_OFFSET * (self.pos[1] + 4),
-                    # SIZE_OFFSET * (self.pos[2] + i),
-                # ),
-                # red=r,
-                # green=g,
-                # blue=b,
-                # radius=SIZE_OFFSET * 256,
-            # )
-            # xmap.ents.append(light)
+    def light(self, xmap):
+        for i in range(self._height):
+            LIGHTMAN.light(xmap, SELF + (ABOVE * i))
 
 
 class PlusPlatform(_LargeRoom):
@@ -1043,95 +1026,59 @@ class FlatSpace(_LargeRoom):
         self.x_floor(world, SOUTHWEST, tex=floor_tex, size=24)
 
 
-# class DoricTemple(_LargeRoom):
-    # _height = 2
+class DigitalRoom(_LargeRoom):
+    _height = 1
+    _randflags = (
+        True, # Roof
+        True, # Tall
+        True, # Density Low / High
+    )
 
-    # def __init__(self, *arg, **kwarg):
-        # super().__init__(*arg, **kwarg)
+    def __init__(self, *arg, **kwarg):
+        super().__init__(*arg, **kwarg)
+        if self._randflags[1]:
+            self._height = 2
 
-    # def render(self, world, xmap):
-        # floor_tex = TEXMAN.get_c('floor')
-        # wall_tex = TEXMAN.get_c('wall')
-        # accent_tex = TEXMAN.get_c('accent')
-        # column_tex = TEXMAN.get_c('column')
+    def render(self, world, xmap):
+        self.light(xmap)
+        prob = 0.3
+        if self._randflags[2]:
+            prob = 0.7
 
-        # self.light(xmap)
+        wall_tex = TEXMAN.get_c('wall')
+        ceil_tex = TEXMAN.get_c('wall')
 
-        # wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=floor_tex)
+        # TODO: fade 0.9
+        self.x_floor(world, SOUTHWEST, tex=ceil_tex, size=24)
+        if self._randflags[1]:
+            self.x_ceiling(world, SOUTHWEST + ABOVE + ABOVE, tex=ceil_tex, size=24)
+        else:
+            self.x_ceiling(world, SOUTHWEST + ABOVE + ABOVE, tex=ceil_tex, size=24)
 
-        # wall(world, '-z', 24, mv(self.pos, (-8, -8, 13)), tex=floor_tex)
-        # wall(world, '-z', 20, mv(self.pos, (-6, -6, 14)), tex=accent_tex)
-        # wall(world, '-z', 16, mv(self.pos, (-4, -4, 15)), tex=floor_tex)
+        #wall_tex = 644
+        self.x_wall(world, NORTHWEST, face=NORTH, tex=wall_tex)
+        self.x_wall(world, NORTHEAST, face=NORTH, tex=wall_tex)
+        self.x_wall(world, SOUTHWEST, face=SOUTH, tex=wall_tex)
+        self.x_wall(world, SOUTHEAST, face=SOUTH, tex=wall_tex)
 
-        # for p in range(-8, 0, 2):
-            # column(world, 'z', 12, mv(self.pos, (p, -8, 1)), tex=column_tex)
-            # column(world, 'z', 12, mv(self.pos, (p, 15, 1)), tex=column_tex)
-        # for p in range(8, 15, 2):
-            # column(world, 'z', 12, mv(self.pos, (p, -8, 1)), tex=column_tex)
-            # column(world, 'z', 12, mv(self.pos, (p, 15, 1)), tex=column_tex)
+        self.x_wall(world, NORTHWEST, face=WEST, tex=wall_tex)
+        self.x_wall(world, SOUTHWEST, face=WEST, tex=wall_tex)
+        self.x_wall(world, SOUTHEAST, face=EAST, tex=wall_tex)
+        self.x_wall(world, NORTHEAST, face=EAST, tex=wall_tex)
 
-        # for p in range(-8, 0, 2):
-            # column(world, 'z', 12, mv(self.pos, (-8, p, 1)), tex=column_tex)
-            # column(world, 'z', 12, mv(self.pos, (15, p, 1)), tex=column_tex)
-        # for p in range(8, 15, 2):
-            # column(world, 'z', 12, mv(self.pos, (-8, p, 1)), tex=column_tex)
-            # column(world, 'z', 12, mv(self.pos, (15, p, 1)), tex=column_tex)
+        if self._randflags[1]:
+            self.x_wall(world, NORTHWEST, face=NORTH, tex=wall_tex)
+            self.x_wall(world, NORTH + NORTH, face=NORTH, tex=wall_tex)
+            self.x_wall(world, NORTHEAST, face=NORTH, tex=wall_tex)
 
+            self.x_wall(world, SOUTHWEST, face=SOUTH, tex=wall_tex)
+            self.x_wall(world, SOUTH + SOUTH, face=SOUTH, tex=wall_tex)
+            self.x_wall(world, SOUTHEAST, face=SOUTH, tex=wall_tex)
 
-# class DigitalRoom(_LargeRoom):
-    # _height = 1
-    # _randflags = (
-        # True, # Roof
-        # True, # Tall
-        # True, # Density Low / High
-    # )
+            self.x_wall(world, NORTHEAST, face=EAST, tex=wall_tex)
+            self.x_wall(world, EAST + EAST, face=EAST, tex=wall_tex)
+            self.x_wall(world, SOUTHEAST, face=EAST, tex=wall_tex)
 
-    # def __init__(self, *arg, **kwarg):
-        # super().__init__(*arg, **kwarg)
-        # if self._randflags[1]:
-            # self._height = 2
-
-    # def render(self, world, xmap):
-        # self.light(xmap)
-        # prob = 0.3
-        # if self._randflags[2]:
-            # prob = 0.7
-
-        # wall_tex = TEXMAN.get_c('wall')
-        # ceil_tex = TEXMAN.get_c('wall')
-
-        # # size = 24
-        # faded_wall(world, '-z', SIZE * 3, mv(self.pos, m(-1, -1, 0)), tex=ceil_tex, prob=0.9)
-        # if self._randflags[1]:
-            # faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -1)), tex=ceil_tex, prob=prob)
-        # else:
-            # faded_wall(world, '+z', SIZE * 3, mv(self.pos, m(-1, -1, -2)), tex=ceil_tex, prob=prob)
-
-        # #wall_tex = 644
-        # faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=prob)
-        # faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, 1, 0)), tex=wall_tex, prob=prob)
-        # if self._randflags[1]:
-            # faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, -1, 1)), tex=wall_tex, prob=prob)
-            # faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, 0, 1)), tex=wall_tex, prob=prob)
-            # faded_wall(world, '-x', SIZE, mv(self.pos, m(-1, 1, 1)), tex=wall_tex, prob=prob)
-
-        # faded_wall(world, '+x', SIZE, mv(self.pos, m(1, -1, 0)), tex=wall_tex, prob=prob)
-        # faded_wall(world, '+x', SIZE, mv(self.pos, m(1, 1, 0)), tex=wall_tex, prob=prob)
-        # if self._randflags[1]:
-            # faded_wall(world, '+x', SIZE, mv(self.pos, m(1, -1, 1)), tex=wall_tex, prob=prob)
-            # faded_wall(world, '+x', SIZE, mv(self.pos, m(1, 0, 1)), tex=wall_tex, prob=prob)
-            # faded_wall(world, '+x', SIZE, mv(self.pos, m(1, 1, 1)), tex=wall_tex, prob=prob)
-
-        # faded_wall(world, '-y', SIZE, mv(self.pos, m(-1, -1, 0)), tex=wall_tex, prob=prob)
-        # faded_wall(world, '-y', SIZE, mv(self.pos, m(1, -1, 0)), tex=wall_tex, prob=prob)
-        # if self._randflags[1]:
-            # faded_wall(world, '-y', SIZE, mv(self.pos, m(-1, -1, 1)), tex=wall_tex, prob=prob)
-            # faded_wall(world, '-y', SIZE, mv(self.pos, m(0, -1, 1)), tex=wall_tex, prob=prob)
-            # faded_wall(world, '-y', SIZE, mv(self.pos, m(1, -1, 1)), tex=wall_tex, prob=prob)
-
-        # faded_wall(world, '+y', SIZE, mv(self.pos, m(-1, 1, 0)), tex=wall_tex, prob=prob)
-        # faded_wall(world, '+y', SIZE, mv(self.pos, m(1, 1, 0)), tex=wall_tex, prob=prob)
-        # if self._randflags[1]:
-            # faded_wall(world, '+y', SIZE, mv(self.pos, m(-1, 1, 1)), tex=wall_tex, prob=prob)
-            # faded_wall(world, '+y', SIZE, mv(self.pos, m(0, 1, 1)), tex=wall_tex, prob=prob)
-            # faded_wall(world, '+y', SIZE, mv(self.pos, m(1, 1, 1)), tex=wall_tex, prob=prob)
+            self.x_wall(world, NORTHWEST, face=WEST, tex=wall_tex)
+            self.x_wall(world, WEST + WEST, face=WEST, tex=wall_tex)
+            self.x_wall(world, SOUTHWEST, face=WEST, tex=wall_tex)
