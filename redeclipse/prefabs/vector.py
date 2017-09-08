@@ -109,8 +109,20 @@ class BaseVector(object):
 
 
 class AbsoluteVector(BaseVector):
+    """
+    This is a derivative of BaseVector specifically for some odd circumstances,
+    namely making rectangular prisms. It has odd rotational semantics
+    specifically for use there.
+    """
 
     def rotate(self, deg):
+        """
+        Obtain a rotated version of self by deg
+
+        :param deg: Angle to rotate (clockwise). Can either be ±x/y, or a
+                    positive multiple of 90.
+        :type deg: str or int
+        """
         if deg == '+x':
             deg = 0
         elif deg == '-x':

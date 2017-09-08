@@ -1,8 +1,7 @@
 from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
 from redeclipse.entities.weapon import Grenade
-from redeclipse.prefabs.construction_kit import wall, column, mv, \
-    low_wall, cube_s, rectangular_prism, ring, rotate_a, faded_wall
+from redeclipse.prefabs.construction_kit import rotate_a
 from redeclipse.textures import PrimaryThemedTextureManager
 # MinecraftThemedTextureManager, DefaultThemedTextureManager, PaperThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
@@ -16,7 +15,7 @@ from redeclipse.prefabs.orientations import SELF, \
     NORTHEAST, SOUTHWEST, SOUTHEAST, TILE_CENTER, HALF_HEIGHT
 
 import random # noqa
-import math
+# import math
 import copy
 random.seed(22)
 
@@ -292,7 +291,6 @@ class Corridor2way(_Room):
     def render(self, world, xmap):
         self.light(xmap)
         floor_tex = TEXMAN.get_c('floor')
-        wall_tex = TEXMAN.get_c('wall')
 
         self.x_floor(world, SELF, tex=floor_tex)
         if self._randflags[0]:
@@ -392,7 +390,6 @@ class JumpCorridorVertical(_Room):
         floor_tex = TEXMAN.get_c('floor')
         wall_tex = TEXMAN.get_c('wall')
         accent_tex = TEXMAN.get_c('accent')
-        column_tex = TEXMAN.get_c('column')
 
         self.x_floor(world, SELF, tex=floor_tex)
         self.x_ceiling(world, SELF + ABOVE + ABOVE, tex=floor_tex)
@@ -467,7 +464,6 @@ class JumpCorridorVerticalCenter(JumpCorridorVertical):
         floor_tex = TEXMAN.get_c('floor')
         wall_tex = TEXMAN.get_c('wall')
         accent_tex = TEXMAN.get_c('accent')
-        column_tex = TEXMAN.get_c('column')
 
         self.x_floor(world, SELF, tex=floor_tex)
         self.light(xmap)
@@ -532,8 +528,6 @@ class Corridor4way(_Room):
 
     def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')
-        wall_tex = TEXMAN.get_c('wall')
-        accent_tex = TEXMAN.get_c('accent')
         column_tex = TEXMAN.get_c('column')
 
         self.x_floor(world, SELF, tex=floor_tex)
@@ -543,15 +537,15 @@ class Corridor4way(_Room):
         if not self._randflags[1] and not self._randflags[2]:
             pass
         elif self._randflags[1] and not self._randflags[2]:
-            self.x_rectangular_prism(world, FineVector(0, 0, 0), AbsoluteVector(1, 1, 8), tex=floor_tex)
-            self.x_rectangular_prism(world, FineVector(0, 7, 0), AbsoluteVector(1, 1, 8), tex=floor_tex)
-            self.x_rectangular_prism(world, FineVector(7, 0, 0), AbsoluteVector(1, 1, 8), tex=floor_tex)
-            self.x_rectangular_prism(world, FineVector(7, 7, 0), AbsoluteVector(1, 1, 8), tex=floor_tex)
+            self.x_rectangular_prism(world, FineVector(0, 0, 0), AbsoluteVector(1, 1, 8), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(0, 7, 0), AbsoluteVector(1, 1, 8), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(7, 0, 0), AbsoluteVector(1, 1, 8), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(7, 7, 0), AbsoluteVector(1, 1, 8), tex=column_tex)
         elif not self._randflags[1] and self._randflags[2]:
-            self.x_rectangular_prism(world, FineVector(0, 0, 0), AbsoluteVector(1, 1, 2), tex=floor_tex)
-            self.x_rectangular_prism(world, FineVector(0, 7, 0), AbsoluteVector(1, 1, 2), tex=floor_tex)
-            self.x_rectangular_prism(world, FineVector(7, 0, 0), AbsoluteVector(1, 1, 2), tex=floor_tex)
-            self.x_rectangular_prism(world, FineVector(7, 7, 0), AbsoluteVector(1, 1, 2), tex=floor_tex)
+            self.x_rectangular_prism(world, FineVector(0, 0, 0), AbsoluteVector(1, 1, 2), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(0, 7, 0), AbsoluteVector(1, 1, 2), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(7, 0, 0), AbsoluteVector(1, 1, 2), tex=column_tex)
+            self.x_rectangular_prism(world, FineVector(7, 7, 0), AbsoluteVector(1, 1, 2), tex=column_tex)
         else:
             pass
 
@@ -659,9 +653,6 @@ class PoleRoom(_LargeRoom):
 
     def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')
-        wall_tex = TEXMAN.get_c('wall')
-        accent_tex = TEXMAN.get_c('accent')
-        column_tex = TEXMAN.get_c('column')
 
         self.light(xmap)
         # size = 24
@@ -761,7 +752,6 @@ class ImposingRingRoom(_LargeRoom):
 
     def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')
-        wall_tex = TEXMAN.get_c('wall')
         accent_tex = TEXMAN.get_c('accent')
         column_tex = TEXMAN.get_c('column')
 
@@ -815,7 +805,6 @@ class AltarRoom(_3X3Room):
 
     def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')
-        wall_tex = TEXMAN.get_c('wall')
         accent_tex = TEXMAN.get_c('accent')
         column_tex = TEXMAN.get_c('column')
 
@@ -905,7 +894,6 @@ class CrossingWalkways(_LargeRoom):
 
     def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')
-        wall_tex = TEXMAN.get_c('wall')
 
         self.light(xmap)
         # Corners are up 1
@@ -1049,36 +1037,39 @@ class DigitalRoom(_LargeRoom):
         ceil_tex = TEXMAN.get_c('wall')
 
         # TODO: fade 0.9
-        self.x_floor(world, SOUTHWEST, tex=ceil_tex, size=24)
+        self.x_floor(world, SOUTHWEST, tex=ceil_tex, size=24, prob=0.9)
         if self._randflags[1]:
-            self.x_ceiling(world, SOUTHWEST + ABOVE + ABOVE, tex=ceil_tex, size=24)
+            self.x_ceiling(world, SOUTHWEST + ABOVE, tex=ceil_tex, size=24, prob=0.9)
         else:
-            self.x_ceiling(world, SOUTHWEST + ABOVE + ABOVE, tex=ceil_tex, size=24)
+            self.x_ceiling(world, SOUTHWEST, tex=ceil_tex, size=24, prob=0.9)
 
         #wall_tex = 644
-        self.x_wall(world, NORTHWEST, face=NORTH, tex=wall_tex)
-        self.x_wall(world, NORTHEAST, face=NORTH, tex=wall_tex)
-        self.x_wall(world, SOUTHWEST, face=SOUTH, tex=wall_tex)
-        self.x_wall(world, SOUTHEAST, face=SOUTH, tex=wall_tex)
+        # TODO: Fix this bug.
+        # self.x_wall(world, NORTHWEST, face=SOUTH, tex=wall_tex, prob=prob)
+        # self.x_wall(world, NORTHEAST, face=SOUTH, tex=wall_tex, prob=prob)
 
-        self.x_wall(world, NORTHWEST, face=WEST, tex=wall_tex)
-        self.x_wall(world, SOUTHWEST, face=WEST, tex=wall_tex)
-        self.x_wall(world, SOUTHEAST, face=EAST, tex=wall_tex)
-        self.x_wall(world, NORTHEAST, face=EAST, tex=wall_tex)
+        # self.x_wall(world, SOUTHWEST, face=NORTH, tex=wall_tex, prob=prob)
+        # self.x_wall(world, SOUTHEAST, face=NORTH, tex=wall_tex, prob=prob)
 
-        if self._randflags[1]:
-            self.x_wall(world, NORTHWEST, face=NORTH, tex=wall_tex)
-            self.x_wall(world, NORTH + NORTH, face=NORTH, tex=wall_tex)
-            self.x_wall(world, NORTHEAST, face=NORTH, tex=wall_tex)
+        self.x_wall(world, NORTHWEST, face=WEST, tex=wall_tex, prob=prob)
+        self.x_wall(world, SOUTHWEST, face=WEST, tex=wall_tex, prob=prob)
 
-            self.x_wall(world, SOUTHWEST, face=SOUTH, tex=wall_tex)
-            self.x_wall(world, SOUTH + SOUTH, face=SOUTH, tex=wall_tex)
-            self.x_wall(world, SOUTHEAST, face=SOUTH, tex=wall_tex)
+        self.x_wall(world, SOUTHEAST, face=EAST, tex=wall_tex, prob=prob)
+        self.x_wall(world, NORTHEAST, face=EAST, tex=wall_tex, prob=prob)
 
-            self.x_wall(world, NORTHEAST, face=EAST, tex=wall_tex)
-            self.x_wall(world, EAST + EAST, face=EAST, tex=wall_tex)
-            self.x_wall(world, SOUTHEAST, face=EAST, tex=wall_tex)
+        # if self._randflags[1]:
+            # self.x_wall(world, NORTHWEST, face=NORTH, tex=wall_tex, prob=prob)
+            # self.x_wall(world, NORTH + NORTH, face=NORTH, tex=wall_tex, prob=prob)
+            # self.x_wall(world, NORTHEAST, face=NORTH, tex=wall_tex, prob=prob)
 
-            self.x_wall(world, NORTHWEST, face=WEST, tex=wall_tex)
-            self.x_wall(world, WEST + WEST, face=WEST, tex=wall_tex)
-            self.x_wall(world, SOUTHWEST, face=WEST, tex=wall_tex)
+            # self.x_wall(world, SOUTHWEST, face=SOUTH, tex=wall_tex, prob=prob)
+            # self.x_wall(world, SOUTH + SOUTH, face=SOUTH, tex=wall_tex, prob=prob)
+            # self.x_wall(world, SOUTHEAST, face=SOUTH, tex=wall_tex, prob=prob)
+
+            # self.x_wall(world, NORTHEAST, face=EAST, tex=wall_tex, prob=prob)
+            # self.x_wall(world, EAST + EAST, face=EAST, tex=wall_tex, prob=prob)
+            # self.x_wall(world, SOUTHEAST, face=EAST, tex=wall_tex, prob=prob)
+
+            # self.x_wall(world, NORTHWEST, face=WEST, tex=wall_tex, prob=prob)
+            # self.x_wall(world, WEST + WEST, face=WEST, tex=wall_tex, prob=prob)
+            # self.x_wall(world, SOUTHWEST, face=WEST, tex=wall_tex, prob=prob)

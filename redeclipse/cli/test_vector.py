@@ -21,7 +21,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     v = VoxelWorld(size=size)
     upm = UnusedPositionManager(size, mirror=True)
 
-    Room = p.AltarRoom
+    Room = p.DigitalRoom
 
     kwargs = Room.randOpts(None)
     n = Room(pos=CoarseVector(8 + 5, 8, 8), orientation='+x', **kwargs)
@@ -62,9 +62,8 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     )
     mymap.ents.append(sunlight)
 
-    for (pos, typ, ori) in upm.unoccupied:
-        r = p.TestRoom(pos, orientation='+x')
-        r.render(v, mymap)
+    from redeclipse.aftereffects import endcap
+    endcap(v, upm)
 
     # Emit config + textures
     p.TEXMAN.emit_conf(mpz_out)

@@ -56,7 +56,14 @@ class UnusedPositionManager:
         raise Exception("UNKNOWN")
 
     def is_legal(self, position):
-        """Is the position within the bounds of the map"""
+        """Is the position within the bounds of the map.
+
+        :param position: A vector representing the position of the room
+        :type position: `redeclipse.prefabs.vector.CoarseVector`
+
+        :returns: Whether or not that position is legal to occuply.
+        :rtype: boolean
+        """
         lowest = 0
         if self.mirror:
             lowest = 1
@@ -65,7 +72,15 @@ class UnusedPositionManager:
     def preregister_rooms(self, *rooms):
         """
         Register positions occupied by this room, but don't *actually*
-        do it, only attempt to do it in a temporary manner.
+        do it, only attempt to do it in a temporary manner. Useful for
+        validating that multi-room rooms work OK even under mirrored
+        circumstances.
+
+        :param rooms: An array of `redeclipse.prefabs._Room`s that are to be pre-registered.
+        :type rooms: list of `redeclipse.prefabs._Room`s
+
+        :returns: Whether or not it is OK to register this room.
+        :rtype: boolean
         """
         logging.info("Prereg: %s", '|'.join([x.__class__.__name__ for x in rooms]))
         tmp_occupied = copy.deepcopy(self.occupied)
@@ -82,6 +97,11 @@ class UnusedPositionManager:
     def register_room(self, room):
         """
         Register positions occupied by this room
+
+        :param room: A single `redeclipse.prefabs._Room`s that are to be added to the world.
+        :type room: `redeclipse.prefabs._Room`
+
+        :rtype: None
         """
         used = room.get_positions()
         # First, we need to check that ALL of those positions are
@@ -112,7 +132,11 @@ class UnusedPositionManager:
                 self.unoccupied.append((position, room, orientation))
 
     def random_position(self):
-        """Select a random doorway to use"""
+        """Select a random doorway to use
+
+        :returns: a doorway from the set of unoccupied doorways.
+        :rtype: tuple of (p, r, o), whatever the heck those are.
+        """
         if len(self.occupied) > 0:
             return random.choice(self.unoccupied)
         else:

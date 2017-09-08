@@ -93,37 +93,69 @@ def wall(world, direction, size, pos, tex=2):
             cube.newtexcube(tex=tex)
         )
 
+
+def subtract_or_skip(point, subtract, prob):
+    if subtract:
+        return True
+    else:
+        if prob < 1:
+            if random.random() > prob:
+                return True
+    return False
+
+
 class ConstructionKitMixin(object):
 
-    def x_column(self, world, offset, direction, length, tex=2):
+    def x_column(self, world, offset, direction, length, tex=2, subtract=False, prob=1.0):
+        for point in self._x_column(world, offset, direction, length):
+            if subtract_or_skip(point, subtract, prob):
+                world.del_pointv(point)
+                continue
+            world.set_pointv(point, cube.newtexcube(tex=tex))
+
+    def _x_column(self, world, offset, direction, length):
         offset = offset.rotate(self.orientation)
         adjustment = self.x_get_adjustment()
         local_position = self.pos + offset + adjustment
         # Then get the orientation, rotated, and converted to ±xyz
         orient = VEC_ORIENT_MAP_INV[direction.rotate(self.orientation)]
         for point in column_points(length, orient):
-            world.set_pointv(
-                point + local_position,
-                cube.newtexcube(tex=tex)
-            )
+            yield point + local_position
 
-    def x_ceiling(self, world, offset, tex=2, size=ROOM_SIZE):
-        return self.x_rectangular_prism(world, offset + FineVector(0, 0, 7), AbsoluteVector(size, size, 1), tex=tex)
+    def x_ceiling(self, world, offset, tex=2, size=ROOM_SIZE, subtract=False, prob=1.0):
+        for point in self._x_ceiling(world, offset, size=size):
+            if subtract_or_skip(point, subtract, prob):
+                world.del_pointv(point)
+                continue
+            world.set_pointv(point, cube.newtexcube(tex=tex))
 
-    def x_floor(self, world, offset, tex=2, size=ROOM_SIZE):
-        return self.x_rectangular_prism(world, offset, AbsoluteVector(size, size, 1), tex=tex)
+    def _x_ceiling(self, world, offset, size=ROOM_SIZE):
+        for point in self._x_rectangular_prism(world, offset + FineVector(0, 0, 7), AbsoluteVector(size, size, 1)): yield point
 
-    def x_wall(self, world, offset, face, tex=2):
+    def x_floor(self, world, offset, tex=2, size=ROOM_SIZE, subtract=False, prob=1.0):
+        for point in self._x_floor(world, offset, size=size):
+            if subtract_or_skip(point, subtract, prob):
+                world.del_pointv(point)
+                continue
+            world.set_pointv(point, cube.newtexcube(tex=tex))
+
+    def _x_floor(self, world, offset, size=ROOM_SIZE):
+        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(size, size, 1)): yield point
+
+    def x_wall(self, world, offset, face, tex=2, subtract=False, prob=1.0):
+        for point in self._x_wall(world, offset, face):
+            if subtract_or_skip(point, subtract, prob):
+                world.del_pointv(point)
+                continue
+            world.set_pointv(point, cube.newtexcube(tex=tex))
+
+    def _x_wall(self, world, offset, face, tex=2):
         offset = offset.rotate(self.orientation)
         local_position = self.pos + offset
         real_face = self.x_get_face(face)
-        # print('face %s => orientation %s => real_face %s' % (face, self.orientation, real_face))
 
         for point in wall_points(ROOM_SIZE, real_face):
-            world.set_pointv(
-                point + local_position,
-                cube.newtexcube(tex=tex)
-            )
+            yield point + local_position
 
     def x_get_adjustment(self):
         if self.orientation == '+x':
@@ -135,47 +167,52 @@ class ConstructionKitMixin(object):
         elif self.orientation == '-y':
             return CoarseVector(0, 1, 0)
 
-    def x_ring(self, world, offset, size, tex=2):
-        # world, FineVector(-2, -2, i), 12, tex=accent_tex)
-        self.x_rectangular_prism(world, offset, AbsoluteVector(1, size - 1, 1), tex=tex)
-        self.x_rectangular_prism(world, offset, AbsoluteVector(size - 1, 1, 1), tex=tex)
-        self.x_rectangular_prism(world, offset + FineVector(0, size - 1, 0), AbsoluteVector(size, 1, 1), tex=tex)
-        self.x_rectangular_prism(world, offset + FineVector(size - 1, 0, 0), AbsoluteVector(1, size, 1), tex=tex)
+    def x_ring(self, world, offset, size, tex=2, subtract=False, prob=1.0):
+        for point in self._x_ring(world, offset, size):
+            if subtract_or_skip(point, subtract, prob):
+                world.del_pointv(point)
+                continue
+            world.set_pointv(point, cube.newtexcube(tex=tex))
 
-    def x_rectangular_prism(self, world, offset, xyz, tex=2, subtract=False):
+    def _x_ring(self, world, offset, size, tex=2):
+        # world, FineVector(-2, -2, i), 12, tex=accent_tex)
+        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(1, size - 1, 1)): yield point
+        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(size - 1, 1, 1)): yield point
+        for point in self._x_rectangular_prism(world, offset + FineVector(0, size - 1, 0), AbsoluteVector(size, 1, 1)): yield point
+        for point in self._x_rectangular_prism(world, offset + FineVector(size - 1, 0, 0), AbsoluteVector(1, size, 1)): yield point
+
+    def x_rectangular_prism(self, world, offset, xyz, tex=2, subtract=False, prob=1.0):
+        for point in self._x_rectangular_prism(world, offset, xyz):
+            if subtract_or_skip(point, subtract, prob):
+                world.del_pointv(point)
+                continue
+            world.set_pointv(point, cube.newtexcube(tex=tex))
+
+    def _x_rectangular_prism(self, world, offset, xyz, tex=2):
         offset = offset.rotate(self.orientation)
         xyz = xyz.rotate(self.orientation)
         # We need to offset self.pos with an adjustment vector. Because
         # reasons. Awful awful reasons.
         adjustment = self.x_get_adjustment()
-
         local_position = self.pos + adjustment + offset
-        print('self', self.pos.fine(), 'off', offset.fine(),
-              'locl', local_position.fine(), 'dims', xyz)
 
         for point in cube_points(xyz.x, xyz.y, xyz.z):
-            if subtract:
-                world.del_pointv(
-                    point + local_position
-                )
-            else:
-                world.set_pointv(
-                    point + local_position,
-                    cube.newtexcube(tex=tex)
-                )
+            yield point + local_position
 
-    def x_low_wall(self, world, offset, face, tex=2):
+    def x_low_wall(self, world, offset, xyz, tex=2, subtract=False, prob=1.0):
+        for point in self._x_rectangular_prism(world, offset, xyz):
+            if subtract_or_skip(point, subtract, prob):
+                world.del_pointv(point)
+                continue
+            world.set_pointv(point, cube.newtexcube(tex=tex))
+
+    def _x_low_wall(self, world, offset, xyz):
         offset = offset.rotate(self.orientation)
         local_position = self.pos + offset
         real_face = self.x_get_face(face)
 
         for point in wall_points(ROOM_SIZE, real_face, limit_j=2):
-            if point.z == 0:
-                print('\t>', point + local_position)
-            world.set_pointv(
-                point + local_position,
-                cube.newtexcube(tex=tex)
-            )
+            yield point + local_position
 
     def x_get_face(self, face):
         if self.orientation == '+x':
@@ -216,6 +253,7 @@ class ConstructionKitMixin(object):
                 return '+x'
         else:
             raise Exception()
+
 
 def faded_wall(world, direction, size, pos, tex=2, prob=0.7):
     for point in wall_points(size, direction):

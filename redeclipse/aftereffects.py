@@ -3,6 +3,7 @@ import random
 from tqdm import tqdm
 import math
 from redeclipse.objects import cube
+from redeclipse.prefabs.construction_kit import cube_points
 import logging
 log = logging.getLogger(__name__)
 
@@ -179,3 +180,21 @@ def box(world):
                         x, y, z,
                         cube.newtexcube(tex=2)
                     )
+
+
+def endcap(world, upm):
+    """
+    A box added around the edge of the world.
+
+    :param world: Input world
+    :type world: redeclipse.Map
+
+    :rtype: None
+    """
+    for (pos, typ, ori) in tqdm(upm.unoccupied):
+        # Sure wish we could do larger rooms.
+        for offset in cube_points(8, 8, 8):
+            world.set_pointv(
+                pos + offset,
+                cube.newtexcube(tex=2)
+            )
