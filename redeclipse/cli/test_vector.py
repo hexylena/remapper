@@ -3,14 +3,12 @@ import argparse
 import random
 import logging
 from redeclipse.voxel import VoxelWorld
-from redeclipse.cli import parse, weighted_choice
+from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
 #from redeclipse.skybox import MinecraftSky
-from redeclipse.prefabs import STARTING_POSITION
 from redeclipse.prefabs.vector import CoarseVector, FineVector
-from tqdm import tqdm
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
@@ -62,8 +60,8 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     )
     mymap.ents.append(sunlight)
 
-    from redeclipse.aftereffects import endcap
-    endcap(v, upm)
+    # from redeclipse.aftereffects import endcap
+    # endcap(v, upm)
 
     # Emit config + textures
     p.TEXMAN.emit_conf(mpz_out)

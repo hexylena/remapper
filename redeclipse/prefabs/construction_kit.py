@@ -199,14 +199,14 @@ class ConstructionKitMixin(object):
         for point in cube_points(xyz.x, xyz.y, xyz.z):
             yield point + local_position
 
-    def x_low_wall(self, world, offset, xyz, tex=2, subtract=False, prob=1.0):
-        for point in self._x_rectangular_prism(world, offset, xyz):
+    def x_low_wall(self, world, offset, face, tex=2, subtract=False, prob=1.0):
+        for point in self._x_rectangular_prism(world, offset, face):
             if subtract_or_skip(point, subtract, prob):
                 world.del_pointv(point)
                 continue
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
-    def _x_low_wall(self, world, offset, xyz):
+    def _x_low_wall(self, world, offset, face):
         offset = offset.rotate(self.orientation)
         local_position = self.pos + offset
         real_face = self.x_get_face(face)
