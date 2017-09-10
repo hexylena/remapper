@@ -16,6 +16,9 @@ class ivec2:
     def to_dict(self):
         return [self.X(), self.Y()]
 
+    def __repr__(self):
+        return '<ivec2 {} {}>'.format(*self.to_dict())
+
 
 class vec2:
     """Float version of ivec2"""
@@ -32,6 +35,9 @@ class vec2:
 
     def to_dict(self):
         return [self.X(), self.Y()]
+
+    def __repr__(self):
+        return '<vec2 {} {}>'.format(*self.to_dict())
 
 
 class vec3:
@@ -56,6 +62,9 @@ class vec3:
     def to_dict(self):
         return [self.X(), self.Y(), self.Z()]
 
+    def __repr__(self):
+        return '<vec3 {} {} {}>'.format(*self.to_dict())
+
 
 class ivec3:
     """
@@ -67,6 +76,15 @@ class ivec3:
         self.y = y
         self.z = z
 
+    def X(self):
+        return int(self.x)
+
+    def Y(self):
+        return int(self.y)
+
+    def Z(self):
+        return int(self.z)
+
     @classmethod
     def ivec5(cls, i, x, y, z, s):
         return ivec3(
@@ -77,58 +95,58 @@ class ivec3:
 
     def mask(self, mask):
         return ivec3(
-            self.x & mask,
-            self.y & mask,
-            self.z & mask
+            self.X() & mask,
+            self.Y() & mask,
+            self.Z() & mask
         )
 
     def shl(self, shift):
         return ivec3(
-            self.x << shift,
-            self.y << shift,
-            self.z << shift,
+            self.X() << shift,
+            self.Y() << shift,
+            self.Z() << shift,
         )
 
     def sub(self, b):
         return ivec3(
-            self.x - b.x,
-            self.y - b.y,
-            self.z - b.z
+            self.X() - b.X(),
+            self.Y() - b.Y(),
+            self.Z() - b.Z()
         )
 
     def mul(self, s):
         return ivec3(
-            self.x * s,
-            self.y * s,
-            self.z * s
+            self.X() * s,
+            self.Y() * s,
+            self.Z() * s
         )
 
     def add(self, b):
         return ivec3(
-            self.x + b.x,
-            self.y + b.y,
-            self.z + b.z
+            self.X() + b.x,
+            self.Y() + b.y,
+            self.Z() + b.z
         )
 
     def gg(self, idx):
         if idx == 0:
-            return self.x
+            return self.X()
         elif idx == 1:
-            return self.y
+            return self.Y()
         elif idx == 2:
-            return self.z
+            return self.Z()
 
     def dot(self, o):
-        return self.x * o.x + self.y * o.y + self.z * o.z
+        return self.X() * o.x + self.Y() * o.y + self.Z() * o.z
 
     def iszero(self):
-        return self.x == 0 and self.y == 0 and self.z == 0
-
-    def __str__(self):
-        return "(%d, %d, %d)" % (self.x, self.y, self.z)
+        return self.X() == 0 and self.Y() == 0 and self.Z() == 0
 
     def to_dict(self):
         return [self.X(), self.Y(), self.Z()]
+
+    def __repr__(self):
+        return '<ivec3 {} {} {}>'.format(*self.to_dict())
 
 
 def cross(a, b):

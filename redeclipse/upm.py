@@ -64,10 +64,9 @@ class UnusedPositionManager:
         :returns: Whether or not that position is legal to occuply.
         :rtype: boolean
         """
-        lowest = 0
-        if self.mirror:
-            lowest = 1
-        return all([x >= lowest and x < 31 for x in position])
+        return 0 <= position.x <= 16 and \
+            0 <= position.y <= 16 and \
+            0 <= position.z <= 16
 
     def preregister_rooms(self, *rooms):
         """
@@ -157,6 +156,7 @@ class UnusedPositionManager:
                   chosing this position
         :rtype: float
         """
+        # TODO: dependent on self.size
         tmpx = abs(x - 128)
         tmpy = abs(y - 128)
         return math.pow(tmpx, 5) + math.pow(tmpy, 5)
