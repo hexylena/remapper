@@ -1,4 +1,4 @@
-from redeclipse.prefabs.vector import CoarseVector, FineVector
+from redeclipse.vector import CoarseVector, FineVector
 
 
 SELF = CoarseVector(0, 0, 0)

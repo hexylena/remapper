@@ -59,7 +59,7 @@ class UnusedPositionManager:
         """Is the position within the bounds of the map.
 
         :param position: A vector representing the position of the room
-        :type position: `redeclipse.prefabs.vector.CoarseVector`
+        :type position: `redeclipse.vector.CoarseVector`
 
         :returns: Whether or not that position is legal to occuply.
         :rtype: boolean

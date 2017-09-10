@@ -1,8 +1,8 @@
 from redeclipse.objects import cube
 import math
 import random
-from redeclipse.prefabs.orientations import SELF, SOUTH, NORTH, WEST, EAST, ABOVE, BELOW, VEC_ORIENT_MAP_INV
-from redeclipse.prefabs.vector import FineVector, CoarseVector, AbsoluteVector
+from redeclipse.vector.orientations import SELF, SOUTH, NORTH, WEST, EAST, ABOVE, BELOW, VEC_ORIENT_MAP_INV
+from redeclipse.vector import FineVector, CoarseVector, AbsoluteVector
 
 ROOM_SIZE = 8
 

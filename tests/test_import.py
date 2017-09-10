@@ -34,8 +34,8 @@ def test_imports():
     import redeclipse.prefabs
     import redeclipse.prefabs.construction_kit
     import redeclipse.prefabs.distributions
-    import redeclipse.prefabs.orientations
-    import redeclipse.prefabs.vector
+    import redeclipse.vector.orientations
+    import redeclipse.vector
     import redeclipse.skybox
     import redeclipse.textures
     import redeclipse.textures.basetex

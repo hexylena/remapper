@@ -84,9 +84,9 @@ class BaseVector(object):
         :param deg: degrees (0, 90, 180, ...) or orientation (+x, -x, ...)
         :type deg: str or int
 
-        :returns: a new ``redeclipse.prefabs.vector.BaseVector``, rotated as
+        :returns: a new ``redeclipse.vector.BaseVector``, rotated as
                   needed.
-        :rtype: redeclipse.prefabs.vector.BaseVector
+        :rtype: redeclipse.vector.BaseVector
         """
         if deg == '+x':
             deg = 0

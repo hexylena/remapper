@@ -8,8 +8,8 @@ from redeclipse.lighting import PositionBasedLightManager
 from redeclipse.prefabs.distributions import UniformDistributionManager
 # TowerDistributionManager, PlatformDistributionManager
 from redeclipse.prefabs.construction_kit import ConstructionKitMixin
-from redeclipse.prefabs.vector import CoarseVector, FineVector, rotate_yaw, AbsoluteVector
-from redeclipse.prefabs.orientations import SELF, \
+from redeclipse.vector import CoarseVector, FineVector, rotate_yaw, AbsoluteVector
+from redeclipse.vector.orientations import SELF, \
     SOUTH, NORTH, WEST, EAST, ABOVE, \
     ABOVE_FINE, NORTHWEST, \
     NORTHEAST, SOUTHWEST, SOUTHEAST, TILE_CENTER, HALF_HEIGHT

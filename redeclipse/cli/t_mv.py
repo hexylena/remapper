@@ -2,7 +2,7 @@
 import argparse
 import logging
 from redeclipse.voxel import VoxelWorld
-from redeclipse.prefabs.vector import FineVector
+from redeclipse.vector import FineVector
 from redeclipse.magicavoxel import to_magicavoxel
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)

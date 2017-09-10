@@ -9,7 +9,7 @@ from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
 from redeclipse.magicavoxel import to_magicavoxel
 #from redeclipse.skybox import MinecraftSky
-from redeclipse.prefabs.vector import CoarseVector, FineVector
+from redeclipse.vector import CoarseVector, FineVector
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
