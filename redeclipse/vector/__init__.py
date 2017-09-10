@@ -3,13 +3,14 @@ from math import sin, cos, pi
 
 def rotate_yaw(angle, orientation):
     if orientation == '+x':
-        return angle
+        return angle % 360
     elif orientation == '+y':
         return (angle + 90) % 360
     elif orientation == '-x':
         return (angle + 180) % 360
     elif orientation == '-y':
         return (angle + 270) % 360
+    raise Exception("Unexpected orientation")
 
 
 class BaseVector(object):
