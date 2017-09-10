@@ -1,6 +1,11 @@
 redeclipse package
 ==================
 
+.. automodule:: redeclipse
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Subpackages
 -----------
 
@@ -12,56 +17,17 @@ Subpackages
     redeclipse.prefabs
     redeclipse.skybox
     redeclipse.textures
+    redeclipse.vector
     redeclipse.voxel
 
 Submodules
 ----------
 
-redeclipse\.aftereffects module
--------------------------------
+.. toctree::
 
-.. automodule:: redeclipse.aftereffects
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   redeclipse.aftereffects
+   redeclipse.enums
+   redeclipse.magicavoxel
+   redeclipse.objects
+   redeclipse.upm
 
-redeclipse\.enums module
-------------------------
-
-.. automodule:: redeclipse.enums
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-redeclipse\.objects module
---------------------------
-
-.. automodule:: redeclipse.objects
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-redeclipse\.upm module
-----------------------
-
-.. automodule:: redeclipse.upm
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-redeclipse\.vec module
-----------------------
-
-.. automodule:: redeclipse.vec
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: redeclipse
-    :members:
-    :undoc-members:
-    :show-inheritance:
