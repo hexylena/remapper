@@ -1,7 +1,7 @@
 import pytest
 
 from redeclipse.upm import UnusedPositionManager
-from redeclipse.prefabs import BaseRoom
+from redeclipse.prefabs import Room
 from redeclipse.vector import CoarseVector
 
 
@@ -12,8 +12,8 @@ def test_upm():
     with pytest.raises(Exception):
         upm.nonrandom_position(upm.nrp_flavour_plain)
 
-    room_a = BaseRoom(pos=CoarseVector(0, 0, 0))
-    room_b = BaseRoom(pos=CoarseVector(16, 0, 0))
+    room_a = Room(pos=CoarseVector(0, 0, 0))
+    room_b = Room(pos=CoarseVector(16, 0, 0))
 
     assert not upm.is_legal(CoarseVector(-1, -1, -1))
     assert upm.is_legal(CoarseVector(0, 0, 0))
@@ -31,7 +31,7 @@ def test_upm():
     print(room_a.get_doorways())
 
     assert len(upm.occupied) == 1
-    # [(CV(BV(1, 0, 0)), <redeclipse.prefabs.BaseRoom object at 0x7ff4ac1bbda0>, '+x'), (CV(BV(0, 1, 0)), <redeclipse.prefabs.BaseRoom object at 0x7ff4ac1bbda0>, '+y')]
+    # [(CV(BV(1, 0, 0)), <redeclipse.prefabs.Room object at 0x7ff4ac1bbda0>, '+x'), (CV(BV(0, 1, 0)), <redeclipse.prefabs.Room object at 0x7ff4ac1bbda0>, '+y')]
     assert len(upm.unoccupied) == 2
 
     upm.register_room(room_b)

@@ -48,7 +48,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         """Pick out a random room based on the connecting room and the
         transition probabilities of that room."""
         possible_rooms = [
-            p.BaseRoom,
+            p.Room,
             p.SpawnRoom,
             # p.JumpCorridor3,
             # p.Corridor4way,

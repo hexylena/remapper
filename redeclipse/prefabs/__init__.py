@@ -1,7 +1,6 @@
 from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
 from redeclipse.entities.weapon import Grenade
-from redeclipse.prefabs.construction_kit import rotate_a
 from redeclipse.textures import PrimaryThemedTextureManager
 # MinecraftThemedTextureManager, DefaultThemedTextureManager, PaperThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
@@ -813,7 +812,7 @@ class AltarRoom(_3X3Room):
         if self._randflags[0]:
             tree = MapModel(
                 xyz=self.pos + FineVector(4, 4, 3).rotate(self.orientation),
-                yaw=rotate_a(270, self.orientation),
+                yaw=rotate_yaw(270, self.orientation),
                 type=124
             )
             xmap.ents.append(tree)

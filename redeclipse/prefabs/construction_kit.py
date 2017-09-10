@@ -79,11 +79,6 @@ def wall_points(size, direction, limit_j=100, limit_i=100):
                 yield FineVector(size - 1, i, j)
 
 
-def multi_wall(world, directions, size, pos, tex=2):
-    for direction in directions:
-        wall(world, direction, size, pos, tex=tex)
-
-
 def wall(world, direction, size, pos, tex=2):
     for point in wall_points(size, direction):
         world.set_point(
@@ -139,8 +134,7 @@ class ConstructionKitMixin(object):
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
     def _x_floor(self, world, offset, size=ROOM_SIZE):
-        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(size, size, 1)):
-            yield point
+        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(size, size, 1)): yield point
 
     def x_wall(self, world, offset, face, tex=2, subtract=False, prob=1.0):
         for point in self._x_wall(world, offset, face):
@@ -259,36 +253,6 @@ class ConstructionKitMixin(object):
             raise Exception()
 
 
-def faded_wall(world, direction, size, pos, tex=2, prob=0.7):
-    for point in wall_points(size, direction):
-        if random.random() < prob:
-            world.set_point(
-                *mv(point, pos),
-                cube.newtexcube(tex=tex)
-            )
-
-
-def low_wall(world, direction, size, pos, height=2, tex=2):
-    for point in wall_points(size, direction, limit_j=height):
-        world.set_point(
-            *mv(point, pos),
-            cube.newtexcube(tex=tex)
-        )
-
-
-def column(world, direction, size, pos, tex=2, subtract=False):
-    for point in column_points(size, direction):
-        if subtract:
-            world.del_point(
-                *mv(point, pos)
-            )
-        else:
-            world.set_point(
-                *mv(point, pos),
-                cube.newtexcube(tex=tex)
-            )
-
-
 def cube_points(x, y, z):
     """
     call with a single number for a cube, or x, y, z for a rectangular prism
@@ -320,48 +284,6 @@ def cube_points(x, y, z):
                 yield FineVector(i, j, k)
 
 
-def cube_s(world, size, pos, tex=2):
-    for point in cube_points(size, size, size):
-        world.set_point(
-            *mv(point, pos),
-            cube.newtexcube(tex=tex)
-        )
-
-
-def rectangular_prism(world, x, y, z, pos, tex=2):
-    for point in cube_points(x, y, z):
-        world.set_point(
-            *mv(point, pos),
-            cube.newtexcube(tex=tex)
-        )
-
-
-def slope(world, pos, corners_down=None, tex=2):
-    # Broken
-    c = cube.newtexcube(tex=tex)
-
-    if 0 in corners_down:
-        c.edges[4] = 136
-    if 1 in corners_down:
-        c.edges[5] = 136
-    if 2 in corners_down:
-        c.edges[7] = 136
-    if 3 in corners_down:
-        c.edges[10] = 136
-
-    world.set_point(*pos, c)
-
-
-def ring(world, pos, size=8, tex=2, thickness=1):
-    for point in wall_points(size, '-z'):
-        if point[0] < thickness or point[0] >= size - thickness or \
-                point[1] < thickness or point[1] >= size - thickness:
-            world.set_point(
-                *mv(point, pos),
-                cube.newtexcube(tex=tex)
-            )
-
-
 def rotate(position, orientation):
     (x, y, z) = position
     if orientation == '-x':
@@ -372,18 +294,5 @@ def rotate(position, orientation):
         return (y, x, z)
     elif orientation == '+y':
         return (y, -x, z)
-    else:
-        raise Exception("Unknown Orientation")
-
-
-def rotate_a(direction, orientation):
-    if orientation == '-x':
-        return direction + 0 % 360
-    elif orientation == '+x':
-        return direction + 180 % 360
-    elif orientation == '-y':
-        return direction + 90 % 360
-    elif orientation == '+y':
-        return direction + 270 % 360
     else:
         raise Exception("Unknown Orientation")
