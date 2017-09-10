@@ -1,18 +1,18 @@
 
 def test_imports():
+    # import redeclipse.cli.mirror_2
+    # import redeclipse.cli.mirror_4
+    # import redeclipse.cli.scaffold
+    # import redeclipse.cli.show_cubes
+    # import redeclipse.cli.snow_forest
+    # import redeclipse.cli.snow_forest2d
     import redeclipse
     import redeclipse.aftereffects
     import redeclipse.cli
     import redeclipse.cli.cfg_gen
     import redeclipse.cli.from_json
     import redeclipse.cli.iso
-    # import redeclipse.cli.mirror_2
-    # import redeclipse.cli.mirror_4
     import redeclipse.cli.mod_cubes
-    # import redeclipse.cli.scaffold
-    # import redeclipse.cli.show_cubes
-    # import redeclipse.cli.snow_forest
-    # import redeclipse.cli.snow_forest2d
     import redeclipse.cli.t_mv
     import redeclipse.cli.t_textures
     import redeclipse.cli.t_town
@@ -34,8 +34,6 @@ def test_imports():
     import redeclipse.prefabs
     import redeclipse.prefabs.construction_kit
     import redeclipse.prefabs.distributions
-    import redeclipse.vector.orientations
-    import redeclipse.vector
     import redeclipse.skybox
     import redeclipse.textures
     import redeclipse.textures.basetex
@@ -48,5 +46,7 @@ def test_imports():
     import redeclipse.textures.primary
     import redeclipse.textures.primary_theme
     import redeclipse.upm
-    import redeclipse.vec
+    import redeclipse.vector
+    import redeclipse.vector.orientations
+    import redeclipse.vector.re
     import redeclipse.voxel
