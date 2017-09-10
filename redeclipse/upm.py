@@ -30,7 +30,7 @@ class UnusedPositionManager:
         :type used: list
 
         :param p: previous room
-        :type p: ``redeclipse.prefabs._Room``
+        :type p: redeclipse.prefabs.Room
         """
         for u in used:
             # For a set of "used" positions, only ONE block should be directly
@@ -75,8 +75,8 @@ class UnusedPositionManager:
         validating that multi-room rooms work OK even under mirrored
         circumstances.
 
-        :param rooms: An array of `redeclipse.prefabs._Room`s that are to be pre-registered.
-        :type rooms: list of `redeclipse.prefabs._Room`s
+        :param rooms: An array of redeclipse.prefabs.Room that are to be pre-registered.
+        :type rooms: list of redeclipse.prefabs.Room
 
         :returns: Whether or not it is OK to register this room.
         :rtype: boolean
@@ -97,8 +97,8 @@ class UnusedPositionManager:
         """
         Register positions occupied by this room
 
-        :param room: A single `redeclipse.prefabs._Room`s that are to be added to the world.
-        :type room: `redeclipse.prefabs._Room`
+        :param room: A single room that is to be added to the world.
+        :type room: redeclipse.prefabs.Room
 
         :rtype: None
         """

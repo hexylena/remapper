@@ -38,7 +38,7 @@ STARTING_POSITION = CoarseVector(4, 4, 3)
 
 # Room is an object, but is also inherits from CKM which inherits from object,
 # so we just inherit from CKM
-class _Room(ConstructionKitMixin):
+class Room(ConstructionKitMixin):
     """Base 'room' class which all other room types inherit from
     """
     room_type = 'oriented'
@@ -123,9 +123,13 @@ class _Room(ConstructionKitMixin):
 
     def render(self, world, xmap):
         self.light(xmap)
+        tex = TEXMAN.get_c('floor')
+
+        self.x_floor(world, SELF, tex=tex)
+        self.x_ceiling(world, SELF, tex=tex)
 
 
-class _3X3Room(_Room):
+class _3X3Room(Room):
     """Another special case of room, though this probably does not need to be.
     AltarRoom is currently the only user."""
     room_type = 'platform_setpiece'
@@ -171,27 +175,7 @@ class _3X3Room(_Room):
         ]
 
 
-class BaseRoom(_Room):
-    """First real 'room' class."""
-
-    def __init__(self, pos, orientation='+x', randflags=None):
-        """Init is kept separate from rendering, because init sets self.pos,
-        and we use that when calling self.get_positions(), which is required as
-        part of placement, we wouldn't want to place a partial room."""
-        self.pos = CoarseVector(*pos)
-        self.orientation = orientation
-        if randflags:
-            self._randflags = randflags
-
-    def render(self, world, xmap):
-        super().render(world, xmap)
-        tex = TEXMAN.get_c('floor')
-
-        self.x_floor(world, SELF, tex=tex)
-        self.x_ceiling(world, SELF, tex=tex)
-
-
-class TestRoom(_Room):
+class TestRoom(Room):
     def __init__(self, pos, orientation='+x', randflags=None):
         """Init is kept separate from rendering, because init sets self.pos,
         and we use that when calling self.get_positions(), which is required as
@@ -210,7 +194,7 @@ class TestRoom(_Room):
         xmap.ents.append(g)
 
 
-class NLongCorridor(_Room):
+class NLongCorridor(Room):
     room_type = 'hallway'
     _randflags = (
         True,  # A
@@ -275,7 +259,7 @@ class NLongCorridor(_Room):
         ]
 
 
-class Corridor2way(_Room):
+class Corridor2way(Room):
     room_type = 'hallway'
     _randflags = (
         True,  # roof
@@ -308,7 +292,7 @@ class Corridor2way(_Room):
         ]
 
 
-class JumpCorridor3(_Room):
+class JumpCorridor3(Room):
     room_type = 'hallway_jump'
 
     def __init__(self, pos, orientation='+x', randflags=None):
@@ -373,7 +357,7 @@ class JumpCorridor3(_Room):
         ]
 
 
-class JumpCorridorVertical(_Room):
+class JumpCorridorVertical(Room):
     room_type = 'vertical'
     _randflags = (
         True,  # extra section
@@ -512,7 +496,7 @@ class JumpCorridorVerticalCenter(JumpCorridorVertical):
         ]
 
 
-class Corridor4way(_Room):
+class Corridor4way(Room):
     room_type = 'platform'
     _randflags = (
         True,  # roof
@@ -552,7 +536,7 @@ class Corridor4way(_Room):
         self.light(xmap)
 
 
-class SpawnRoom(_Room):
+class SpawnRoom(Room):
     room_type = 'platform_setpiece'
     _randflags = (
         True,  # Two sides open
@@ -858,7 +842,7 @@ class AltarRoom(_3X3Room):
         ]
 
 
-class Stair(_Room):
+class Stair(Room):
     room_type = 'stair'
 
     def render(self, world, xmap):
