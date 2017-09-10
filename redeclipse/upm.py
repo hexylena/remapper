@@ -76,7 +76,7 @@ class UnusedPositionManager:
         circumstances.
 
         :param rooms: An array of redeclipse.prefabs.Room that are to be pre-registered.
-        :type rooms: list of redeclipse.prefabs.Room
+        :type rooms: list(redeclipse.prefabs.Room)
 
         :returns: Whether or not it is OK to register this room.
         :rtype: boolean
