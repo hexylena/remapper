@@ -30,7 +30,7 @@ class UnusedPositionManager:
         :type used: list
 
         :param p: previous room
-        :type p: ???
+        :type p: ``redeclipse.prefabs._Room``
         """
         for u in used:
             # For a set of "used" positions, only ONE block should be directly
@@ -134,7 +134,7 @@ class UnusedPositionManager:
         """Select a random doorway to use
 
         :returns: a doorway from the set of unoccupied doorways.
-        :rtype: tuple of (p, r, o), whatever the heck those are.
+        :rtype: tuple of (position, room, orientation), whatever the heck those are.
         """
         if len(self.occupied) > 0:
             return random.choice(self.unoccupied)
