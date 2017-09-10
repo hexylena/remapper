@@ -1,4 +1,4 @@
-from redeclipse.vec import ivec3
+from redeclipse.vector.re import ivec3
 from redeclipse.enums import EntType, WeaponType
 
 class Entity:

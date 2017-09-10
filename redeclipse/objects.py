@@ -1,5 +1,5 @@
 from redeclipse.enums import Faces, TextNum, OctLayers
-from redeclipse.vec import ivec2, ivec3, vec2, vec3
+from redeclipse.vector.re import ivec2, ivec3, vec2, vec3
 MAXENTATTRS = 100
 VSLOT_SHPARAM = 0
 DEFAULT_ALPHA_FRONT = 0.5

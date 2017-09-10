@@ -5,8 +5,7 @@ import random
 import noise
 
 from redeclipse.entities import Light
-from redeclipse.prefabs.vector import CoarseVector, FineVector
-from redeclipse.prefabs.orientations import TILE_CENTER, HALF_HEIGHT
+from redeclipse.vector.orientations import TILE_CENTER, HALF_HEIGHT
 
 SIZE = 8
 _BUILTIN_SIZE = 2 ** 7
