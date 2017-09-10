@@ -9,10 +9,9 @@ from tqdm import tqdm
 import simplejson as json
 import logging
 log = logging.getLogger(__name__)
-
 __version__ = "0.6"
-
 MAXSTRLEN = 512
+
 
 def tb(str_or_bytes):
     """
@@ -181,12 +180,12 @@ class Map:
 
         self._write_int_as_chr(handle, c.octsav)
         if c.octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
-            self._savechildren(handle, c.children, indent=indent+1)
+            self._savechildren(handle, c.children, indent=indent + 1)
             return
         elif c.octsav & 0x7 == OCT.OCTSAV_EMPTY.value:
-            pass # Nothing to write
+            pass  # Nothing to write
         elif c.octsav & 0x7 == OCT.OCTSAV_SOLID.value:
-            pass # Nothing to write, simply that c is solid
+            pass  # Nothing to write, simply that c is solid
         elif c.octsav & 0x7 == OCT.OCTSAV_NORMAL.value:
             self._write_custom(handle, 'BBBBBBBBBBBB', c.edges)
         elif c.octsav & 0x7 == OCT.OCTSAV_LODCUBE.value:
@@ -212,7 +211,7 @@ class Map:
             self._write_int_as_chr(handle, c.totalverts)
 
             for i in range(6):
-                if not c.surfmask & (1<<i):
+                if not c.surfmask & (1 << i):
                     pass
                 else:
                     surfinfo = c.ext.surfaces[i]
@@ -249,6 +248,7 @@ class Map:
         Return self.to_dict as json
         """
         return json.dumps(self.to_dict(), iterable_as_array=True)
+
     @classmethod
     def from_dict(cls, data):
         """
@@ -346,7 +346,6 @@ class MapParser(object):
                 self._loadvslot(VSlot(None, len(vslots)), changed)
                 numvslots -= 1
 
-
         for idx, v in enumerate(vslots):
             if 0 <= idx < numvslots:
                 vslots[prev[idx]]._next = vslots[idx]
@@ -355,7 +354,7 @@ class MapParser(object):
 
     def _loadvslot(self, vs, changed):
         vs.changed = changed
-        if vs.changed & (1<<VTYPE.VSLOT_SHPARAM.value):
+        if vs.changed & (1 << VTYPE.VSLOT_SHPARAM.value):
             flags = self._read_ushort()
             numparams = flags & 0x7FFF
             for i in range(numparams):
@@ -380,39 +379,39 @@ class MapParser(object):
                 else:
                     ssp.palette = 0
                     ssp.palindex = 0
-        if vs.changed & (1<<VTYPE.VSLOT_SCALE.value):
+        if vs.changed & (1 << VTYPE.VSLOT_SCALE.value):
             vs.scale = self._read_float()
-        if vs.changed & (1<<VTYPE.VSLOT_ROTATION.value):
+        if vs.changed & (1 << VTYPE.VSLOT_ROTATION.value):
             vs.rotation = self._read_int()
-        if vs.changed & (1<<VTYPE.VSLOT_OFFSET.value):
+        if vs.changed & (1 << VTYPE.VSLOT_OFFSET.value):
             vs.offset_x = self._read_int()
             vs.offset_y = self._read_int()
-        if vs.changed & (1<<VTYPE.VSLOT_SCROLL.value):
+        if vs.changed & (1 << VTYPE.VSLOT_SCROLL.value):
             vs.scroll_x = self._read_int()
             vs.scroll_y = self._read_int()
-        if vs.changed & (1<<VTYPE.VSLOT_LAYER.value):
+        if vs.changed & (1 << VTYPE.VSLOT_LAYER.value):
             vs.layer = self._read_int()
-        if vs.changed & (1<<VTYPE.VSLOT_ALPHA.value):
+        if vs.changed & (1 << VTYPE.VSLOT_ALPHA.value):
             vs.alphafront = self._read_float()
             vs.alphaback = self._read_float()
 
-        if vs.changed & (1<<VTYPE.VSLOT_COLOR.value):
+        if vs.changed & (1 << VTYPE.VSLOT_COLOR.value):
             vs.colorscale = [
                 self._read_float(),
                 self._read_float(),
                 self._read_float()
             ]
-        if vs.changed & (1<<VTYPE.VSLOT_PALETTE.value):
+        if vs.changed & (1 << VTYPE.VSLOT_PALETTE.value):
             vs.palette = self._read_int()
             vs.palindex = self._read_int()
-        if vs.changed & (1<<VTYPE.VSLOT_COAST.value):
+        if vs.changed & (1 << VTYPE.VSLOT_COAST.value):
             vs.coastscale = self._read_float()
 
     def _loadchildren(self, size, failed, indent=0):
         cube_arr = cube.newcubes(Faces.F_EMPTY, 0)
         for i in range(8):
             failed, c_x = self._loadc(
-                cube_arr[i], # c
+                cube_arr[i],  # c
                 size,
                 failed,
                 indent=indent
@@ -429,7 +428,7 @@ class MapParser(object):
         c.octsav = octsav
         c.haschildren = False
         if octsav & 0x7 == OCT.OCTSAV_CHILDREN.value:
-            c.children = self._loadchildren(size>>1, failed, indent=indent+1)
+            c.children = self._loadchildren(size >> 1, failed, indent=indent + 1)
             return False, c
         elif octsav & 0x7 == OCT.OCTSAV_EMPTY.value:
             c.setfaces(Faces.F_EMPTY)
@@ -459,7 +458,7 @@ class MapParser(object):
             c.newcubeext(totalverts, False)
             # offset = 0
             for i in range(6):
-                if not surfmask & (1<<i):
+                if not surfmask & (1 << i):
                     c.ext.surfaces.append(None)
                 else:
                     c.ext.surfaces.append(
@@ -472,7 +471,7 @@ class MapParser(object):
                     )
 
                     surf = c.ext.surfaces[i]
-                    vertmask = surf.verts
+                    # vertmask = surf.verts
                     numverts = surf.totalverts()
                     if not numverts:
                         surf.verts = 0
@@ -526,7 +525,6 @@ class MapParser(object):
         if magic not in (b'MAPZ', b'BFGZ'):
             raise Exception("Not a mapz file")
 
-
         log.debug('Loading map: %s', base_path)
         log.debug('Header Magic: %s', magic)
         version = self._read_int()
@@ -537,7 +535,7 @@ class MapParser(object):
         meta_keys = ('worldsize', 'numents', 'numpvs',
                      'lightmaps', 'blendmap', 'numvslots',
                      'gamever', 'revision')
-        #'gameident', 'numvars')
+        # 'gameident', 'numvars')
         meta = OrderedDict()
         for k in meta_keys:
             meta[k] = self._read_int()
@@ -547,7 +545,6 @@ class MapParser(object):
         meta['numvars'] = self._read_int()
         log.debug(meta)
         log.debug('Header Worldsize: %s', meta['worldsize'])
-
 
         map_vars = OrderedDict()
         for i in range(meta['numvars']):
@@ -591,14 +588,14 @@ class MapParser(object):
         failed = False
         log.debug("_loadchildren")
         worldroot = self._loadchildren(
-            meta['worldsize']>>1,
+            meta['worldsize'] >> 1,
             failed
         )
 
         cube.validatec(worldroot, meta['worldsize'] >> 1)
 
         worldscale = 0
-        while 1<<worldscale < meta['worldsize']:
+        while 1 << worldscale < meta['worldsize']:
             worldscale += 1
         # log.debug("Worldscale %s" % worldscale)
 

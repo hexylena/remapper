@@ -8,7 +8,7 @@ from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
 from redeclipse.magicavoxel import to_magicavoxel
-#from redeclipse.skybox import MinecraftSky
+# from redeclipse.skybox import MinecraftSky
 from redeclipse.vector import CoarseVector, FineVector
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -52,12 +52,11 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
                 cube.newtexcube(tex=1)
             )
 
-
     sunlight = Sunlight(
         red=128,
         green=128,
         blue=128,
-        offset=45, # top
+        offset=45,  # top
     )
     mymap.ents.append(sunlight)
 

@@ -7,7 +7,7 @@ from redeclipse.cli import parse, weighted_choice
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
-#from redeclipse.skybox import MinecraftSky
+# from redeclipse.skybox import MinecraftSky
 from redeclipse.prefabs import STARTING_POSITION
 from redeclipse.vector import CoarseVector
 from tqdm import tqdm
@@ -52,11 +52,11 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             p.PlusPlatform,
             p.FlatSpace,
 
-            #p.Stair,
-            #p.DigitalRoom,
-            #p.DoricTemple,
-            #p.ImposingRingRoom,
-            #p.ImposingBlockRoom,
+            # p.Stair,
+            # p.DigitalRoom,
+            # p.DoricTemple,
+            # p.ImposingRingRoom,
+            # p.ImposingBlockRoom,
         ]
 
         choices = []
@@ -91,7 +91,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         red=128,
         green=128,
         blue=128,
-        offset=45, # top
+        offset=45,  # top
     )
     mymap.ents.append(sunlight)
 
@@ -122,45 +122,43 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             r = roomClass(pos=position, **kwargs)
             r_m = roomClass(pos=mirror(position), **mirror(kwargs))
             # Try adding it
-            # try:
-            if not upm.preregister_rooms(r, r_m):
-                log.info("would fail on one or more rooms")
+            try:
+                if not upm.preregister_rooms(r, r_m):
+                    log.info("would fail on one or more rooms")
+                    continue
+
+                # This step might raise an exception
+                upm.register_room(r)
+                upm.register_room(r_m)
+
+                pbar.update(2)
+                pbar.set_description('%3d' % v.zmax)
+                # If we get here, we've placed successfully so bump count + render
+                room_count += 2
+                r.render(v, mymap)
+                r_m.render(v, mymap)
+            except Exception as e:
+                # We have failed to register the room because
+                # it does not fit here.
+                # So, we continue.
+                if debug:
+                    print(e)
                 continue
-
-            # This step might raise an exception
-            upm.register_room(r)
-            upm.register_room(r_m)
-
-            pbar.update(2)
-            pbar.set_description('%3d' % v.heighest_point)
-            # pbar.set_description("[%s] Placing %s at %s (%s)" % (room_count, roomClass.__name__, position, kwargs['orientation']))
-            # If we get here, we've placed successfully so bump count + render
-            room_count += 2
-            r.render(v, mymap)
-            r_m.render(v, mymap)
-            # except Exception as e:
-                # # We have failed to register the room because
-                # # it does not fit here.
-                # # So, we continue.
-                # if debug:
-                    # print(e)
-                # continue
 
     if debug:
         for (pos, typ, ori) in upm.unoccupied:
             r = p.TestRoom(pos, orientation='+x')
             r.render(v, mymap)
 
-
-    #from redeclipse.aftereffects import grid, decay, gradient3, box
+    # from redeclipse.aftereffects import grid, decay, gradient3, box
     # grid(v, size=48)
     # decay(v, gradient3)
-    #box(v)
+    # box(v)
 
     # Emit config + textures
     p.TEXMAN.emit_conf(mpz_out)
     p.TEXMAN.copy_data()
-    #mymap.skybox(MinecraftSky('/home/hxr/games/redeclipse-1.5.3/'))
+    # mymap.skybox(MinecraftSky('/home/hxr/games/redeclipse-1.5.3/'))
 
     # Standard code to render octree to file.
 

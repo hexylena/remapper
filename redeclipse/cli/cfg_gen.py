@@ -21,7 +21,6 @@ texture c "textures/default.png" 0 0 0 0.500000 // 1
 texture c "%s" 0 0 0 1.000000 // %s
 """ % (file, idx + 2))
 
-
     # Some example ents
     print("""
 mmodel "unnamed/rocks/rock01"
@@ -47,6 +46,7 @@ mapsound "sounds/ambience/blowwind" 80
 mapsound "sounds/ambience/cavedrip" 100
 mapsound "sounds/ambience/creek" 80
     """)
+
 
 if __name__ == '__main__':
     main()

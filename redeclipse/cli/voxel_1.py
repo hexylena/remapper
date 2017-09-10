@@ -4,7 +4,7 @@ from redeclipse.cli import parse
 from redeclipse.objects import cube
 from redeclipse.cli.show_cubes import show_cubes
 import argparse
-# import random
+
 
 def main():
     parser = argparse.ArgumentParser(description='Add trees to map')
@@ -28,6 +28,7 @@ def main():
     # print(json.dumps(mymap.to_dict()['world'], iterable_as_array=True))
 
     mymap.write(args.output)
+
 
 if __name__ == '__main__':
     main()

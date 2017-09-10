@@ -4,7 +4,6 @@ We can't work with octrees. Just... no.
 So we work in a voxel world, and then convert this to an octree with the small
 resolution cube that makes sense, and then let RE optimise the map when need be.
 """
-import sys
 from redeclipse.objects import cube
 from redeclipse.enums import OCT
 import logging
@@ -17,35 +16,28 @@ class VoxelWorld:
         # Size defines number of cubes from left to right.
         self.size = size
         self.world = {}
-        self.boundaries = {
-            'xmax': 0,
-            'xmin': size,
-            'ymax': 0,
-            'ymin': size,
-            'zmax': 0,
-            'zmin': size,
-        }
 
-    def get_extents(self):
-        return {
-            'x': self.boundaries['xmax'] - self.boundaries['xmin'],
-            'y': self.boundaries['ymax'] - self.boundaries['ymin'],
-            'z': self.boundaries['zmax'] - self.boundaries['zmin'],
-        }
+        # Boundaries
+        self.xmax = 0
+        self.xmin = size
+        self.ymax = 0
+        self.ymin = size
+        self.zmax = 0
+        self.zmin = size
 
     def _update_boundaries(self, x, y, z):
-        if x > self.boundaries['xmax']:
-            self.boundaries['xmax'] = x
-        if x < self.boundaries['xmin']:
-            self.boundaries['xmin'] = x
-        if y > self.boundaries['ymax']:
-            self.boundaries['ymax'] = y
-        if y < self.boundaries['ymin']:
-            self.boundaries['ymin'] = y
-        if z > self.boundaries['zmax']:
-            self.boundaries['zmax'] = z
-        if z < self.boundaries['zmin']:
-            self.boundaries['zmin'] = z
+        if x > self.xmax:
+            self.xmax = x
+        if x < self.xmin:
+            self.xmin = x
+        if y > self.ymax:
+            self.ymax = y
+        if y < self.ymin:
+            self.ymin = y
+        if z > self.zmax:
+            self.zmax = z
+        if z < self.zmin:
+            self.zmin = z
 
     def set_point(self, x, y, z, data):
         log.debug("set_point (%d, %d, %d)", x, y, z)
@@ -73,7 +65,7 @@ class VoxelWorld:
         else:
             return None
 
-    def to_octree(self,  x_bounds=None, y_bounds=None, z_bounds=None, layers=False):
+    def to_octree(self, x_bounds=None, y_bounds=None, z_bounds=None, layers=False):
         if x_bounds is None:
             x_bounds = (
                 0, self.size

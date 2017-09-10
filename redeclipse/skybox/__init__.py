@@ -37,8 +37,10 @@ class Skybox:
     def get_short_path(self):
         return 'hxr/skybox/%s' % self.basename
 
+
 class DesertSky(Skybox):
     basename = 'desert'
+
 
 class MinecraftSky(Skybox):
     basename = 'minecraft'

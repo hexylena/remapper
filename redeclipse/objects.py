@@ -1,5 +1,6 @@
 from redeclipse.enums import Faces, TextNum, OctLayers
 from redeclipse.vector.re import ivec2, ivec3, vec2, vec3
+
 MAXENTATTRS = 100
 VSLOT_SHPARAM = 0
 DEFAULT_ALPHA_FRONT = 0.5
@@ -25,7 +26,6 @@ class VSlot:
     def __init__(self, a, b):
         self.a = a
         self.b = b
-
 
         self.slot = None
         self._next = None
@@ -67,6 +67,7 @@ class VSlot:
         for prop in d['_order']:
             setattr(v, prop, d[prop])
         return v
+
 
 class SurfaceInfo:
     def __init__(self, lmid0, lmid1, verts, numverts):
@@ -178,11 +179,11 @@ class cube:
         # points to 8 cube structures which are its children, or NULL. -Z first, then -Y, -X
         self.children = None
         # extended info for the cube
-        self.ext = None # extended info
+        self.ext = None  # extended info
         # edges of the cube, each uchar is 2 4bit values denoting the range.
-        self.edges = [128] * 12 # 12
+        self.edges = [128] * 12  # 12
         # 4 edges of each dimension together representing 2 perpendicular faces
-        self.faces = [] # 3
+        self.faces = []  # 3
         # one for each face. same order as orient.
         self.texture = [TextNum.DEFAULT_GEOM] * 6
         # empty-space material
@@ -285,7 +286,7 @@ class cube:
         return c
 
     def setfaces(self, face):
-        #octa.h L256
+        # octa.h L256
         self.faces = [
             face,
             face,
@@ -309,139 +310,139 @@ class cube:
         if orient == 0:
             return [
                 ivec3(
-                    self.edges[0+2+1] &0xF,
-                    self.edges[4+0+1] >>4,
-                    self.edges[8+2+0] >>4
+                    self.edges[0 + 2 + 1] & 0xF,
+                    self.edges[4 + 0 + 1] >> 4,
+                    self.edges[8 + 2 + 0] >> 4
                 ),
                 ivec3(
-                    self.edges[0+0+1] &0xF,
-                    self.edges[4+0+0] >>4,
-                    self.edges[8+2+0] &0xF
+                    self.edges[0 + 0 + 1] & 0xF,
+                    self.edges[4 + 0 + 0] >> 4,
+                    self.edges[8 + 2 + 0] & 0xF
                 ),
                 ivec3(
-                    self.edges[0+0+0] &0xF,
-                    self.edges[4+0+0] &0xF,
-                    self.edges[8+0+0] &0xF
+                    self.edges[0 + 0 + 0] & 0xF,
+                    self.edges[4 + 0 + 0] & 0xF,
+                    self.edges[8 + 0 + 0] & 0xF
                 ),
                 ivec3(
-                    self.edges[0+2+0] &0xF,
-                    self.edges[4+0+1] &0xF,
-                    self.edges[8+0+0] >>4
+                    self.edges[0 + 2 + 0] & 0xF,
+                    self.edges[4 + 0 + 1] & 0xF,
+                    self.edges[8 + 0 + 0] >> 4
                 )
             ]
         elif orient == 1:
             return [
                 ivec3(
-                    self.edges[0+2+1] >>4,
-                    self.edges[4+2+1] >>4,
-                    self.edges[8+2+1] >>4
+                    self.edges[0 + 2 + 1] >> 4,
+                    self.edges[4 + 2 + 1] >> 4,
+                    self.edges[8 + 2 + 1] >> 4
                 ),
                 ivec3(
-                    self.edges[0+2+0] >>4,
-                    self.edges[4+2+1] &0xF,
-                    self.edges[8+0+1] >>4
+                    self.edges[0 + 2 + 0] >> 4,
+                    self.edges[4 + 2 + 1] & 0xF,
+                    self.edges[8 + 0 + 1] >> 4
                 ),
                 ivec3(
-                    self.edges[0+0+0] >>4,
-                    self.edges[4+2+0] &0xF,
-                    self.edges[8+0+1] &0xF
+                    self.edges[0 + 0 + 0] >> 4,
+                    self.edges[4 + 2 + 0] & 0xF,
+                    self.edges[8 + 0 + 1] & 0xF
                 ),
                 ivec3(
-                    self.edges[0+0+1] >>4,
-                    self.edges[4+2+0] >>4,
-                    self.edges[8+2+1] &0xF
+                    self.edges[0 + 0 + 1] >> 4,
+                    self.edges[4 + 2 + 0] >> 4,
+                    self.edges[8 + 2 + 1] & 0xF
                 ),
             ]
         elif orient == 2:
             return [
                 ivec3(
-                    self.edges[0+2+0] >>4,
-                    self.edges[4+2+1] &0xF,
-                    self.edges[8+0+1] >>4
+                    self.edges[0 + 2 + 0] >> 4,
+                    self.edges[4 + 2 + 1] & 0xF,
+                    self.edges[8 + 0 + 1] >> 4
                 ),
                 ivec3(
-                    self.edges[0+2+0] &0xF,
-                    self.edges[4+0+1] &0xF,
-                    self.edges[8+0+0] >>4
+                    self.edges[0 + 2 + 0] & 0xF,
+                    self.edges[4 + 0 + 1] & 0xF,
+                    self.edges[8 + 0 + 0] >> 4
                 ),
                 ivec3(
-                    self.edges[0+0+0] &0xF,
-                    self.edges[4+0+0] &0xF,
-                    self.edges[8+0+0] &0xF
+                    self.edges[0 + 0 + 0] & 0xF,
+                    self.edges[4 + 0 + 0] & 0xF,
+                    self.edges[8 + 0 + 0] & 0xF
                 ),
                 ivec3(
-                    self.edges[0+0+0] >>4,
-                    self.edges[4+2+0] &0xF,
-                    self.edges[8+0+1] &0xF
+                    self.edges[0 + 0 + 0] >> 4,
+                    self.edges[4 + 2 + 0] & 0xF,
+                    self.edges[8 + 0 + 1] & 0xF
                 )
             ]
         elif orient == 3:
             return [
                 ivec3(
-                    self.edges[0+0+1] &0xF,
-                    self.edges[4+0+0] >>4,
-                    self.edges[8+2+0] &0xF
+                    self.edges[0 + 0 + 1] & 0xF,
+                    self.edges[4 + 0 + 0] >> 4,
+                    self.edges[8 + 2 + 0] & 0xF
                 ),
                 ivec3(
-                    self.edges[0+2+1] &0xF,
-                    self.edges[4+0+1] >>4,
-                    self.edges[8+2+0] >>4
+                    self.edges[0 + 2 + 1] & 0xF,
+                    self.edges[4 + 0 + 1] >> 4,
+                    self.edges[8 + 2 + 0] >> 4
                 ),
                 ivec3(
-                    self.edges[0+2+1] >>4,
-                    self.edges[4+2+1] >>4,
-                    self.edges[8+2+1] >>4
+                    self.edges[0 + 2 + 1] >> 4,
+                    self.edges[4 + 2 + 1] >> 4,
+                    self.edges[8 + 2 + 1] >> 4
                 ),
                 ivec3(
-                    self.edges[0+0+1] >>4,
-                    self.edges[4+2+0] >>4,
-                    self.edges[8+2+1] &0xF
+                    self.edges[0 + 0 + 1] >> 4,
+                    self.edges[4 + 2 + 0] >> 4,
+                    self.edges[8 + 2 + 1] & 0xF
                 )
             ]
         elif orient == 4:
             return [
                 ivec3(
-                    self.edges[0+0+0] &0xF,
-                    self.edges[4+0+0] &0xF,
-                    self.edges[8+0+0] &0xF
+                    self.edges[0 + 0 + 0] & 0xF,
+                    self.edges[4 + 0 + 0] & 0xF,
+                    self.edges[8 + 0 + 0] & 0xF
                 ),
                 ivec3(
-                    self.edges[0+0+1] &0xF,
-                    self.edges[4+0+0] >>4,
-                    self.edges[8+2+0] &0xF
+                    self.edges[0 + 0 + 1] & 0xF,
+                    self.edges[4 + 0 + 0] >> 4,
+                    self.edges[8 + 2 + 0] & 0xF
                 ),
                 ivec3(
-                    self.edges[0+0+1] >>4,
-                    self.edges[4+2+0] >>4,
-                    self.edges[8+2+1] &0xF
+                    self.edges[0 + 0 + 1] >> 4,
+                    self.edges[4 + 2 + 0] >> 4,
+                    self.edges[8 + 2 + 1] & 0xF
                 ),
                 ivec3(
-                    self.edges[0+0+0] >>4,
-                    self.edges[4+2+0] &0xF,
-                    self.edges[8+0+1] &0xF
+                    self.edges[0 + 0 + 0] >> 4,
+                    self.edges[4 + 2 + 0] & 0xF,
+                    self.edges[8 + 0 + 1] & 0xF
                 )
             ]
         elif orient == 5:
             return [
                 ivec3(
-                    self.edges[0+2+0] &0xF,
-                    self.edges[4+0+1] &0xF,
-                    self.edges[8+0+0] >>4
+                    self.edges[0 + 2 + 0] & 0xF,
+                    self.edges[4 + 0 + 1] & 0xF,
+                    self.edges[8 + 0 + 0] >> 4
                 ),
                 ivec3(
-                    self.edges[0+2+0] >>4,
-                    self.edges[4+2+1] &0xF,
-                    self.edges[8+0+1] >>4
+                    self.edges[0 + 2 + 0] >> 4,
+                    self.edges[4 + 2 + 1] & 0xF,
+                    self.edges[8 + 0 + 1] >> 4
                 ),
                 ivec3(
-                    self.edges[0+2+1] >>4,
-                    self.edges[4+2+1] >>4,
-                    self.edges[8+2+1] >>4
+                    self.edges[0 + 2 + 1] >> 4,
+                    self.edges[4 + 2 + 1] >> 4,
+                    self.edges[8 + 2 + 1] >> 4
                 ),
                 ivec3(
-                    self.edges[0+2+1] &0xF,
-                    self.edges[4+0+1] >>4,
-                    self.edges[8+2+0] >>4
+                    self.edges[0 + 2 + 1] & 0xF,
+                    self.edges[4 + 0 + 1] >> 4,
+                    self.edges[8 + 2 + 0] >> 4
                 )
             ]
 
@@ -457,16 +458,16 @@ class cube:
                     cls.validatec(cube_arr[i].children, size >> 1, depth + 1)
             elif size > 0x1000:
                 cls.subdividecube(cube_arr[i], True, False)
-                cls.validatec(cube_arr[i].children, size>>1, depth + 1)
+                cls.validatec(cube_arr[i].children, size >> 1, depth + 1)
             else:
                 for j in range(3):
                     f = cube_arr[i].faces[j]
                     if not isinstance(f, int):
                         f = f.value
                     e0 = f & 0x0F0F0F0F
-                    e1 = (f>>4) & 0x0F0F0F0F
-                    if (e0 == e1 or ((e1+0x07070707)|(e1-e0))&0xF0F0F0F0):
-                        cls.emptyfaces(cube_arr[i]);
+                    e1 = (f >> 4) & 0x0F0F0F0F
+                    if (e0 == e1 or ((e1 + 0x07070707) | (e1 - e0)) & 0xF0F0F0F0):
+                        cls.emptyfaces(cube_arr[i])
                         break
 
     @classmethod

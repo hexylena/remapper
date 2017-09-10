@@ -46,8 +46,10 @@ class vec3:
 
     def X(self):
         return float(self.x)
+
     def Y(self):
         return float(self.y)
+
     def Z(self):
         return float(self.z)
 
@@ -68,9 +70,9 @@ class ivec3:
     @classmethod
     def ivec5(cls, i, x, y, z, s):
         return ivec3(
-            x + ((i&1)>>0) * s,
-            y + ((i&2)>>1) * s,
-            z + ((i&4)>>2) * s
+            x + ((i & 1) >> 0) * s,
+            y + ((i & 2) >> 1) * s,
+            z + ((i & 4) >> 2) * s
         )
 
     def mask(self, mask):
@@ -117,7 +119,7 @@ class ivec3:
             return self.z
 
     def dot(self, o):
-        return self.x*o.x + self.y*o.y + self.z*o.z
+        return self.x * o.x + self.y * o.y + self.z * o.z
 
     def iszero(self):
         return self.x == 0 and self.y == 0 and self.z == 0
@@ -136,14 +138,13 @@ def cross(a, b):
 
     if isinstance(a, ivec3):
         return ivec3(
-            a.y*b.z-a.z*b.y,
-            a.z*b.x-a.x*b.z,
-            a.x*b.y-a.y*b.x,
+            a.y * b.z - a.z * b.y,
+            a.z * b.x - a.x * b.z,
+            a.x * b.y - a.y * b.x,
         )
     else:
         return vec3(
-            a.y*b.z-a.z*b.y,
-            a.z*b.x-a.x*b.z,
-            a.x*b.y-a.y*b.x,
+            a.y * b.z - a.z * b.y,
+            a.z * b.x - a.x * b.z,
+            a.x * b.y - a.y * b.x,
         )
-

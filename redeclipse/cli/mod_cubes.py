@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 from redeclipse.cli import parse
-from redeclipse.objects import cube, cubext, SurfaceInfo
+from redeclipse.objects import cubext, SurfaceInfo
 import argparse
 # import random
+
 
 def simplify(d):
     d['faces'] = d['faces'][0]
@@ -16,6 +17,7 @@ def simplify(d):
         if not d[k]:
             del d[k]
     return d
+
 
 def show_cubes(m, indent=0):
     for c in m:
@@ -50,6 +52,7 @@ def show_cubes(m, indent=0):
         if c.children:
             show_cubes(c.children, indent=indent + 1)
 
+
 def main():
     parser = argparse.ArgumentParser(description='Add trees to map')
     parser.add_argument('input', help='Input .mpz file')
@@ -60,6 +63,7 @@ def main():
     show_cubes(mymap.world)
 
     mymap.write(args.output)
+
 
 if __name__ == '__main__':
     main()

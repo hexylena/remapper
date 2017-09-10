@@ -4,6 +4,7 @@ from redeclipse.cli import parse
 import argparse
 # import random
 
+
 def simplify(d):
     d['faces'] = d['faces'][0]
     if d['octsav'] == 1:
@@ -17,6 +18,7 @@ def simplify(d):
             del d[k]
     return d
 
+
 def show_cubes(m, indent=0, simple=False):
     for c in m:
         z = c.to_dict(children=False)
@@ -29,6 +31,7 @@ def show_cubes(m, indent=0, simple=False):
         if c.children:
             show_cubes(c.children, indent=indent + 1)
 
+
 def main():
     parser = argparse.ArgumentParser(description='Add trees to map')
     parser.add_argument('input', help='Input .mpz file')
@@ -37,6 +40,7 @@ def main():
 
     mymap = parse(args.input)
     show_cubes(mymap.world, simple=args.simplify)
+
 
 if __name__ == '__main__':
     main()

@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 from redeclipse.voxel import VoxelWorld
 from redeclipse.cli import parse
-from redeclipse.entities import Sunlight
 from redeclipse.skybox import DesertSky
-from redeclipse import prefabs as p
-from redeclipse.upm import UnusedPositionManager
-import sys
-import traceback
 import argparse
 import random
 
@@ -15,7 +10,6 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     random.seed(seed)
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
-
 
     # Standard code to render octree to file.
     mymap.skybox(DesertSky('/home/hxr/games/redeclipse-1.5.3/'))

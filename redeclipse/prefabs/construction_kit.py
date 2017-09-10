@@ -1,9 +1,7 @@
 from redeclipse.objects import cube
-import math
 import random
-from redeclipse.vector.orientations import SELF, SOUTH, NORTH, WEST, EAST, ABOVE, BELOW, VEC_ORIENT_MAP_INV
+from redeclipse.vector.orientations import SOUTH, NORTH, WEST, EAST, VEC_ORIENT_MAP_INV
 from redeclipse.vector import FineVector, CoarseVector, AbsoluteVector
-
 ROOM_SIZE = 8
 
 
@@ -130,7 +128,8 @@ class ConstructionKitMixin(object):
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
     def _x_ceiling(self, world, offset, size=ROOM_SIZE):
-        for point in self._x_rectangular_prism(world, offset + FineVector(0, 0, 7), AbsoluteVector(size, size, 1)): yield point
+        for point in self._x_rectangular_prism(world, offset + FineVector(0, 0, 7), AbsoluteVector(size, size, 1)):
+            yield point
 
     def x_floor(self, world, offset, tex=2, size=ROOM_SIZE, subtract=False, prob=1.0):
         for point in self._x_floor(world, offset, size=size):
@@ -140,7 +139,8 @@ class ConstructionKitMixin(object):
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
     def _x_floor(self, world, offset, size=ROOM_SIZE):
-        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(size, size, 1)): yield point
+        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(size, size, 1)):
+            yield point
 
     def x_wall(self, world, offset, face, tex=2, subtract=False, prob=1.0):
         for point in self._x_wall(world, offset, face):
@@ -176,10 +176,14 @@ class ConstructionKitMixin(object):
 
     def _x_ring(self, world, offset, size, tex=2):
         # world, FineVector(-2, -2, i), 12, tex=accent_tex)
-        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(1, size - 1, 1)): yield point
-        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(size - 1, 1, 1)): yield point
-        for point in self._x_rectangular_prism(world, offset + FineVector(0, size - 1, 0), AbsoluteVector(size, 1, 1)): yield point
-        for point in self._x_rectangular_prism(world, offset + FineVector(size - 1, 0, 0), AbsoluteVector(1, size, 1)): yield point
+        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(1, size - 1, 1)):
+            yield point
+        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(size - 1, 1, 1)):
+            yield point
+        for point in self._x_rectangular_prism(world, offset + FineVector(0, size - 1, 0), AbsoluteVector(size, 1, 1)):
+            yield point
+        for point in self._x_rectangular_prism(world, offset + FineVector(size - 1, 0, 0), AbsoluteVector(1, size, 1)):
+            yield point
 
     def x_rectangular_prism(self, world, offset, xyz, tex=2, subtract=False, prob=1.0):
         for point in self._x_rectangular_prism(world, offset, xyz):
@@ -356,6 +360,7 @@ def ring(world, pos, size=8, tex=2, thickness=1):
                 *mv(point, pos),
                 cube.newtexcube(tex=tex)
             )
+
 
 def rotate(position, orientation):
     (x, y, z) = position

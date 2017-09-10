@@ -19,5 +19,6 @@ def main():
     else:
         print(json.dumps(mymap.to_dict(), iterable_as_array=True))
 
+
 if __name__ == '__main__':
     main()

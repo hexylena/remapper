@@ -1,0 +1,8 @@
+language: python
+python:
+- '3.3'
+
+script:
+ - pip install flake8
+ - flake8 redeclipse
+ - tox

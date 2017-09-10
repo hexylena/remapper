@@ -1,5 +1,6 @@
 # TODO: Refactor
 
+
 class BaseTex(object):
     # where the textures are output to
     basepath = "hxr/textures"
@@ -12,20 +13,24 @@ class BaseTex(object):
     # texture n "trak/trak6/tile3_nm.png"
     # texture s "trak/trak6/tile3_gloss.jpg"
     # texcolor 0.750000 0.250000 0.125000
+
     def files(self):
         return []
 
 
 class Sky(BaseTex):
     scale = 1
+
     def conf(self, **kwargs):
         return """
 setshader stdworld
 texture c "textures/sky.png" 0 0 0 {0.scale} // 0 {0.__class__}
 """.format(self)
 
+
 class Default(BaseTex):
     scale = 1
+
     def conf(self, **kwargs):
         return """
 setshader stdworld
@@ -39,6 +44,7 @@ class SimpleColourTex(BaseTex):
     r = 1
     g = 0
     b = 1
+
     def conf(self, idx=0, **kwargs):
         return """
 setshader stdworld
@@ -62,6 +68,7 @@ texture c "{0.basepath}/{0.c}" 0 0 0 {0.scale} // {idx} {0.__class__}
     def files(self):
         yield self.c
 
+
 class DefaultBumpSpecMapWorld(BaseTex):
     scale = 2
     c = None
@@ -81,6 +88,7 @@ texture s "{0.basepath}/{0.s}"
         if self.texcolor:
             conf += "texcolor %s %s %s" % self.texcolor
         return conf
+
 
 class BumpSpecMapWorld(DefaultBumpSpecMapWorld):
     def files(self):
@@ -116,12 +124,14 @@ texture z "{0.basepath}/{0.z}"\n""".format(self, idx=idx)
             conf += "texcolor %s %s %s\n\n" % self.texcolor
         return conf
 
+
 class BumpSpecMapParallaxWorld(DefaultBumpSpecMapParallaxWorld):
     def files(self):
         yield self.c
         yield self.n
         yield self.s
         yield self.z
+
 
 class DefaultBumpSpecMapParallaxGlowWorld(BaseTex):
     c = None
@@ -155,6 +165,7 @@ texture g "{0.basepath}/{0.g}"\n""".format(self, idx=idx)
         if self.texcolor:
             conf += "texcolor %s %s %s\n\n" % self.texcolor
         return conf
+
 
 class BumpSpecMapParallaxGlowWorld(DefaultBumpSpecMapParallaxGlowWorld):
     def files(self):

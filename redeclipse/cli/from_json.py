@@ -1,7 +1,6 @@
-from redeclipse import Map
 import json
 import argparse
-
+from redeclipse import Map
 
 
 def main():
@@ -13,6 +12,7 @@ def main():
     # mymap = parse(args.input)
     mymap = Map.from_dict(json.load(args.input))
     mymap.write(args.output)
+
 
 if __name__ == '__main__':
     main()

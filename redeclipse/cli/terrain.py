@@ -8,14 +8,12 @@ import random # noqa
 import math # noqa
 import noise # noqa
 random.seed(22)
-
 IJ_SIZE = 2**3
 K_SIZE = 50
 MAP_SEED = 0
-
 octaves = 1
 noise_scaling = 32
-# import random
+
 
 def main():
     parser = argparse.ArgumentParser(description='Try smoothed terrain')
@@ -48,7 +46,7 @@ def main():
             print(i, j, q)
             seen[(i, j)] = True
 
-        if i%10==0 and j==0 and k==0:
+        if i % 10 == 0 and j == 0 and k == 0:
             sys.stderr.write('%s/%s %s\n' % (i, IJ_SIZE, q))
 
         # four corners around
@@ -75,11 +73,10 @@ def main():
         c = cube.newtexcube(tex=i)
         v.set_point(i, i, i, c)
 
-
     for i in range(10):
         for j in range(1):
             for k in range(20, 30):
-                (q, corners) = point(i, j , k)
+                (q, corners) = point(i, j, k)
                 if q:
                     c = cube.newtexcube(tex=q)
                     if corners:
@@ -93,6 +90,7 @@ def main():
     mymap.world = v.to_octree()
     mymap.world[0].octsav = 0
     mymap.write(args.output)
+
 
 if __name__ == '__main__':
     main()

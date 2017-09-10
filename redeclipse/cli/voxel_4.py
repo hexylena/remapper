@@ -102,12 +102,11 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         red=128,
         green=128,
         blue=128,
-        offset=45, # top
+        offset=45,  # top
     )
     mymap.ents.append(sunlight)
 
     room_count = 0
-
     logging.info("Placing rooms")
     with tqdm(total=rooms) as pbar:
         while True:
@@ -157,8 +156,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             r = p.TestRoom(pos, orientation='+x')
             r.render(v, mymap)
 
-
-    from redeclipse.aftereffects import grid, decay, gradient3
+    from redeclipse.aftereffects import grid  # decay, gradient3
     grid(v, size=48)
     # decay(v, gradient3)
 

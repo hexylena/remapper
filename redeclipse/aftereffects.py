@@ -1,4 +1,3 @@
-import sys
 import random
 from tqdm import tqdm
 import math
@@ -23,8 +22,6 @@ def vertical_gradient(x, y, z, slope=256):
     :returns: a float for that specific point.
     :rtype: float
     """
-    if slope < 1:
-        slope = 1
     return 1 - (z / slope)
 
 
@@ -97,12 +94,18 @@ def grid(world, size=24):
     :rtype: None
     """
     log.info('Applying Grid Effect')
+
     def pos_func(x, y, z):
         return (x % size == 0 and y % size == 0) or \
-                (z % size == 0 and y % size == 0) or \
-                (z % size == 0 and x % size == 0)
+            (z % size == 0 and y % size == 0) or \
+            (z % size == 0 and x % size == 0)
 
-    for z in tqdm(range(world.heighest_point)):
+    print(
+        world.zmax, world.zmin,
+        world.ymax, world.ymin,
+        world.xmax, world.xmin,
+    )
+    for z in tqdm(range(world.zmax)):
         for x in range(world.size):
             for y in range(world.size):
                 if pos_func(x, y, z):
@@ -127,7 +130,7 @@ def decay(world, position_function):
     :rtype: None
     """
     log.info('Applying Decay Effect')
-    for z in tqdm(range(world.heighest_point)):
+    for z in tqdm(range(world.zmax)):
         for x in range(world.size):
             for y in range(world.size):
                 if random.random() > position_function(x, y, z):
@@ -152,7 +155,7 @@ def growth(world, position_function):
     :rtype: None
     """
     log.info('Applying Growth Effect')
-    for z in tqdm(range(world.heighest_point)):
+    for z in tqdm(range(world.zmax)):
         for x in range(world.size):
             for y in range(world.size):
                 if random.random() > position_function(x, y, z):

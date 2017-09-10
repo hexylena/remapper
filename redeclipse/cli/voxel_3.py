@@ -4,8 +4,6 @@ from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
-import sys
-import traceback
 import argparse
 import random
 
@@ -31,7 +29,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     def random_room(connecting_room):
         """Pick out a random room based on the connecting room and the
         transition probabilities of that room."""
-        possible_rooms =  [
+        possible_rooms = [
             p.BaseRoom,
             p.SpawnRoom,
             # p.JumpCorridor3,
@@ -81,7 +79,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         red=128,
         green=128,
         blue=128,
-        offset=45, # top
+        offset=45,  # top
     )
     mymap.ents.append(sunlight)
 
@@ -125,7 +123,6 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         for (pos, typ, ori) in upm.unoccupied:
             r = p.TestRoom(pos, orientation='+x')
             r.render(v, mymap)
-
 
     # Standard code to render octree to file.
     mymap.world = v.to_octree()

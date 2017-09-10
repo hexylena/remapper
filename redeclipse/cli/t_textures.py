@@ -3,12 +3,9 @@ import argparse
 import random
 import logging
 from redeclipse.voxel import VoxelWorld
-from redeclipse.cli import parse, weighted_choice
+from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
-from redeclipse.upm import UnusedPositionManager
-from redeclipse.skybox import MinecraftSky
-from tqdm import tqdm
 log = logging.getLogger(__name__)
 
 
@@ -24,11 +21,11 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         red=128,
         green=128,
         blue=128,
-        offset=45, # top
+        offset=45,  # top
     )
     mymap.ents.append(sunlight)
 
-    from redeclipse.aftereffects import grid, decay, gradient3, box
+    from redeclipse.aftereffects import grid, decay, gradient3
     grid(v, size=48)
     decay(v, gradient3)
     # box(v)

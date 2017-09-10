@@ -1,6 +1,7 @@
 from redeclipse.vector.re import ivec3
 from redeclipse.enums import EntType, WeaponType
 
+
 class Entity:
 
     def __init__(self, xyz, type, attrs, links, reserved):

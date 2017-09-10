@@ -4,13 +4,11 @@ from redeclipse.entities.model import MapModel
 from redeclipse.entities import PlayerSpawn
 from redeclipse.cli import parse
 from redeclipse.objects import cube
-from PIL import Image
 import argparse
 import random
 import noise
 from tqdm import tqdm
 random.seed(22)
-
 IJ_SIZE = 2**8
 WORLD_SIZE = 2**8
 MAP_SEED = 0
@@ -19,10 +17,11 @@ OVERALL_SCALING = 2
 octaves = 2
 noise_scaling = 32
 
+
 def _light_distribution(i, j, wan=0.2, ldist=0.215, wan_a=2.9, wan_b=1.1, lan_a=26.9, lan_b=23.1, LSEED=0):
     wide_area = noise.pnoise2(
-        OVERALL_SCALING * wan_a * i/noise_scaling,
-        OVERALL_SCALING * wan_b * j/noise_scaling,
+        OVERALL_SCALING * wan_a * i / noise_scaling,
+        OVERALL_SCALING * wan_b * j / noise_scaling,
         octaves=octaves, base=MAP_SEED + LSEED
     )
     if wide_area < wan:
@@ -31,8 +30,8 @@ def _light_distribution(i, j, wan=0.2, ldist=0.215, wan_a=2.9, wan_b=1.1, lan_a=
         wide_area = 1
 
     local_distribution = noise.pnoise2(
-        OVERALL_SCALING * lan_a * i/noise_scaling,
-        OVERALL_SCALING * lan_b * j/noise_scaling,
+        OVERALL_SCALING * lan_a * i / noise_scaling,
+        OVERALL_SCALING * lan_b * j / noise_scaling,
         octaves=octaves, base=MAP_SEED + LSEED
     )
     if 0.2 < local_distribution < ldist:
@@ -58,8 +57,8 @@ def point_rock(i, j):
 
 def point_height(i, j):
     q = noise.pnoise2(
-        0.3 * i/noise_scaling,
-        0.7 * j/noise_scaling,
+        0.3 * i / noise_scaling,
+        0.7 * j / noise_scaling,
         octaves=octaves, base=MAP_SEED
     )
     q *= 15
@@ -68,7 +67,7 @@ def point_height(i, j):
 
 
 def point_snow(i, j):
-    q = noise.pnoise2(0.9 * j/noise_scaling, 0.7 * i/noise_scaling, octaves=octaves, base=MAP_SEED + 100)
+    q = noise.pnoise2(0.9 * j / noise_scaling, 0.7 * i / noise_scaling, octaves=octaves, base=MAP_SEED + 100)
     return q < 0
 
 
@@ -140,11 +139,10 @@ def main():
                 )
                 mymap.ents.append(rock)
 
-
-
     mymap.world = v.to_octree()
     mymap.world[0].octsav = 0
     mymap.write(args.output)
+
 
 if __name__ == '__main__':
     main()

@@ -311,4 +311,3 @@ class CoarseVector(BaseVector):
             newvec.y,
             newvec.z
         )
-

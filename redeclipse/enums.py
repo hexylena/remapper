@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class EntType(Enum):
     """
     Redeclipse Entities
@@ -64,9 +65,9 @@ class OctLayers(Enum):
     """
     ???
     """
-    LAYER_TOP = (1<<5)
-    LAYER_BOTTOM = (1<<6)
-    LAYER_DUP = (1<<7)
+    LAYER_TOP = (1 << 5)
+    LAYER_BOTTOM = (1 << 6)
+    LAYER_DUP = (1 << 7)
     LAYER_BLEND = LAYER_TOP | LAYER_BOTTOM
     MAXFACEVERTS = 15
 
