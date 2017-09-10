@@ -5,31 +5,6 @@ from redeclipse.vector import FineVector, CoarseVector, AbsoluteVector
 ROOM_SIZE = 8
 
 
-def mv(a, b):
-    return (
-        a[0] + b[0],
-        a[1] + b[1],
-        a[2] + b[2],
-    )
-
-
-def mi(*args):
-    if len(args) == 1:
-        p0 = args[0][0]
-        p1 = args[0][1]
-        p2 = args[0][2]
-    else:
-        p0 = args[0]
-        p1 = args[1]
-        p2 = args[2]
-
-    return (
-        p0 * -1,
-        p1 * -1,
-        p2 * -1,
-    )
-
-
 def column_points(size, direction):
     for i in range(size):
         if direction in ('-x', '+x', 'x'):
@@ -77,14 +52,6 @@ def wall_points(size, direction, limit_j=100, limit_i=100):
                 yield FineVector(0, i, j)
             elif direction == '+x':
                 yield FineVector(size - 1, i, j)
-
-
-def wall(world, direction, size, pos, tex=2):
-    for point in wall_points(size, direction):
-        world.set_point(
-            *mv(point, pos),
-            cube.newtexcube(tex=tex)
-        )
 
 
 def subtract_or_skip(point, subtract, prob):
