@@ -10,6 +10,8 @@ import simplejson as json
 import logging
 log = logging.getLogger(__name__)
 
+__version__ = "0.6"
+
 MAXSTRLEN = 512
 
 def tb(str_or_bytes):

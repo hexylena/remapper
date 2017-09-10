@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 with open('redeclipse/__init__.py', 'r') as f:
     for line in f:
         if line.startswith('__version__'):
-            version = line.strip().split('=')[1].strip(' \'"')
+            version = line.strip().split('=')[1].strip(' \''')
             break
     else:
         version = '0.0.1'
@@ -11,10 +11,15 @@ with open('redeclipse/__init__.py', 'r') as f:
 with open('README.rst', 'rb') as f:
     readme = f.read().decode('utf-8')
 
-REQUIRES = ['enum34']
+REQUIRES = [
+    'enum34',
+    'simplejson',
+    'noise',
+    'tqdm'
+]
 
 setup(
-    name="redeclipse",
+    name='redeclipse',
     version=version,
     description='RedEclipse / Cube2 / Saurbrauten map editor library',
     long_description=readme,
