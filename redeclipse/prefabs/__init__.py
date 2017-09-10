@@ -1037,7 +1037,8 @@ class DigitalRoom(_LargeRoom):
         ceil_tex = TEXMAN.get_c('wall')
 
         # TODO: fade 0.9
-        self.x_floor(world, SOUTHWEST, tex=ceil_tex, size=24, prob=0.9)
+        prob = 1.0
+        self.x_floor(world, SOUTHWEST, tex=ceil_tex, size=24, prob=1.9)
         # if self._randflags[1]:
             # self.x_ceiling(world, SOUTHWEST + ABOVE, tex=ceil_tex, size=24, prob=0.9)
         # else:
@@ -1051,9 +1052,7 @@ class DigitalRoom(_LargeRoom):
         # self.x_wall(world, SOUTHWEST, face=NORTH, tex=wall_tex, prob=prob)
         # self.x_wall(world, SOUTHEAST, face=NORTH, tex=wall_tex, prob=prob)
 
-        self.x_low_wall(world, NORTHWEST + ABOVE, WEST, tex=wall_tex)
-        self.x_low_wall(world, SOUTHWEST + ABOVE, WEST, tex=wall_tex)
-        # self.x_wall(world, NORTHWEST, face=WEST, tex=wall_tex, prob=prob)
+        self.x_wall(world, NORTHWEST, face=WEST, tex=wall_tex, prob=prob)
         # self.x_wall(world, SOUTHWEST, face=WEST, tex=wall_tex, prob=prob)
 
         # self.x_wall(world, SOUTHEAST, face=EAST, tex=wall_tex, prob=prob)

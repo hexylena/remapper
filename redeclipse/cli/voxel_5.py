@@ -163,9 +163,10 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     #mymap.skybox(MinecraftSky('/home/hxr/games/redeclipse-1.5.3/'))
 
     # Standard code to render octree to file.
-    mymap.world = v.to_octree()
-    mymap.world[0].octsav = 0
-    mymap.write(mpz_out.name)
+
+    # mymap.world = v.to_octree()
+    # mymap.world[0].octsav = 0
+    # mymap.write(mpz_out.name)
 
 
 if __name__ == '__main__':

@@ -17,18 +17,44 @@ class VoxelWorld:
         # Size defines number of cubes from left to right.
         self.size = size
         self.world = {}
-        self.heighest_point = 0
+        self.boundaries = {
+            'xmax': 0,
+            'xmin': size,
+            'ymax': 0,
+            'ymin': size,
+            'zmax': 0,
+            'zmin': size,
+        }
+
+    def get_extents(self):
+        return {
+            'x': self.boundaries['xmax'] - self.boundaries['xmin'],
+            'y': self.boundaries['ymax'] - self.boundaries['ymin'],
+            'z': self.boundaries['zmax'] - self.boundaries['zmin'],
+        }
+
+    def _update_boundaries(self, x, y, z):
+        if x > self.boundaries['xmax']:
+            self.boundaries['xmax'] = x
+        if x < self.boundaries['xmin']:
+            self.boundaries['xmin'] = x
+        if y > self.boundaries['ymax']:
+            self.boundaries['ymax'] = y
+        if y < self.boundaries['ymin']:
+            self.boundaries['ymin'] = y
+        if z > self.boundaries['zmax']:
+            self.boundaries['zmax'] = z
+        if z < self.boundaries['zmin']:
+            self.boundaries['zmin'] = z
 
     def set_point(self, x, y, z, data):
         log.debug("set_point (%d, %d, %d)", x, y, z)
-        if z > self.heighest_point:
-            self.heighest_point = z
+        self._update_boundaries(x, y, z)
         self.world[x, y, z] = data
 
     def set_pointv(self, xyz, data):
         log.debug("set_point %s", xyz)
-        if xyz.z > self.heighest_point:
-            self.heighest_point = xyz.z
+        self._update_boundaries(xyz.x, xyz.y, xyz.z)
         self.world[tuple(xyz)] = data
 
     def del_point(self, x, y, z):

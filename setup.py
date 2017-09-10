@@ -1,15 +1,29 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
+with open('redeclipse/__init__.py', 'r') as f:
+    for line in f:
+        if line.startswith('__version__'):
+            version = line.strip().split('=')[1].strip(' \'"')
+            break
+    else:
+        version = '0.0.1'
+
+with open('README.rst', 'rb') as f:
+    readme = f.read().decode('utf-8')
+
+REQUIRES = ['enum34']
 
 setup(
     name="redeclipse",
-    version='1.0.0',
+    version=version,
     description='RedEclipse / Cube2 / Saurbrauten map editor library',
+    long_description=readme,
     author='E. Rasche',
     author_email='hxr@hx42.org',
-    install_requires=['enum34'],
+    maintainer='E. Rasche',
+    maintainer_email='hxr@hx42.org',
     url='https://github.com/erasche/redeclipse-maps',
-    packages=["redeclipse"],
+    license='GPL-3.0',
     entry_points={
         'console_scripts': [
                 'redeclipse_iso = redeclipse.cli.iso:main',
@@ -25,9 +39,13 @@ setup(
         },
     classifiers=[
         'Development Status :: 4 - Beta',
-        'Operating System :: OS Independent',
         'Intended Audience :: Developers',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 3.5',
         'Environment :: Console',
-        ],
+    ],
+    install_requires=REQUIRES,
+    tests_require=['coverage', 'pytest'],
     include_package_data=True,
+    packages=find_packages(),
 )

@@ -7,6 +7,7 @@ from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
+from redeclipse.magicavoxel import to_magicavoxel
 #from redeclipse.skybox import MinecraftSky
 from redeclipse.prefabs.vector import CoarseVector, FineVector
 logging.basicConfig(level=logging.INFO)
@@ -67,10 +68,12 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     p.TEXMAN.emit_conf(mpz_out)
     p.TEXMAN.copy_data()
 
+    with open('out.vox', 'wb') as handle:
+        to_magicavoxel(v, handle)
     # Standard code to render octree to file.
-    mymap.world = v.to_octree()
-    mymap.world[0].octsav = 0
-    mymap.write(mpz_out.name)
+    # mymap.world = v.to_octree()
+    # mymap.world[0].octsav = 0
+    # mymap.write(mpz_out.name)
 
 
 if __name__ == '__main__':
