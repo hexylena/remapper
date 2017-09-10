@@ -1,7 +1,7 @@
 redeclipse\.prefabs\.vector module
 ==================================
 
-.. automodule:: redeclipse.prefabs.vector
+.. automodule:: redeclipse.vector
     :members:
     :undoc-members:
     :show-inheritance:

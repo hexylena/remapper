@@ -1,5 +1,5 @@
-redeclipse\.prefabs\.orientations module
-========================================
+redeclipse\.vector\.orientations module
+=======================================
 
 .. automodule:: redeclipse.vector.orientations
     :members:
