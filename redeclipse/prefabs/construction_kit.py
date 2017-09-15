@@ -180,9 +180,16 @@ class ConstructionKitMixin(object):
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
     def _x_column(self, offset, direction, length):
-        offset = offset.rotate(self.orientation)
-        adjustment = self.x_get_adjustment()
-        local_position = self.pos + offset + adjustment
+        print('_x_column', self.orientation)
+        print('off', offset)
+        tmp = (FineVector(4, 4, 0) - offset).rotate(self.orientation)
+        # offset = offset.rotate(self.orientation)
+        # print('off', offset)
+        # adjustment = self.x_get_adjustment().fine()
+        # print('adj', adjustment)
+        # print('s.p', self.pos, '→', self.pos + FineVector(8, 8, 8))
+        local_position = self.pos + FineVector(4, 4, 0) + tmp # offset + adjustment
+        print('lop', local_position)
         # Then get the orientation, rotated, and converted to +/-xyz
         for point in column_points(length, direction.rotate(self.orientation)):
             yield point + local_position

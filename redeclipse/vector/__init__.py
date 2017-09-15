@@ -77,6 +77,23 @@ class BaseVector(object):
         yield self.y
         yield self.z
 
+    def __lt__(self, other):
+        """
+        https://math.stackexchange.com/questions/54655/how-to-compare-points-in-multi-dimensional-space
+
+        This ordering isn't a super logical one, but it is a functional one
+        which is what we need to provide sorted() ability.
+        """
+        if self.x < other.x:
+            return True
+        elif self.x == other.x:
+            if self.y < other.y:
+                return True
+            elif self.y == other.y:
+                if self.z < other.z:
+                    return True
+        return False
+
     def rotate(self, deg):
         """
         Return a new vector, rotated by the specified
@@ -85,17 +102,20 @@ class BaseVector(object):
         :param deg: degrees (0, 90, 180, ...) or orientation (+x, -x, ...)
         :type deg: str or int
 
+        Note that rotation is counterclockwise around the z=+1 axis. I.e. use
+        the right handle rule.
+
         :returns: a new ``redeclipse.vector.BaseVector``, rotated as
                   needed.
         :rtype: redeclipse.vector.BaseVector
         """
         if deg == '+x':
             deg = 0
+        elif deg == '-y':
+            deg = 90
         elif deg == '-x':
             deg = 180
         elif deg == '+y':
-            deg = 90
-        elif deg == '-y':
             deg = 270
 
         if deg % 90 != 0:
@@ -129,11 +149,11 @@ class AbsoluteVector(BaseVector):
         """
         if deg == '+x':
             deg = 0
+        elif deg == '-y':
+            deg = 90
         elif deg == '-x':
             deg = 180
         elif deg == '+y':
-            deg = 90
-        elif deg == '-y':
             deg = 270
 
         deg %= 360
