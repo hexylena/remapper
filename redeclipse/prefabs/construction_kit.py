@@ -122,7 +122,7 @@ def cube_points(x, y, z):
                 yield FineVector(i, j, k)
 
 
-def subtract_or_skip(point, subtract, prob):
+def subtract_or_skip(subtract, prob):
     """
     determine if we should subtract or skip based on the parameters.
 
@@ -173,13 +173,13 @@ class ConstructionKitMixin(object):
         :param prob: Probability of placing any given cube.
         :type prob: float
         """
-        for point in self._x_column(world, offset, direction, length):
-            if subtract_or_skip(point, subtract, prob):
+        for point in self._x_column(offset, direction, length):
+            if subtract_or_skip(subtract, prob):
                 world.del_pointv(point)
                 continue
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
-    def _x_column(self, world, offset, direction, length):
+    def _x_column(self, offset, direction, length):
         offset = offset.rotate(self.orientation)
         adjustment = self.x_get_adjustment()
         local_position = self.pos + offset + adjustment
@@ -209,14 +209,14 @@ class ConstructionKitMixin(object):
         :param prob: Probability of placing any given cube.
         :type prob: float
         """
-        for point in self._x_ceiling(world, offset, size=size):
-            if subtract_or_skip(point, subtract, prob):
+        for point in self._x_ceiling(offset, size=size):
+            if subtract_or_skip(subtract, prob):
                 world.del_pointv(point)
                 continue
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
-    def _x_ceiling(self, world, offset, size=ROOM_SIZE):
-        for point in self._x_rectangular_prism(world, offset + FineVector(0, 0, 7), AbsoluteVector(size, size, 1)):
+    def _x_ceiling(self, offset, size=ROOM_SIZE):
+        for point in self._x_rectangular_prism(offset + FineVector(0, 0, 7), AbsoluteVector(size, size, 1)):
             yield point
 
     def x_floor(self, world, offset, tex=2, size=ROOM_SIZE, subtract=False, prob=1.0):
@@ -242,13 +242,13 @@ class ConstructionKitMixin(object):
         :type prob: float
         """
         for point in self._x_floor(world, offset, size=size):
-            if subtract_or_skip(point, subtract, prob):
+            if subtract_or_skip(subtract, prob):
                 world.del_pointv(point)
                 continue
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
-    def _x_floor(self, world, offset, size=ROOM_SIZE):
-        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(size, size, 1)): yield point
+    def _x_floor(self, offset, size=ROOM_SIZE):
+        for point in self._x_rectangular_prism(offset, AbsoluteVector(size, size, 1)): yield point
 
     def x_wall(self, world, offset, face, tex=2, subtract=False, prob=1.0):
         """
@@ -277,13 +277,13 @@ class ConstructionKitMixin(object):
         :param prob: Probability of placing any given cube.
         :type prob: float
         """
-        for point in self._x_wall(world, offset, face):
-            if subtract_or_skip(point, subtract, prob):
+        for point in self._x_wall(offset, face):
+            if subtract_or_skip(subtract, prob):
                 world.del_pointv(point)
                 continue
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
-    def _x_wall(self, world, offset, face):
+    def _x_wall(self, offset, face):
         offset = offset.rotate(self.orientation)
         local_position = self.pos + offset
         real_face = self.x_get_face(face)
@@ -329,21 +329,21 @@ class ConstructionKitMixin(object):
         :param prob: Probability of placing any given cube.
         :type prob: float
         """
-        for point in self._x_ring(world, offset, size):
-            if subtract_or_skip(point, subtract, prob):
+        for point in self._x_ring(offset, size):
+            if subtract_or_skip(subtract, prob):
                 world.del_pointv(point)
                 continue
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
-    def _x_ring(self, world, offset, size, tex=2):
+    def _x_ring(self, offset, size):
         # world, FineVector(-2, -2, i), 12, tex=accent_tex)
-        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(1, size - 1, 1)):
+        for point in self._x_rectangular_prism(offset, AbsoluteVector(1, size - 1, 1)):
             yield point
-        for point in self._x_rectangular_prism(world, offset, AbsoluteVector(size - 1, 1, 1)):
+        for point in self._x_rectangular_prism(offset, AbsoluteVector(size - 1, 1, 1)):
             yield point
-        for point in self._x_rectangular_prism(world, offset + FineVector(0, size - 1, 0), AbsoluteVector(size, 1, 1)):
+        for point in self._x_rectangular_prism(offset + FineVector(0, size - 1, 0), AbsoluteVector(size, 1, 1)):
             yield point
-        for point in self._x_rectangular_prism(world, offset + FineVector(size - 1, 0, 0), AbsoluteVector(1, size, 1)):
+        for point in self._x_rectangular_prism(offset + FineVector(size - 1, 0, 0), AbsoluteVector(1, size, 1)):
             yield point
 
     def x_rectangular_prism(self, world, offset, xyz, tex=2, subtract=False, prob=1.0):
@@ -368,13 +368,13 @@ class ConstructionKitMixin(object):
         :param prob: Probability of placing any given cube.
         :type prob: float
         """
-        for point in self._x_rectangular_prism(world, offset, xyz):
-            if subtract_or_skip(point, subtract, prob):
+        for point in self._x_rectangular_prism(offset, xyz):
+            if subtract_or_skip(subtract, prob):
                 world.del_pointv(point)
                 continue
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
-    def _x_rectangular_prism(self, world, offset, xyz, tex=2):
+    def _x_rectangular_prism(self, offset, xyz):
         offset = offset.rotate(self.orientation)
         xyz = xyz.rotate(self.orientation)
         # We need to offset self.pos with an adjustment vector. Because
@@ -409,18 +409,20 @@ class ConstructionKitMixin(object):
         :param prob: Probability of placing any given cube.
         :type prob: float
         """
-        for point in self._x_low_wall(world, offset, face):
-            if subtract_or_skip(point, subtract, prob):
+        for point in self._x_low_wall(offset, face):
+            if subtract_or_skip(subtract, prob):
                 world.del_pointv(point)
                 continue
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
-    def _x_low_wall(self, world, offset, face):
+    def _x_low_wall(self, offset, face):
         offset = offset.rotate(self.orientation)
         local_position = self.pos + offset
         real_face = self.x_get_face(face)
+        print('>', offset, local_position, real_face)
 
         for point in wall_points(ROOM_SIZE, real_face, limit_j=2):
+            print('.', point)
             yield point + local_position
 
     def x_get_face(self, face):

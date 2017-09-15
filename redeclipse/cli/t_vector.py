@@ -20,25 +20,21 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     v = VoxelWorld(size=size)
     upm = UnusedPositionManager(size, mirror=True)
 
-    Room = p.DigitalRoom
+    Room = p.OffsetTest
 
-    kwargs = Room.randOpts(None)
-    n = Room(pos=CoarseVector(8 + 5, 8, 8), orientation='+x', **kwargs)
-    kwargs = Room.randOpts(None)
-    s = Room(pos=CoarseVector(8 - 5, 8, 8), orientation='-x', **kwargs)
-    kwargs = Room.randOpts(None)
-    e = Room(pos=CoarseVector(8, 8 + 5, 8), orientation='+y', **kwargs)
-    kwargs = Room.randOpts(None)
-    w = Room(pos=CoarseVector(8, 8 - 5, 8), orientation='-y', **kwargs)
+    n = Room(pos=CoarseVector(8 + 4, 8, 8), orientation='+x')
+    s = Room(pos=CoarseVector(8 - 4, 8, 8), orientation='-x')
+    e = Room(pos=CoarseVector(8, 8 + 4, 8), orientation='+y')
+    w = Room(pos=CoarseVector(8, 8 - 4, 8), orientation='-y')
 
     upm.register_room(n)
     upm.register_room(s)
     upm.register_room(e)
     upm.register_room(w)
 
-    sp = p.SpawnRoom(pos=CoarseVector(8 + 2, 8, 8), orientation='+x', randflags=[True])
-    upm.register_room(sp)
-    sp.render(v, mymap)
+    # sp = p.SpawnRoom(pos=CoarseVector(8 + 2, 8, 8), orientation='+x', randflags=[True])
+    # upm.register_room(sp)
+    # sp.render(v, mymap)
     n.render(v, mymap)
     s.render(v, mymap)
     e.render(v, mymap)

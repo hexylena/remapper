@@ -1058,3 +1058,29 @@ class DigitalRoom(_LargeRoom):
         # self.x_wall(world, NORTHWEST, face=WEST, tex=wall_tex, prob=prob)
         # self.x_wall(world, WEST + WEST, face=WEST, tex=wall_tex, prob=prob)
         # self.x_wall(world, SOUTHWEST, face=WEST, tex=wall_tex, prob=prob)
+
+class OffsetTest(_LargeRoom):
+    _height = 1
+    _randflags = ()
+
+    def __init__(self, *arg, **kwarg):
+        super().__init__(*arg, **kwarg)
+
+    def render(self, world, xmap):
+        self.light(xmap)
+
+        wall_tex = TEXMAN.get_c('wall')
+        ceil_tex = TEXMAN.get_c('wall')
+
+        # TODO: fade 0.9
+        self.x_floor(world, SELF, tex=ceil_tex, size=4)
+        self.x_floor(world, SELF + NORTH * 1, tex=ceil_tex, size=4)
+        self.x_floor(world, SELF + NORTH * 2, tex=ceil_tex, size=4)
+        self.x_floor(world, SELF + NORTH * 3, tex=ceil_tex, size=4)
+        self.x_floor(world, SELF + NORTH * 4, tex=ceil_tex, size=4)
+
+        self.x_low_wall(world, SELF + ABOVE_FINE + (NORTH * 0), EAST)
+        self.x_low_wall(world, SELF + ABOVE_FINE + (NORTH * 1), SOUTH)
+        self.x_low_wall(world, SELF + ABOVE_FINE + (NORTH * 2), WEST)
+        self.x_low_wall(world, SELF + ABOVE_FINE + (NORTH * 3), NORTH)
+        self.x_low_wall(world, SELF + ABOVE_FINE + (NORTH * 4), EAST)
