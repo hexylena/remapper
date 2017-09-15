@@ -36,7 +36,7 @@ def test_rotate():
 
 
 def test_basevector():
-    for Class in (BaseVector, AbsoluteVector, CoarseVector, FineVector):
+    for idx, Class in enumerate((BaseVector, AbsoluteVector, FineVector, CoarseVector)):
         v = Class(4, 2, 1)
         w = Class(4, 2, 1)
         u = Class(2, 4, 1)
@@ -45,10 +45,8 @@ def test_basevector():
         y = Class(0, 1, 0)
         z = Class(0, 0, 1)
 
-        # TODO: broken hash?
-        exp = 4 << 20 + 2 << 10 + 1
-        print(hash(v), exp)
-        # assert hash(v) == exp
+        exp = (idx << 31) + (4 << 20) + (2 << 10) + 1
+        assert hash(v) == exp
         assert v == w
         assert v != u
 

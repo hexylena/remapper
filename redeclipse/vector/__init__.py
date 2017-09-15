@@ -16,7 +16,7 @@ def rotate_yaw(angle, orientation):
 class BaseVector(object):
 
     def __hash__(self):
-        return 0 << 31 + self.x << 20 + self.y << 10 + self.z
+        return (0 << 31) + (self.x << 20) + (self.y << 10) + self.z
 
     def __eq__(self, other):
         return isinstance(other, BaseVector) and \
@@ -117,7 +117,7 @@ class AbsoluteVector(BaseVector):
     """
 
     def __hash__(self):
-        return 1 << 31 + self.x << 20 + self.y << 10 + self.z
+        return (1 << 31) + (self.x << 20) + (self.y << 10) + self.z
 
     def rotate(self, deg):
         """
@@ -157,7 +157,7 @@ class AbsoluteVector(BaseVector):
 class FineVector(BaseVector):
 
     def __hash__(self):
-        return 2 << 31 + self.x << 20 + self.y << 10 + self.z
+        return (2 << 31) + (self.x << 20) + (self.y << 10) + self.z
 
     def __eq__(self, other):
         if isinstance(other, CoarseVector):
@@ -237,7 +237,7 @@ class FineVector(BaseVector):
 class CoarseVector(BaseVector):
 
     def __hash__(self):
-        return 3 << 31 + self.x << 20 + self.y << 10 + self.z
+        return (3 << 31) + (self.x << 20) + (self.y << 10) + self.z
 
     def __eq__(self, other):
         if isinstance(other, CoarseVector):

@@ -1,6 +1,6 @@
 from redeclipse.objects import cube
 import random
-from redeclipse.vector.orientations import SOUTH, NORTH, WEST, EAST, VEC_ORIENT_MAP_INV, VEC_ORIENT_MAP, get_vector_rotation
+from redeclipse.vector.orientations import SOUTH, NORTH, WEST, EAST, ABOVE, BELOW, VEC_ORIENT_MAP, get_vector_rotation
 from redeclipse.vector import FineVector, CoarseVector, AbsoluteVector
 ROOM_SIZE = 8
 
@@ -16,12 +16,18 @@ def column_points(size, direction):
     :rtype: list(redeclipse.vector.FineVector)
     """
     for i in range(size):
-        if direction in ('-x', '+x', 'x'):
+        if direction == NORTH:
             yield FineVector(i, 0, 0)
-        elif direction in ('-y', '+y', 'y'):
+        elif direction == SOUTH:
+            yield FineVector(-i, 0, 0)
+        elif direction == EAST:
             yield FineVector(0, i, 0)
-        elif direction in ('-z', '+z', 'z'):
+        elif direction == WEST:
+            yield FineVector(0, -i, 0)
+        elif direction == ABOVE:
             yield FineVector(0, 0, i)
+        elif direction == BELOW:
+            yield FineVector(0, 0, -i)
 
 
 def wall_points(size, direction, limit_j=100, limit_i=100):
@@ -178,8 +184,7 @@ class ConstructionKitMixin(object):
         adjustment = self.x_get_adjustment()
         local_position = self.pos + offset + adjustment
         # Then get the orientation, rotated, and converted to ±xyz
-        orient = VEC_ORIENT_MAP_INV[direction.rotate(self.orientation)]
-        for point in column_points(length, orient):
+        for point in column_points(length, direction.rotate(self.orientation)):
             yield point + local_position
 
     def x_ceiling(self, world, offset, tex=2, size=ROOM_SIZE, subtract=False, prob=1.0):
@@ -278,7 +283,7 @@ class ConstructionKitMixin(object):
                 continue
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
-    def _x_wall(self, world, offset, face, tex=2):
+    def _x_wall(self, world, offset, face):
         offset = offset.rotate(self.orientation)
         local_position = self.pos + offset
         real_face = self.x_get_face(face)
@@ -404,7 +409,7 @@ class ConstructionKitMixin(object):
         :param prob: Probability of placing any given cube.
         :type prob: float
         """
-        for point in self._x_rectangular_prism(world, offset, face):
+        for point in self._x_low_wall(world, offset, face):
             if subtract_or_skip(point, subtract, prob):
                 world.del_pointv(point)
                 continue

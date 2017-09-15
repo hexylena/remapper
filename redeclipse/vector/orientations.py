@@ -66,11 +66,3 @@ def get_vector_rotation(vec):
         return 180
     elif vec == WEST:
         return 270
-
-#: Inverse of VEC_ORIENT_MAP allowing converting new to old style.
-VEC_ORIENT_MAP_INV = {
-    v: k
-    for (k, v) in VEC_ORIENT_MAP.items()
-}
-
-__all__ = [NORTH, SOUTH, ABOVE, BELOW, EAST, WEST]

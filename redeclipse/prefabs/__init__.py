@@ -28,7 +28,7 @@ SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
 # TEXMAN = PaperThemedTextureManager()
 TEXMAN = PrimaryThemedTextureManager()
 LIGHTMAN = PositionBasedLightManager(brightness=1.0, saturation=0.6)
-LIGHTMAN = None
+# LIGHTMAN = None
 # DISTMAN = TowerDistributionManager()
 # DISTMAN = PlatformDistributionManager()
 DISTMAN = UniformDistributionManager()
