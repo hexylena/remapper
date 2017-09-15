@@ -136,5 +136,12 @@ def test_sos_skip():
 
 def test_ck_mixin():
     ckm = ConstructionKitMixin()
-    print(ckm)
-    assert False
+    offset = FineVector(64, 64, 64)
+
+    expected_points = [
+        FineVector(64 + i, 64, 64)
+        for i in range(4)
+    ]
+    observed_points = list(ckm._x_column(offset, NORTH, 4))
+    for e, o in zip(expected_points, observed_points):
+        assert e == o
