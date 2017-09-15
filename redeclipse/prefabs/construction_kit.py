@@ -183,7 +183,7 @@ class ConstructionKitMixin(object):
         offset = offset.rotate(self.orientation)
         adjustment = self.x_get_adjustment()
         local_position = self.pos + offset + adjustment
-        # Then get the orientation, rotated, and converted to ±xyz
+        # Then get the orientation, rotated, and converted to +/-xyz
         for point in column_points(length, direction.rotate(self.orientation)):
             yield point + local_position
 
@@ -216,7 +216,10 @@ class ConstructionKitMixin(object):
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
     def _x_ceiling(self, offset, size=ROOM_SIZE):
-        for point in self._x_rectangular_prism(offset + FineVector(0, 0, 7), AbsoluteVector(size, size, 1)):
+        for point in self._x_rectangular_prism(
+                offset + FineVector(0, 0, 7),
+                AbsoluteVector(size, size, 1)
+        ):
             yield point
 
     def x_floor(self, world, offset, tex=2, size=ROOM_SIZE, subtract=False, prob=1.0):
@@ -241,7 +244,7 @@ class ConstructionKitMixin(object):
         :param prob: Probability of placing any given cube.
         :type prob: float
         """
-        for point in self._x_floor(world, offset, size=size):
+        for point in self._x_floor(offset, size=size):
             if subtract_or_skip(subtract, prob):
                 world.del_pointv(point)
                 continue
