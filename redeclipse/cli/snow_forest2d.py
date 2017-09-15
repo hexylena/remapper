@@ -3,6 +3,7 @@ import sys # noqa
 import random # noqa
 import math # noqa
 import noise # noqa
+from PIL import Image
 from tqdm import tqdm
 
 random.seed(22)

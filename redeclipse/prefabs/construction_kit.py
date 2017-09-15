@@ -183,12 +183,7 @@ class ConstructionKitMixin(object):
         print('_x_column', self.orientation)
         print('off', offset)
         tmp = (FineVector(4, 4, 0) - offset).rotate(self.orientation)
-        # offset = offset.rotate(self.orientation)
-        # print('off', offset)
-        # adjustment = self.x_get_adjustment().fine()
-        # print('adj', adjustment)
-        # print('s.p', self.pos, '→', self.pos + FineVector(8, 8, 8))
-        local_position = self.pos + FineVector(4, 4, 0) + tmp # offset + adjustment
+        local_position = self.pos + FineVector(4, 4, 0) + tmp
         print('lop', local_position)
         # Then get the orientation, rotated, and converted to +/-xyz
         for point in column_points(length, direction.rotate(self.orientation)):
@@ -258,7 +253,8 @@ class ConstructionKitMixin(object):
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
     def _x_floor(self, offset, size=ROOM_SIZE):
-        for point in self._x_rectangular_prism(offset, AbsoluteVector(size, size, 1)): yield point
+        for point in self._x_rectangular_prism(offset, AbsoluteVector(size, size, 1)):
+            yield point
 
     def x_wall(self, world, offset, face, tex=2, subtract=False, prob=1.0):
         """

@@ -1059,6 +1059,7 @@ class DigitalRoom(_LargeRoom):
         # self.x_wall(world, WEST + WEST, face=WEST, tex=wall_tex, prob=prob)
         # self.x_wall(world, SOUTHWEST, face=WEST, tex=wall_tex, prob=prob)
 
+
 class OffsetTest(_LargeRoom):
     _height = 1
     _randflags = ()
@@ -1069,7 +1070,6 @@ class OffsetTest(_LargeRoom):
     def render(self, world, xmap):
         self.light(xmap)
 
-        wall_tex = TEXMAN.get_c('wall')
         ceil_tex = TEXMAN.get_c('wall')
 
         # TODO: fade 0.9

@@ -48,6 +48,7 @@ VEC_ORIENT_MAP = {
     '-z': BELOW,
 }
 
+
 def get_vector_rotation(vec):
     """
     Get the rotation from a cardinal direction vector.
