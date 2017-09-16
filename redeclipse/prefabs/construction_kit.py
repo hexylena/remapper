@@ -1,7 +1,7 @@
 from redeclipse.objects import cube
 import random
-from redeclipse.vector.orientations import SOUTH, NORTH, WEST, EAST, ABOVE, BELOW, VEC_ORIENT_MAP, get_vector_rotation, TILE_VOX_OFF
-from redeclipse.vector import FineVector, CoarseVector, AbsoluteVector
+from redeclipse.vector.orientations import VEC_ORIENT_MAP, get_vector_rotation, TILE_VOX_OFF
+from redeclipse.vector import FineVector
 ROOM_SIZE = 8
 
 
@@ -37,21 +37,18 @@ def wall_points(size, direction, limit_j=100, limit_i=100):
     if size > 0:
         i_lower_bound = 0
         i_upper_bound = size
+        j_lower_bound = 0
+        j_upper_bound = size
     else:
         i_lower_bound = size
         i_upper_bound = 0
+        j_lower_bound = size
+        j_upper_bound = 0
 
     for i in range(i_lower_bound, i_upper_bound):
         # Allow partial_j walls
         if i > limit_i:
             continue
-
-        if size > 0:
-            j_lower_bound = 0
-            j_upper_bound = size
-        else:
-            j_lower_bound = size
-            j_upper_bound = 0
 
         for j in range(j_lower_bound, j_upper_bound):
             # Allow partial_j walls
@@ -157,7 +154,6 @@ class ConstructionKitMixin(object):
                 continue
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
-
     def x_column(self, offset, direction, length):
         local_position = self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
         for point in column_points(length, direction.rotate(self.orientation)):
@@ -166,11 +162,11 @@ class ConstructionKitMixin(object):
     def x_ceiling(self, offset, size=ROOM_SIZE):
         yield from self.x_rectangular_prism(
             offset + FineVector(0, 0, 7),
-            AbsoluteVector(size, size, 1)
+            FineVector(size, size, 1)
         )
 
     def x_floor(self, offset, size=ROOM_SIZE):
-        yield from self.x_rectangular_prism(offset, AbsoluteVector(size, size, 1))
+        yield from self.x_rectangular_prism(offset, FineVector(size, size, 1))
 
     def x_wall(self, offset, face, limit_j=8):
         local_position = self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
@@ -181,14 +177,15 @@ class ConstructionKitMixin(object):
 
     def x_ring(self, offset, size):
         # world, FineVector(-2, -2, i), 12, tex=accent_tex)
-        yield from self._x_rectangular_prism(offset, AbsoluteVector(1, size - 1, 1))
-        yield from self._x_rectangular_prism(offset, AbsoluteVector(size - 1, 1, 1))
-        yield from self._x_rectangular_prism(offset + FineVector(0, size - 1, 0), AbsoluteVector(size, 1, 1))
-        yield from self._x_rectangular_prism(offset + FineVector(size - 1, 0, 0), AbsoluteVector(1, size, 1))
+        yield from self.x_rectangular_prism(offset, FineVector(1, size - 1, 1))
+        yield from self.x_rectangular_prism(offset, FineVector(size - 1, 1, 1))
+        yield from self.x_rectangular_prism(offset + FineVector(0, size - 1, 0), FineVector(size, 1, 1))
+        yield from self.x_rectangular_prism(offset + FineVector(size - 1, 0, 0), FineVector(1, size, 1))
 
     def x_rectangular_prism(self, offset, xyz):
-        xyz = xyz.rotate(self.orientation)
+        xyz = xyz.rotate(self.orientation).vox()
         local_position = self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
+        print(local_position, xyz)
 
         for point in cube_points(xyz.x, xyz.y, xyz.z):
             yield point + local_position

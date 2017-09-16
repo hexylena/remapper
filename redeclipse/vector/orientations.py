@@ -34,7 +34,7 @@ HALF_HEIGHT = FineVector(0, 0, 4)
 VOXEL_OFFSET = FineVector(0.5, 0.5, 0.5)
 TILE_VOX_OFF = VOXEL_OFFSET - TILE_CENTER
 
-NORTH_FINE = FineVector(1, 0, 0)
+NORTH_FINE = FineVector(0, 1, 0)
 WEST_FINE = NORTH_FINE.rotate(90)
 SOUTH_FINE = NORTH_FINE.rotate(180)
 EAST_FINE = NORTH_FINE.rotate(270)
@@ -62,11 +62,32 @@ def get_vector_rotation(vec):
     :returns: A (degree) direction
     :rtype: int
     """
-    if vec == NORTH:
+    if vec == EAST:
         return 0
-    elif vec == WEST:
+    elif vec == NORTH:
         return 90
-    elif vec == SOUTH:
+    elif vec == WEST:
         return 180
-    elif vec == EAST:
+    elif vec == SOUTH:
         return 270
+
+
+def get_orientation_rotation(ori):
+    """
+    Get the rotation from an orientation
+
+    :param ori: A directional orientation ('+x', '-x', ...)
+    :type ori: str
+
+    :returns: A (degree) direction
+    :rtype: int
+    """
+    if ori == '+x':
+        return 0
+    elif ori == '-y':
+        return 90
+    elif ori == '-x':
+        return 180
+    elif ori == '+y':
+        return 270
+    raise Exception("Unknown orientation")

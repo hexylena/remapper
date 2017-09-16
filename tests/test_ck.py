@@ -2,8 +2,8 @@ import pytest
 
 # from redeclipse.prefabs import Room
 from redeclipse.prefabs.construction_kit import wall_points, column_points, ConstructionKitMixin, cube_points, subtract_or_skip
-from redeclipse.vector import FineVector
-from redeclipse.vector.orientations import NORTH, SOUTH, EAST, WEST, ABOVE, BELOW, VOXEL_OFFSET, TILE_VOX_OFF
+from redeclipse.vector import FineVector, CoarseVector
+from redeclipse.vector.orientations import NORTH, SOUTH, EAST, WEST, ABOVE, BELOW, VOXEL_OFFSET, TILE_VOX_OFF, SELF
 from redeclipse.voxel import VoxelWorld
 
 
@@ -270,8 +270,8 @@ def test_ck_unknown_func():
 def test_ck_known_func():
     vox = VoxelWorld(size=4)
     ckm = ConstructionKitMixin()
-    ckm.pos = FineVector(8, 8, 8).fine()
-    ckm.orientation = '+y'
-    ckm.x('floor', vox, FineVector(0, 0, 0), size=8)
+    ckm.pos = CoarseVector(1, 1, 1).fine()
+    ckm.orientation = '+x'
+    ckm.x('floor', vox, SELF, size=8)
     print(sorted(vox.world.keys()))
     assert False
