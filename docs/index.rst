@@ -10,8 +10,6 @@ Welcome to RedEclipse Map Library's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   map_format
-   cfg_format
    modules
 
 
