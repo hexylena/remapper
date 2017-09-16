@@ -1,6 +1,6 @@
 from redeclipse.objects import cube
 import random
-from redeclipse.vector.orientations import VEC_ORIENT_MAP, get_vector_rotation, TILE_VOX_OFF
+from redeclipse.vector.orientations import VEC_ORIENT_MAP, get_vector_rotation, TILE_VOX_OFF, VOXEL_OFFSET, NORTH
 from redeclipse.vector import FineVector
 ROOM_SIZE = 8
 
@@ -135,7 +135,6 @@ class ConstructionKitMixin(object):
     A mixin for constructing things in the VoxelWorld. The code is still
     a bit messy...
     """
-
     def x(self, construction, world, *args, **kwargs):
         funcname = 'x_' + construction
         if not hasattr(self, funcname):
@@ -166,7 +165,19 @@ class ConstructionKitMixin(object):
         )
 
     def x_floor(self, offset, size=ROOM_SIZE):
-        yield from self.x_rectangular_prism(offset, FineVector(size, size, 1))
+        # Get the center for an arbitrary sized room
+        room_center = VOXEL_OFFSET - FineVector(ROOM_SIZE / 2, ROOM_SIZE / 2, 0)
+        print('room center', room_center)
+        for i in range(ROOM_SIZE):
+            # Loop across the 'bottom' edge
+            off = offset + FineVector(i, 0, 0)
+            print('off', off)
+            # sum these two together to get the offset for a column to start from.
+            lop = self.pos + off.offset_rotate(self.orientation, offset=room_center)
+            print('lop', lop)
+            # And then yield those.
+            for point in column_points(ROOM_SIZE, NORTH.rotate(self.orientation)):
+                yield point + lop
 
     def x_wall(self, offset, face, limit_j=8):
         local_position = self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)

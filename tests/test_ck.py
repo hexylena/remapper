@@ -191,8 +191,6 @@ def test_ck_mixin():
     ckm.orientation = '-y'
     observed_points = list(ckm.x_column(FineVector(0, 0, 0), NORTH, 4))
     expected_points = [FineVector(71 - i, 64, 64) for i in range(4)]
-    print(expected_points)
-    print([x.vox() for x in observed_points])
     for e, o in zip(expected_points, observed_points):
         assert e == o
 
@@ -267,11 +265,20 @@ def test_ck_unknown_func():
         ckm.x('asdf', None)
 
 
-def test_ck_known_func():
+def test_ck_known_func_floor():
+    """
+    This test states that no matter what orientation a room is placed in,
+    assuming it is in the same coarse vector, it should occupy the same
+    space, (8, 16) on x and y.
+    """
     vox = VoxelWorld(size=4)
     ckm = ConstructionKitMixin()
     ckm.pos = CoarseVector(1, 1, 1).fine()
-    ckm.orientation = '+x'
-    ckm.x('floor', vox, SELF, size=8)
-    print(sorted(vox.world.keys()))
-    assert False
+    for orientation in ('+x', '-x', '+y', '-y'):
+        vox = VoxelWorld(size=4)
+        ckm.orientation = orientation
+        ckm.x('floor', vox, SELF, size=8)
+        for (x, y, z) in vox.world.keys():
+            assert 8 <= x < 16
+            assert 8 <= y < 16
+            assert 8 == z
