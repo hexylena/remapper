@@ -1,10 +1,10 @@
-Redeclipse map library 
-======================
+Redeclipse map library |travis| |docs|
+======================================
 
-.. image:: https://travis-ci.org/erasche/remapper.svg?branch=master
+.. |travis| image:: https://travis-ci.org/erasche/remapper.svg?branch=master
    :target: https://travis-ci.org/erasche/remapper
 
-.. image:: https://readthedocs.org/projects/remapper/badge/?version=latest
+.. |docs| image:: https://readthedocs.org/projects/remapper/badge/?version=latest
    :target: https://travis-ci.org/erasche/remappe://remapper.readthedocs.io/en/latest/
 
 .. figure:: ./maps/hxr-4-straumsvik.screenshot.png
