@@ -282,3 +282,45 @@ def test_ck_known_func_floor():
             assert 8 <= x < 16
             assert 8 <= y < 16
             assert 8 == z
+
+
+def test_ck_ceil():
+    """
+    This test states that no matter what orientation a room is placed in,
+    assuming it is in the same coarse vector, it should occupy the same
+    space, (8, 16) on x and y.
+    """
+    vox = VoxelWorld(size=4)
+    ckm = ConstructionKitMixin()
+    ckm.pos = CoarseVector(1, 1, 1).fine()
+    for orientation in ('+x', '-x', '+y', '-y'):
+        vox = VoxelWorld(size=4)
+        ckm.orientation = orientation
+        ckm.x('ceiling', vox, SELF, size=8)
+        for (x, y, z) in vox.world.keys():
+            assert 8 <= x < 16
+            assert 8 <= y < 16
+            assert 15 == z
+
+
+def test_ck_wall():
+    ckm = ConstructionKitMixin()
+    ckm.pos = CoarseVector(1, 1, 1).fine()
+
+    ckm.orientation = '+x'
+    vox = VoxelWorld(size=4)
+    ckm.x('wall', vox, SELF, SOUTH)
+
+    # for (x, y, z) in vox.world.keys():
+        # assert 8 <= x <= 16
+        # assert y == 8
+        # assert 8 <= z <= 16
+
+    vox = VoxelWorld(size=4)
+    ckm.x('wall', vox, SELF, EAST)
+    # for (x, y, z) in vox.world.keys():
+        # assert x == 15
+        # assert 8 <= y <= 16
+        # assert 8 <= z <= 16
+
+    assert False

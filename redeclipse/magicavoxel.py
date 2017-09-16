@@ -12,9 +12,9 @@ def to_magicavoxel(voxel_world, handle):
     handle.write(struct.pack('4s', b'SIZE'))
     handle.write(struct.pack('i', 12))
     handle.write(struct.pack('i', 0))
-    handle.write(struct.pack('i', voxel_world.xmax))  # x
-    handle.write(struct.pack('i', voxel_world.ymax))  # y
-    handle.write(struct.pack('i', voxel_world.zmax))  # z
+    handle.write(struct.pack('i', int(voxel_world.xmax)))  # x
+    handle.write(struct.pack('i', int(voxel_world.ymax)))  # y
+    handle.write(struct.pack('i', int(voxel_world.zmax)))  # z
     # xyzi chunk
     handle.write(struct.pack('4s', b'XYZI'))
     handle.write(struct.pack('i', cs))  # chunk size TODO
@@ -22,7 +22,7 @@ def to_magicavoxel(voxel_world, handle):
     handle.write(struct.pack('i', len(voxel_world.world)))  # numvoxels
 
     def m(x):
-        return bytes(chr(x), 'ascii')
+        return bytes(chr(int(x)), 'ascii')
 
     for ((x, y, z), value) in voxel_world.world.items():
         handle.write(struct.pack('cccc', m(x), m(y), m(z), m(1)))

@@ -55,9 +55,9 @@ def test_basevector():
         assert x * 4 == Class(4, 0, 0)
         assert y * 2 == Class(0, 2, 0)
         # Mult + Additions
-        assert x * 4 + y * 2 + z * 1 == v
+        assert (x * 4) + (y * 2) + (z * 1) == v
         # Mult + Sub
-        assert v - x * 3 - y * 2 - z * 1 == x
+        assert v - (x * 3) - (y * 2) - (z * 1) == x
 
         # Rotations
         assert v.rotate('+x') == v
@@ -122,3 +122,14 @@ def test_comparison():
 
     for ai, bi in zip(sorted(collection), sorted(col2)):
         assert ai == bi
+
+
+def test_addition():
+    a = FineVector(8, 8, 8)
+    b = CoarseVector(1, 1, 1)
+
+    # Addition should work both ways.
+    assert a + b == CoarseVector(2, 2, 2)
+    assert a + b == FineVector(16, 16, 16)
+    assert b + a == CoarseVector(2, 2, 2)
+    assert b + a == FineVector(16, 16, 16)

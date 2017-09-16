@@ -1,6 +1,6 @@
 from redeclipse.objects import cube
 import random
-from redeclipse.vector.orientations import VEC_ORIENT_MAP, get_vector_rotation, TILE_VOX_OFF, VOXEL_OFFSET, NORTH
+from redeclipse.vector.orientations import TILE_VOX_OFF, VOXEL_OFFSET, NORTH, SOUTH, EAST, WEST, ABOVE
 from redeclipse.vector import FineVector
 ROOM_SIZE = 8
 
@@ -159,39 +159,60 @@ class ConstructionKitMixin(object):
             yield point + local_position
 
     def x_ceiling(self, offset, size=ROOM_SIZE):
-        yield from self.x_rectangular_prism(
-            offset + FineVector(0, 0, 7),
-            FineVector(size, size, 1)
-        )
-
-    def x_floor(self, offset, size=ROOM_SIZE):
-        # Get the center for an arbitrary sized room
         room_center = VOXEL_OFFSET - FineVector(ROOM_SIZE / 2, ROOM_SIZE / 2, 0)
-        print('room center', room_center)
         for i in range(ROOM_SIZE):
             # Loop across the 'bottom' edge
-            off = offset + FineVector(i, 0, 0)
-            print('off', off)
+            off = offset + FineVector(i, 0, 7)
             # sum these two together to get the offset for a column to start from.
             lop = self.pos + off.offset_rotate(self.orientation, offset=room_center)
-            print('lop', lop)
             # And then yield those.
             for point in column_points(ROOM_SIZE, NORTH.rotate(self.orientation)):
                 yield point + lop
 
+    def x_floor(self, offset, size=ROOM_SIZE):
+        # Get the center for an arbitrary sized room
+        room_center = VOXEL_OFFSET - FineVector(ROOM_SIZE / 2, ROOM_SIZE / 2, 0)
+        for i in range(ROOM_SIZE):
+            # Loop across the 'bottom' edge
+            off = offset + FineVector(i, 0, 0)
+            # sum these two together to get the offset for a column to start from.
+            lop = self.pos + off.offset_rotate(self.orientation, offset=room_center)
+            # And then yield those.
+            for point in column_points(ROOM_SIZE, NORTH.rotate(self.orientation)):
+                print(point, lop, point+lop)
+                yield point + lop
+
+    def x_low_wall(self, offset, face):
+        yield from self.x_wall(offset, face, limit_j=2)
+
     def x_wall(self, offset, face, limit_j=8):
-        local_position = self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
-        real_face = self.x_get_face(face)
+        # Get a vector for where we should start drawing.
+        if face == SOUTH:
+            vec = 0
+        elif face == EAST:
+            vec = 90
+        elif face == NORTH:
+            vec = 180
+        elif face == WEST:
+            vec = 270
 
-        for point in wall_points(ROOM_SIZE, real_face, limit_j=limit_j):
-            yield point + local_position
+        print('wall', offset, face, limit_j, vec)
+        for i in range(8):
+            # Loop across the 'bottom' edge
+            off = FineVector(i, 0, 0).offset_rotate(vec, offset=TILE_VOX_OFF)
+            # sum these two together to get the offset for a column to start from.
+            # lop = self.pos + off.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
+            print('\t', FineVector(i, 0, 0).offset_rotate(vec, offset=TILE_VOX_OFF))
+            # And then yield those.
+            for point in column_points(ROOM_SIZE, ABOVE):
+                yield point
 
-    def x_ring(self, offset, size):
-        # world, FineVector(-2, -2, i), 12, tex=accent_tex)
-        yield from self.x_rectangular_prism(offset, FineVector(1, size - 1, 1))
-        yield from self.x_rectangular_prism(offset, FineVector(size - 1, 1, 1))
-        yield from self.x_rectangular_prism(offset + FineVector(0, size - 1, 0), FineVector(size, 1, 1))
-        yield from self.x_rectangular_prism(offset + FineVector(size - 1, 0, 0), FineVector(1, size, 1))
+    # def x_ring(self, offset, size):
+        # # world, FineVector(-2, -2, i), 12, tex=accent_tex)
+        # yield from self.x_rectangular_prism(offset, FineVector(1, size - 1, 1))
+        # yield from self.x_rectangular_prism(offset, FineVector(size - 1, 1, 1))
+        # yield from self.x_rectangular_prism(offset + FineVector(0, size - 1, 0), FineVector(size, 1, 1))
+        # yield from self.x_rectangular_prism(offset + FineVector(size - 1, 0, 0), FineVector(1, size, 1))
 
     def x_rectangular_prism(self, offset, xyz):
         xyz = xyz.rotate(self.orientation).vox()
@@ -201,9 +222,6 @@ class ConstructionKitMixin(object):
         for point in cube_points(xyz.x, xyz.y, xyz.z):
             yield point + local_position
 
-    def x_low_wall(self, offset, face):
-        yield from self._x_wall(offset, face, limit_j=2)
-
     def x_get_face(self, face):
         """
         Get the appropriate translation of ``face`` for ``self.orientation``
@@ -211,12 +229,14 @@ class ConstructionKitMixin(object):
         :param face: The face that we want to represent
         :type face: redeclipse.vector.CoarseVector
 
+
+        >>> f(0, 0, 0).offset_rotate(90, offset=f(-3.5, -3.5, .5))
+        FV(BV(7.0, 0.0, 0.0))
+        >>> f(0, 0, 0).offset_rotate(180, offset=f(-3.5, -3.5, .5))
+        FV(BV(7.0, 7.0, 0.0))
+        >>> f(0, 0, 0).offset_rotate(270, offset=f(-3.5, -3.5, .5))
+        FV(BV(0.0, 7.0, 0.0))
+
         :returns: New style direction
         :rtype: redeclipse.vector.CoarseVector
         """
-        # Convert self's orientation to a vector
-        ori_vec = VEC_ORIENT_MAP[self.orientation]
-        # Get the "rotation" of this vector (i.e. 0/90/180/270)
-        ori_dir = get_vector_rotation(ori_vec)
-        # Now we add the rotation of our orientation to the requested face.
-        return face.rotate(ori_dir)

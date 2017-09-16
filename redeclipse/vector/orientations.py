@@ -43,10 +43,10 @@ BELOW_FINE = FineVector(0, 0, -1)
 
 #: Map allowing conversion of old style ±xyz to new CoarseVector directions
 VEC_ORIENT_MAP = {
-    '+x': NORTH,
-    '-x': SOUTH,
-    '+y': EAST,
-    '-y': WEST,
+    '+x': EAST,
+    '-x': WEST,
+    '+y': NORTH,
+    '-y': SOUTH,
     '+z': ABOVE,
     '-z': BELOW,
 }

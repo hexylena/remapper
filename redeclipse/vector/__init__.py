@@ -30,18 +30,24 @@ class BaseVector(object):
         self.z = z
 
     def __add__(self, other):
-        return self.__class__(
-            self.x + other.x,
-            self.y + other.y,
-            self.z + other.z,
-        )
+        if self.__class__ == other.__class__:
+            return self.__class__(
+                self.x + other.x,
+                self.y + other.y,
+                self.z + other.z,
+            )
+        else:
+            raise Exception("addition not defined for dissimilar classes")
 
     def __sub__(self, other):
-        return self.__class__(
-            self.x - other.x,
-            self.y - other.y,
-            self.z - other.z,
-        )
+        if self.__class__ == other.__class__:
+            return self.__class__(
+                self.x - other.x,
+                self.y - other.y,
+                self.z - other.z,
+            )
+        else:
+            raise Exception("addition not defined for dissimilar classes")
 
     def __mul__(self, m):
         return self.__class__(
@@ -247,6 +253,24 @@ class FineVector(BaseVector):
     def fine(self):
         return self
 
+    def __add__(self, other):
+        a = self.fine()
+        b = other.fine()
+        return FineVector(
+            a.x + b.x,
+            a.y + b.y,
+            a.z + b.z,
+        )
+
+    def __sub__(self, other):
+        a = self.fine()
+        b = other.fine()
+        return FineVector(
+            a.x - b.x,
+            a.y - b.y,
+            a.z - b.z,
+        )
+
 
 class CoarseVector(BaseVector):
 
@@ -282,3 +306,39 @@ class CoarseVector(BaseVector):
             newvec.y,
             newvec.z
         )
+
+    def __add__(self, other):
+        if isinstance(other, CoarseVector):
+            return CoarseVector(
+                self.x + other.x,
+                self.y + other.y,
+                self.z + other.z,
+            )
+        elif isinstance(other, FineVector):
+            a = self.fine()
+            b = other.fine()
+            return FineVector(
+                a.x + b.x,
+                a.y + b.y,
+                a.z + b.z,
+            )
+        else:
+            raise Exception("Unsupported operand")
+
+    def __sub__(self, other):
+        if isinstance(other, CoarseVector):
+            return CoarseVector(
+                self.x - other.x,
+                self.y - other.y,
+                self.z - other.z,
+            )
+        elif isinstance(other, FineVector):
+            a = self.fine()
+            b = other.fine()
+            return FineVector(
+                a.x - b.x,
+                a.y - b.y,
+                a.z - b.z,
+            )
+        else:
+            raise Exception("Unsupported operand")
