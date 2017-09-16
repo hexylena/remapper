@@ -142,11 +142,11 @@ def test_ck_mixin():
     assert ckm.pos.rotate('-y') == ckm.pos.rotate(90)
     assert ckm.pos.rotate(90) == FineVector(-64, 64, 64)
 
-    # ckm.orientation = '+x'
-    # expected_points = [FineVector(64 + i, 64, 64) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), NORTH, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
+    ckm.orientation = '+x'
+    expected_points = [FineVector(64 + i, 64, 64) for i in range(4)]
+    observed_points = list(ckm._x_column(FineVector(0, 0, 0), NORTH, 4))
+    for e, o in zip(expected_points, observed_points):
+        assert e == o
 
     # expected_points = [FineVector(64, 64 + i, 64) for i in range(4)]
     # observed_points = list(ckm._x_column(FineVector(0, 0, 0), EAST, 4))
