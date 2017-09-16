@@ -179,7 +179,7 @@ class ConstructionKitMixin(object):
             lop = self.pos + off.offset_rotate(self.orientation, offset=room_center)
             # And then yield those.
             for point in column_points(ROOM_SIZE, NORTH.rotate(self.orientation)):
-                print(point, lop, point+lop)
+                print(point, lop, point + lop)
                 yield point + lop
 
     def x_low_wall(self, offset, face):
@@ -199,7 +199,7 @@ class ConstructionKitMixin(object):
         print('wall', offset, face, limit_j, vec)
         for i in range(8):
             # Loop across the 'bottom' edge
-            off = FineVector(i, 0, 0).offset_rotate(vec, offset=TILE_VOX_OFF)
+            # off = FineVector(i, 0, 0).offset_rotate(vec, offset=TILE_VOX_OFF)
             # sum these two together to get the offset for a column to start from.
             # lop = self.pos + off.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
             print('\t', FineVector(i, 0, 0).offset_rotate(vec, offset=TILE_VOX_OFF))
