@@ -4,13 +4,13 @@ from redeclipse.vector import CoarseVector, FineVector
 #: Reference to own position
 SELF = CoarseVector(0, 0, 0)
 #: One (coarse) position north of the current location
-NORTH = CoarseVector(1, 0, 0)
-#: One (coarse) position east of the current location
-EAST = NORTH.rotate(90)
+NORTH = CoarseVector(0, 1, 0)
+#: One (coarse) position west of the current location
+WEST = NORTH.rotate(90)
 #: One (coarse) position south of the current location
 SOUTH = NORTH.rotate(180)
-#: One (coarse) position west of the current location
-WEST = NORTH.rotate(270)
+#: One (coarse) position east of the current location
+EAST = NORTH.rotate(270)
 
 #: Northwest of current location
 NORTHWEST = NORTH + WEST
@@ -30,11 +30,14 @@ BELOW = CoarseVector(0, 0, -1)
 TILE_CENTER = FineVector(4, 4, 0)
 #: Vertical center of the current 8x8x8 cube. Combine with TILE_CENTER for the actual cube center.
 HALF_HEIGHT = FineVector(0, 0, 4)
+#: Voxel offset (to the center of the voxel from the bottom left corner of the voxel)
+VOXEL_OFFSET = FineVector(0.5, 0.5, 0.5)
+TILE_VOX_OFF = VOXEL_OFFSET - TILE_CENTER
 
 NORTH_FINE = FineVector(1, 0, 0)
-EAST_FINE = NORTH_FINE.rotate(90)
+WEST_FINE = NORTH_FINE.rotate(90)
 SOUTH_FINE = NORTH_FINE.rotate(180)
-WEST_FINE = NORTH_FINE.rotate(270)
+EAST_FINE = NORTH_FINE.rotate(270)
 ABOVE_FINE = FineVector(0, 0, 1)
 BELOW_FINE = FineVector(0, 0, -1)
 
@@ -61,9 +64,9 @@ def get_vector_rotation(vec):
     """
     if vec == NORTH:
         return 0
-    elif vec == EAST:
+    elif vec == WEST:
         return 90
     elif vec == SOUTH:
         return 180
-    elif vec == WEST:
+    elif vec == EAST:
         return 270

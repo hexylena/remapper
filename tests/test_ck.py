@@ -1,7 +1,10 @@
-from redeclipse.prefabs import Room
-from redeclipse.vector import CoarseVector, FineVector
-from redeclipse.vector.orientations import NORTH, SOUTH, EAST, WEST, ABOVE, BELOW
+import pytest
+
+# from redeclipse.prefabs import Room
 from redeclipse.prefabs.construction_kit import wall_points, column_points, ConstructionKitMixin, cube_points, subtract_or_skip
+from redeclipse.vector import FineVector
+from redeclipse.vector.orientations import NORTH, SOUTH, EAST, WEST, ABOVE, BELOW, VOXEL_OFFSET, TILE_VOX_OFF
+from redeclipse.voxel import VoxelWorld
 
 
 def test_wall_points_ltz():
@@ -87,19 +90,19 @@ def test_wall_points_limit_ij():
 def test_column_points():
     n = column_points(2, NORTH)
     next(n)
-    assert next(n) == FineVector(1, 0, 0)
+    assert next(n) == FineVector(0, 1, 0)
 
     n = column_points(2, SOUTH)
     next(n)
-    assert next(n) == FineVector(-1, 0, 0)
+    assert next(n) == FineVector(0, -1, 0)
 
     n = column_points(2, EAST)
     next(n)
-    assert next(n) == FineVector(0, 1, 0)
+    assert next(n) == FineVector(1, 0, 0)
 
     n = column_points(2, WEST)
     next(n)
-    assert next(n) == FineVector(0, -1, 0)
+    assert next(n) == FineVector(-1, 0, 0)
 
     n = column_points(2, ABOVE)
     next(n)
@@ -134,6 +137,15 @@ def test_sos_skip():
         assert not subtract_or_skip(False, 1)
 
 
+def test_vector_to_voxelvec():
+    q = VOXEL_OFFSET
+    assert q.rotate(180) == FineVector(-0.5, -0.5, 0.5)
+    assert q.vox() == FineVector(0, 0, 0)
+    assert q.rotate(180).vox() == FineVector(-1, -1, 0)
+    assert q.rotate(90).vox() == FineVector(-1, 0, 0)
+    assert q.rotate(270).vox() == FineVector(0, -1, 0)
+
+
 def test_ck_mixin():
     ckm = ConstructionKitMixin()
     ckm.pos = FineVector(64, 64, 64)
@@ -142,48 +154,62 @@ def test_ck_mixin():
     assert ckm.pos.rotate('-y') == ckm.pos.rotate(90)
     assert ckm.pos.rotate(90) == FineVector(-64, 64, 64)
 
-    ckm.orientation = '+x'
-    expected_points = [FineVector(64 + i, 64, 64) for i in range(4)]
-    observed_points = list(ckm._x_column(FineVector(0, 0, 0), NORTH, 4))
+    # check the general algorithm.
+    # for a point, rotate it around the tile center.
+    # This means use vector math to find the different
+    oa = FineVector(0, 0, 0)  # SW
+    ob = FineVector(0, 7, 0)  # NW
+    oc = FineVector(7, 7, 0)  # NE
+    od = FineVector(7, 0, 0)  # SE
+
+    va = FineVector(0, 0, 0)  # SW
+    vb = FineVector(0, 7, 0)  # NW
+    vc = FineVector(7, 7, 0)  # NE
+    vd = FineVector(7, 0, 0)  # SE
+    # First, offset any and all vectors by their half-voxel offset.
+    va += TILE_VOX_OFF
+    vb += TILE_VOX_OFF
+    vc += TILE_VOX_OFF
+    vd += TILE_VOX_OFF
+    # Now we have voxels around the (0, 0, 0) point where we can safely rotate.
+    va = va.rotate(90)
+    vb = vb.rotate(90)
+    vc = vc.rotate(90)
+    vd = vd.rotate(90)
+    # Now we have to shift them back
+    va -= TILE_VOX_OFF
+    vb -= TILE_VOX_OFF
+    vc -= TILE_VOX_OFF
+    vd -= TILE_VOX_OFF
+
+    # ok, algo looks good!
+    assert vb == oa
+    assert vc == ob
+    assert vd == oc
+    assert va == od
+
+    ckm.orientation = '-y'
+    observed_points = list(ckm.x_column(FineVector(0, 0, 0), NORTH, 4))
+    expected_points = [FineVector(71 - i, 64, 64) for i in range(4)]
+    print(expected_points)
+    print([x.vox() for x in observed_points])
     for e, o in zip(expected_points, observed_points):
         assert e == o
 
-    # expected_points = [FineVector(64, 64 + i, 64) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), EAST, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
+    expected_points = [FineVector(71, 64 + i, 64) for i in range(4)]
+    observed_points = list(ckm.x_column(FineVector(0, 0, 0), EAST, 4))
+    for e, o in zip(expected_points, observed_points):
+        assert e == o
 
-    # expected_points = [FineVector(64 - i, 64, 64) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), SOUTH, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
+    expected_points = [FineVector(71 + i, 64, 64) for i in range(4)]
+    observed_points = list(ckm.x_column(FineVector(0, 0, 0), SOUTH, 4))
+    for e, o in zip(expected_points, observed_points):
+        assert e == o
 
-    # expected_points = [FineVector(64, 64 - i, 64) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), WEST, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
-
-
-    # ckm.orientation = '-x'
-    # expected_points = [FineVector(64 + 8 - i, 64 + 8, 64) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), NORTH, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
-
-    # expected_points = [FineVector(64 + 8, 64 + 8 - i, 64) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), EAST, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
-
-    # expected_points = [FineVector(64 + 8 + i, 64 + 8, 64) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), SOUTH, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
-
-    # expected_points = [FineVector(64 + 8, 64 + 8 + i, 64) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), WEST, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
+    expected_points = [FineVector(71, 64 - i, 64) for i in range(4)]
+    observed_points = list(ckm.x_column(FineVector(0, 0, 0), WEST, 4))
+    for e, o in zip(expected_points, observed_points):
+        assert e == o
 
 
 def test_ck_mixin2():
@@ -193,49 +219,6 @@ def test_ck_mixin2():
     assert ckm.pos.rotate('+x') == ckm.pos
     assert ckm.pos.rotate('-y') == ckm.pos.rotate(90)
     assert ckm.pos.rotate(90) == FineVector(-56, 56, 56)
-
-    # ckm.orientation = '+x'
-    # expected_points = [FineVector(56 + i, 56, 56) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), NORTH, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
-
-    # expected_points = [FineVector(56, 56 + i, 56) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), EAST, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
-
-    # expected_points = [FineVector(56 - i, 56, 56) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), SOUTH, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
-
-    # expected_points = [FineVector(56, 56 - i, 56) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), WEST, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
-
-
-    # ckm.orientation = '-x'
-    # expected_points = [FineVector(56 + 8 - i, 56 + 8, 56) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), NORTH, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
-
-    # expected_points = [FineVector(56 + 8, 56 + 8 - i, 56) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), EAST, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
-
-    # expected_points = [FineVector(56 + 8 + i, 56 + 8, 56) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), SOUTH, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
-
-    # expected_points = [FineVector(56 + 8, 56 + 8 + i, 56) for i in range(4)]
-    # observed_points = list(ckm._x_column(FineVector(0, 0, 0), WEST, 4))
-    # for e, o in zip(expected_points, observed_points):
-        # assert e == o
 
 
 def test_ck_mixin_3():
@@ -250,5 +233,45 @@ def test_ck_mixin_3():
     for orientation in ('+x', '-x', '+y', '-y'):
         ckm.orientation = orientation
         # Column straight up from the southwest corner.
-        for pt in ckm._x_column(FineVector(1, 1, 0), ABOVE, 8):
+        for pt in ckm.x_column(FineVector(1, 1, 0), ABOVE, 8):
             assert ckm.pos < pt < bounds
+
+
+def test_ck_mixin_floorceil():
+    ckm = ConstructionKitMixin()
+    ckm.pos = FineVector(16, 8, 0)
+
+    lower_bound = ckm.pos - FineVector(8, 8, 0)
+    upper_bound = ckm.pos + FineVector(8, 8, 1)
+
+    # Ok, let's test some invariants. Given a cube with a column along one
+    # edge, no matter which way it is rotated, the voxels in the cube should
+    # never leave the 8x8x8 space.
+
+    for orientation in ('+x', '-x', '+y', '-y'):
+        ckm.orientation = orientation
+        # Column straight up from the southwest corner.
+        for pt in ckm.x_floor(FineVector(0, 0, 0), 8):
+            assert lower_bound <= pt <= upper_bound
+
+    ckm.orientation = '+y'
+    # Column straight up from the southwest corner.
+    for pt in ckm.x_floor(FineVector(0, 0, 0), 8):
+        assert lower_bound <= pt <= upper_bound
+
+
+def test_ck_unknown_func():
+    ckm = ConstructionKitMixin()
+
+    with pytest.raises(Exception):
+        ckm.x('asdf', None)
+
+
+def test_ck_known_func():
+    vox = VoxelWorld(size=4)
+    ckm = ConstructionKitMixin()
+    ckm.pos = FineVector(8, 8, 8).fine()
+    ckm.orientation = '+y'
+    ckm.x('floor', vox, FineVector(0, 0, 0), size=8)
+    print(sorted(vox.world.keys()))
+    assert False

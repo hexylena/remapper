@@ -1,4 +1,4 @@
-from math import sin, cos, pi
+from math import sin, cos, pi, floor
 
 
 def rotate_yaw(angle, orientation):
@@ -16,7 +16,7 @@ def rotate_yaw(angle, orientation):
 class BaseVector(object):
 
     def __hash__(self):
-        return (0 << 31) + (self.x << 20) + (self.y << 10) + self.z
+        return (0 << 31) + (floor(self.x) << 20) + (floor(self.y) << 10) + floor(self.z)
 
     def __eq__(self, other):
         return isinstance(other, BaseVector) and \
@@ -25,40 +25,48 @@ class BaseVector(object):
             self.z == other.z
 
     def __init__(self, x, y, z):
-        self.x = int(x)
-        self.y = int(y)
-        self.z = int(z)
+        self.x = x
+        self.y = y
+        self.z = z
 
     def __add__(self, other):
-        return BaseVector(
+        return self.__class__(
             self.x + other.x,
             self.y + other.y,
             self.z + other.z,
         )
 
     def __sub__(self, other):
-        return BaseVector(
+        return self.__class__(
             self.x - other.x,
             self.y - other.y,
             self.z - other.z,
         )
 
     def __mul__(self, m):
-        return BaseVector(
+        return self.__class__(
             self.x * m,
             self.y * m,
             self.z * m
         )
 
-    def __div__(self, m):
-        return BaseVector(
+    def __truediv__(self, m):
+        return self.__class__(
             self.x / m,
             self.y / m,
             self.z / m
         )
 
+    def __floordiv__(self, m):
+        return self.__class__(
+            floor(self.x / m),
+            floor(self.y / m),
+            floor(self.z / m)
+        )
+
     def __repr__(self):
         return 'BV(%s, %s, %s)' % (self.x, self.y, self.z)
+        # return 'BV(%s, %s, %s)VBV(%s, %s, %s)' % (self.x, self.y, self.z, floor(self.x), floor(self.y), floor(self.z))
 
     def __getitem__(self, key):
         if key == 0:
@@ -94,6 +102,15 @@ class BaseVector(object):
                     return True
         return False
 
+    def __le__(self, other):
+        return self == other or self < other
+
+    def vox(self):
+        """
+        Return a voxel-appropriate version of self (i.e. apply floor to drag it to the right location.)
+        """
+        return self.__class__(floor(self.x), floor(self.y), floor(self.z))
+
     def rotate(self, deg):
         """
         Return a new vector, rotated by the specified
@@ -122,11 +139,35 @@ class BaseVector(object):
             raise ValueError("Degree must be a multiple of 90.")
 
         theta = pi * deg / 180
-        return BaseVector(
-            round(self.x * cos(theta) - self.y * sin(theta)),
-            round(self.x * sin(theta) + self.y * cos(theta)),
+        # We allow 0.5 increments for properly centered cubes. So we need to do
+        # the math in double, round it there, then divide by two to ensure
+        # everything is in (0, 0.5, 1, 1.5, ...)
+        return self.__class__(
+            round((2 * self.x * cos(theta)) - (2 * self.y * sin(theta))) / 2,
+            round((2 * self.x * sin(theta)) + (2 * self.y * cos(theta))) / 2,
             self.z
         )
+
+    def offset_rotate(self, deg, offset=None):
+        """
+        Return a new vector, rotated by the specified
+        number of degrees.
+
+        :param deg: degrees (0, 90, 180, ...) or orientation (+x, -x, ...)
+        :type deg: str or int
+
+        :param offset: point around which to rotate
+        :type offset: redeclipse.vector.BaseVector (or child thereof)
+
+        Note that rotation is counterclockwise around the z=+1 axis. I.e. use
+        the right handle rule.
+
+        :returns: a new ``redeclipse.vector.BaseVector``, rotated as
+                  needed.
+        :rtype: redeclipse.vector.BaseVector
+        """
+        # TODO: We could auto-vox_off, not sure if this is useful?
+        return (self + offset).rotate(deg) - offset
 
 
 class AbsoluteVector(BaseVector):
@@ -137,7 +178,7 @@ class AbsoluteVector(BaseVector):
     """
 
     def __hash__(self):
-        return (1 << 31) + (self.x << 20) + (self.y << 10) + self.z
+        return (1 << 31) + (floor(self.x) << 20) + (floor(self.y) << 10) + floor(self.z)
 
     def rotate(self, deg):
         """
@@ -177,7 +218,7 @@ class AbsoluteVector(BaseVector):
 class FineVector(BaseVector):
 
     def __hash__(self):
-        return (2 << 31) + (self.x << 20) + (self.y << 10) + self.z
+        return (2 << 31) + (floor(self.x) << 20) + (floor(self.y) << 10) + floor(self.z)
 
     def __eq__(self, other):
         if isinstance(other, CoarseVector):
@@ -199,56 +240,9 @@ class FineVector(BaseVector):
         else:
             return False
 
-    def __add__(self, other):
-        if isinstance(other, CoarseVector):
-            return FineVector(
-                self.x + (8 * other.x),
-                self.y + (8 * other.y),
-                self.z + (8 * other.z)
-            )
-        elif isinstance(other, FineVector):
-            return FineVector(
-                self.x + other.x,
-                self.y + other.y,
-                self.z + other.z
-            )
-        else:
-            raise Exception("Operation not defined for type %s" % type(other))
-
-    def __sub__(self, other):
-        if isinstance(other, CoarseVector):
-            return FineVector(
-                self.x - (8 * other.x),
-                self.y - (8 * other.y),
-                self.z - (8 * other.z)
-            )
-        elif isinstance(other, FineVector):
-            return FineVector(
-                self.x - other.x,
-                self.y - other.y,
-                self.z - other.z
-            )
-        else:
-            raise Exception("Operation not defined for type %s" % type(other))
-
-    def __mul__(self, m):
-        return FineVector(
-            self.x * m,
-            self.y * m,
-            self.z * m
-        )
-
     def __repr__(self):
         rp = super().__repr__()
         return 'FV(%s)' % rp
-
-    def rotate(self, deg):
-        rotation = super().rotate(deg)
-        return FineVector(
-            rotation.x,
-            rotation.y,
-            rotation.z
-        )
 
     def fine(self):
         return self
@@ -257,7 +251,7 @@ class FineVector(BaseVector):
 class CoarseVector(BaseVector):
 
     def __hash__(self):
-        return (3 << 31) + (self.x << 20) + (self.y << 10) + self.z
+        return (3 << 31) + (floor(self.x) << 20) + (floor(self.y) << 10) + floor(self.z)
 
     def __eq__(self, other):
         if isinstance(other, CoarseVector):
@@ -277,56 +271,9 @@ class CoarseVector(BaseVector):
         else:
             return False
 
-    def __add__(self, other):
-        if isinstance(other, CoarseVector):
-            return CoarseVector(
-                self.x + other.x,
-                self.y + other.y,
-                self.z + other.z
-            )
-        elif isinstance(other, FineVector):
-            return FineVector(
-                (8 * self.x) + other.x,
-                (8 * self.y) + other.y,
-                (8 * self.z) + other.z
-            )
-        else:
-            raise Exception("Operation not defined for type %s" % type(other))
-
-    def __sub__(self, other):
-        if isinstance(other, CoarseVector):
-            return CoarseVector(
-                self.x - other.x,
-                self.y - other.y,
-                self.z - other.z
-            )
-        elif isinstance(other, FineVector):
-            return FineVector(
-                (8 * self.x) - other.x,
-                (8 * self.y) - other.y,
-                (8 * self.z) - other.z
-            )
-        else:
-            raise Exception("Operation not defined for type %s" % type(other))
-
-    def __mul__(self, m):
-        return CoarseVector(
-            self.x * m,
-            self.y * m,
-            self.z * m
-        )
-
     def __repr__(self):
         rp = super().__repr__()
         return 'CV(%s)' % rp
-
-    def rotate(self, deg):
-        rotation = super().rotate(deg)
-        return CoarseVector(
-            rotation.x,
-            rotation.y,
-            rotation.z
-        )
 
     def fine(self):
         newvec = self * 8

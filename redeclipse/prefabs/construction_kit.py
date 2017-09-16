@@ -1,6 +1,6 @@
 from redeclipse.objects import cube
 import random
-from redeclipse.vector.orientations import SOUTH, NORTH, WEST, EAST, ABOVE, BELOW, VEC_ORIENT_MAP, get_vector_rotation
+from redeclipse.vector.orientations import SOUTH, NORTH, WEST, EAST, ABOVE, BELOW, VEC_ORIENT_MAP, get_vector_rotation, TILE_VOX_OFF
 from redeclipse.vector import FineVector, CoarseVector, AbsoluteVector
 ROOM_SIZE = 8
 
@@ -15,19 +15,10 @@ def column_points(size, direction):
     :returns: An iterable of FineVectors
     :rtype: list(redeclipse.vector.FineVector)
     """
+    # Convert direction to fine.
+    direction = direction.fine() / 8
     for i in range(size):
-        if direction == NORTH:
-            yield FineVector(i, 0, 0)
-        elif direction == SOUTH:
-            yield FineVector(-i, 0, 0)
-        elif direction == EAST:
-            yield FineVector(0, i, 0)
-        elif direction == WEST:
-            yield FineVector(0, -i, 0)
-        elif direction == ABOVE:
-            yield FineVector(0, 0, i)
-        elif direction == BELOW:
-            yield FineVector(0, 0, -i)
+        yield direction * i
 
 
 def wall_points(size, direction, limit_j=100, limit_i=100):
@@ -148,288 +139,62 @@ class ConstructionKitMixin(object):
     a bit messy...
     """
 
-    def x_column(self, world, offset, direction, length, tex=2, subtract=False, prob=1.0):
-        """
-        Draw a column
+    def x(self, construction, world, *args, **kwargs):
+        funcname = 'x_' + construction
+        if not hasattr(self, funcname):
+            raise Exception("Unknown function")
+        func = getattr(self, funcname)
+        tex = 2
+        subtract = kwargs.get('subtract', False)
+        prob = kwargs.get('prob', 1.1)
+        if 'tex' in kwargs:
+            tex = kwargs['tex']
+            del kwargs['tex']
 
-        :param world: The universe
-        :type world: redeclipse.voxel.VoxelWorld
-
-        :param offset: The offset to start drawing at.
-        :type offset: redeclipse.vector.FineVector or redeclipse.vector.CoarseVector
-
-        :param direction: The direction to draw the column in
-        :type direction: str
-
-        :param length: The length of the column
-        :type length: str
-
-        :param tex: Texture index
-        :type tex: int
-
-        :param subtract: Should we instead subtract the selected space
-        :type subtract: boolean
-
-        :param prob: Probability of placing any given cube.
-        :type prob: float
-        """
-        for point in self._x_column(offset, direction, length):
+        for point in func(*args, **kwargs):
             if subtract_or_skip(subtract, prob):
                 world.del_pointv(point)
                 continue
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
-    def _x_column(self, offset, direction, length):
-        print('_x_column', self.orientation)
-        print('off', offset)
-        tmp = (FineVector(4, 4, 0) - offset).rotate(self.orientation)
-        local_position = self.pos + FineVector(4, 4, 0) + tmp
-        print('lop', local_position)
-        # Then get the orientation, rotated, and converted to +/-xyz
+
+    def x_column(self, offset, direction, length):
+        local_position = self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
         for point in column_points(length, direction.rotate(self.orientation)):
             yield point + local_position
 
-    def x_ceiling(self, world, offset, tex=2, size=ROOM_SIZE, subtract=False, prob=1.0):
-        """
-        Draw a ceiling
+    def x_ceiling(self, offset, size=ROOM_SIZE):
+        yield from self.x_rectangular_prism(
+            offset + FineVector(0, 0, 7),
+            AbsoluteVector(size, size, 1)
+        )
 
-        :param world: The universe
-        :type world: redeclipse.voxel.VoxelWorld
+    def x_floor(self, offset, size=ROOM_SIZE):
+        yield from self.x_rectangular_prism(offset, AbsoluteVector(size, size, 1))
 
-        :param offset: The offset to start drawing at.
-        :type offset: redeclipse.vector.FineVector or redeclipse.vector.CoarseVector
-
-        :param size: The size of the wall (usually 8)
-        :type size: str
-
-        :param tex: Texture index
-        :type tex: int
-
-        :param subtract: Should we instead subtract the selected space
-        :type subtract: boolean
-
-        :param prob: Probability of placing any given cube.
-        :type prob: float
-        """
-        for point in self._x_ceiling(offset, size=size):
-            if subtract_or_skip(subtract, prob):
-                world.del_pointv(point)
-                continue
-            world.set_pointv(point, cube.newtexcube(tex=tex))
-
-    def _x_ceiling(self, offset, size=ROOM_SIZE):
-        for point in self._x_rectangular_prism(
-                offset + FineVector(0, 0, 7),
-                AbsoluteVector(size, size, 1)
-        ):
-            yield point
-
-    def x_floor(self, world, offset, tex=2, size=ROOM_SIZE, subtract=False, prob=1.0):
-        """
-        Draw a floor
-
-        :param world: The universe
-        :type world: redeclipse.voxel.VoxelWorld
-
-        :param offset: The offset to start drawing at.
-        :type offset: redeclipse.vector.FineVector or redeclipse.vector.CoarseVector
-
-        :param size: The size of the floor
-        :type size: str
-
-        :param tex: Texture index
-        :type tex: int
-
-        :param subtract: Should we instead subtract the selected space
-        :type subtract: boolean
-
-        :param prob: Probability of placing any given cube.
-        :type prob: float
-        """
-        for point in self._x_floor(offset, size=size):
-            if subtract_or_skip(subtract, prob):
-                world.del_pointv(point)
-                continue
-            world.set_pointv(point, cube.newtexcube(tex=tex))
-
-    def _x_floor(self, offset, size=ROOM_SIZE):
-        for point in self._x_rectangular_prism(offset, AbsoluteVector(size, size, 1)):
-            yield point
-
-    def x_wall(self, world, offset, face, tex=2, subtract=False, prob=1.0):
-        """
-        Draw a wall (non-floor)
-
-        :param world: The universe
-        :type world: redeclipse.voxel.VoxelWorld
-
-        :param offset: The offset to start drawing at.
-        :type offset: redeclipse.vector.FineVector or redeclipse.vector.CoarseVector
-
-        :param face: The face to draw the wall on
-        :type face: redeclipse.vector.orientations.NORTH or redeclipse.vector.orientations.EAST or
-                    redeclipse.vector.orientations.SOUTH or redeclipse.vector.orientations.WEST or
-                    redeclipse.vector.orientations.BELOW or redeclipse.vector.orientations.ABOVE
-
-        :param size: The size of the floor
-        :type size: str
-
-        :param tex: Texture index
-        :type tex: int
-
-        :param subtract: Should we instead subtract the selected space
-        :type subtract: boolean
-
-        :param prob: Probability of placing any given cube.
-        :type prob: float
-        """
-        for point in self._x_wall(offset, face):
-            if subtract_or_skip(subtract, prob):
-                world.del_pointv(point)
-                continue
-            world.set_pointv(point, cube.newtexcube(tex=tex))
-
-    def _x_wall(self, offset, face):
-        offset = offset.rotate(self.orientation)
-        local_position = self.pos + offset
+    def x_wall(self, offset, face, limit_j=8):
+        local_position = self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
         real_face = self.x_get_face(face)
 
-        for point in wall_points(ROOM_SIZE, real_face):
+        for point in wall_points(ROOM_SIZE, real_face, limit_j=limit_j):
             yield point + local_position
 
-    def x_get_adjustment(self):
-        """
-        Get the offset/adjustment needed in some circumstances.
-
-        :returns: a vector to be added to position
-        :rtype: redeclipse.vector.CoarseVector
-        """
-        if self.orientation == '+x':
-            return CoarseVector(0, 0, 0)
-        elif self.orientation == '-x':
-            return CoarseVector(1, 1, 0)
-        elif self.orientation == '+y':
-            return CoarseVector(1, 0, 0)
-        elif self.orientation == '-y':
-            return CoarseVector(0, 1, 0)
-
-    def x_ring(self, world, offset, size, tex=2, subtract=False, prob=1.0):
-        """
-        Draw a ring
-
-        :param world: The universe
-        :type world: redeclipse.voxel.VoxelWorld
-
-        :param offset: The offset to start drawing at.
-        :type offset: redeclipse.vector.FineVector or redeclipse.vector.CoarseVector
-
-        :param size: The size of the ring
-        :type size: str
-
-        :param tex: Texture index
-        :type tex: int
-
-        :param subtract: Should we instead subtract the selected space
-        :type subtract: boolean
-
-        :param prob: Probability of placing any given cube.
-        :type prob: float
-        """
-        for point in self._x_ring(offset, size):
-            if subtract_or_skip(subtract, prob):
-                world.del_pointv(point)
-                continue
-            world.set_pointv(point, cube.newtexcube(tex=tex))
-
-    def _x_ring(self, offset, size):
+    def x_ring(self, offset, size):
         # world, FineVector(-2, -2, i), 12, tex=accent_tex)
-        for point in self._x_rectangular_prism(offset, AbsoluteVector(1, size - 1, 1)):
-            yield point
-        for point in self._x_rectangular_prism(offset, AbsoluteVector(size - 1, 1, 1)):
-            yield point
-        for point in self._x_rectangular_prism(offset + FineVector(0, size - 1, 0), AbsoluteVector(size, 1, 1)):
-            yield point
-        for point in self._x_rectangular_prism(offset + FineVector(size - 1, 0, 0), AbsoluteVector(1, size, 1)):
-            yield point
+        yield from self._x_rectangular_prism(offset, AbsoluteVector(1, size - 1, 1))
+        yield from self._x_rectangular_prism(offset, AbsoluteVector(size - 1, 1, 1))
+        yield from self._x_rectangular_prism(offset + FineVector(0, size - 1, 0), AbsoluteVector(size, 1, 1))
+        yield from self._x_rectangular_prism(offset + FineVector(size - 1, 0, 0), AbsoluteVector(1, size, 1))
 
-    def x_rectangular_prism(self, world, offset, xyz, tex=2, subtract=False, prob=1.0):
-        """
-        Draw a rectangular prism
-
-        :param world: The universe
-        :type world: redeclipse.voxel.VoxelWorld
-
-        :param offset: The offset to start drawing at.
-        :type offset: redeclipse.vector.FineVector or redeclipse.vector.CoarseVector
-
-        :param xyz: The size of the rectangular prism
-        :type xyz: redeclipse.vector.AbsoluteVector
-
-        :param tex: Texture index
-        :type tex: int
-
-        :param subtract: Should we instead subtract the selected space
-        :type subtract: boolean
-
-        :param prob: Probability of placing any given cube.
-        :type prob: float
-        """
-        for point in self._x_rectangular_prism(offset, xyz):
-            if subtract_or_skip(subtract, prob):
-                world.del_pointv(point)
-                continue
-            world.set_pointv(point, cube.newtexcube(tex=tex))
-
-    def _x_rectangular_prism(self, offset, xyz):
-        offset = offset.rotate(self.orientation)
+    def x_rectangular_prism(self, offset, xyz):
         xyz = xyz.rotate(self.orientation)
-        # We need to offset self.pos with an adjustment vector. Because
-        # reasons. Awful awful reasons.
-        adjustment = self.x_get_adjustment()
-        local_position = self.pos + adjustment + offset
+        local_position = self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
 
         for point in cube_points(xyz.x, xyz.y, xyz.z):
             yield point + local_position
 
-    def x_low_wall(self, world, offset, face, tex=2, subtract=False, prob=1.0):
-        """
-        Draw a low wall (2 high)
-
-        :param world: The universe
-        :type world: redeclipse.voxel.VoxelWorld
-
-        :param offset: The offset to start drawing at.
-        :type offset: redeclipse.vector.FineVector or redeclipse.vector.CoarseVector
-
-        :param face: The face to draw the wall on
-        :type face: redeclipse.vector.orientations.NORTH or redeclipse.vector.orientations.EAST or
-                    redeclipse.vector.orientations.SOUTH or redeclipse.vector.orientations.WEST or
-                    redeclipse.vector.orientations.BELOW or redeclipse.vector.orientations.ABOVE
-
-        :param tex: Texture index
-        :type tex: int
-
-        :param subtract: Should we instead subtract the selected space
-        :type subtract: boolean
-
-        :param prob: Probability of placing any given cube.
-        :type prob: float
-        """
-        for point in self._x_low_wall(offset, face):
-            if subtract_or_skip(subtract, prob):
-                world.del_pointv(point)
-                continue
-            world.set_pointv(point, cube.newtexcube(tex=tex))
-
-    def _x_low_wall(self, offset, face):
-        offset = offset.rotate(self.orientation)
-        local_position = self.pos + offset
-        real_face = self.x_get_face(face)
-        print('>', offset, local_position, real_face)
-
-        for point in wall_points(ROOM_SIZE, real_face, limit_j=2):
-            print('.', point)
-            yield point + local_position
+    def x_low_wall(self, offset, face):
+        yield from self._x_wall(offset, face, limit_j=2)
 
     def x_get_face(self, face):
         """
