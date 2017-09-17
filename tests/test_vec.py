@@ -64,9 +64,9 @@ def test_basevector():
         assert v.rotate(EAST) == v
         assert v.rotate(0) == v
         assert v.rotate(360) == v
-        assert v.rotate(SOUTH) == v.rotate(90)
+        assert v.rotate(NORTH) == v.rotate(90)
         assert v.rotate(WEST) == v.rotate(90).rotate(90)
-        assert v.rotate(NORTH) == v.rotate(90).rotate(90).rotate(90)
+        assert v.rotate(SOUTH) == v.rotate(90).rotate(90).rotate(90)
         # Rotations, pt2 since I screwed them up the first time.
         assert v.rotate(90) == Class(-2, 4, 1)
         assert v.rotate(180) == Class(-4, -2, 1)

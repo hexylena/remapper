@@ -1,4 +1,4 @@
-from math import atan2
+import math
 
 from redeclipse.vector import CoarseVector, FineVector
 
@@ -56,7 +56,7 @@ def get_vector_rotation(vec):
     :returns: A (degree) direction
     :rtype: int
     """
-    return atan2(vec.y, vec.x)
+    return int(180 * math.atan2(vec.y, vec.x) / math.pi)
 
 
 def rotate_yaw(angle, orientation):
@@ -69,3 +69,14 @@ def rotate_yaw(angle, orientation):
     elif orientation == SOUTH:
         return (angle + 270) % 360
     raise Exception("Unexpected orientation")
+
+
+def n(vec):
+    if vec == NORTH:
+        return 'NORTH'
+    elif vec == SOUTH:
+        return 'SOUTH'
+    elif vec == EAST:
+        return 'EAST'
+    elif vec == WEST:
+        return 'WEST'

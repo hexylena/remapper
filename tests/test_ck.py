@@ -19,7 +19,7 @@ def test_wall_points_ltz():
 
 def test_wall_points_gtz():
     a = list(wall_points(
-        4, '+z'
+        4, ABOVE
     ))
 
     for i in range(4):
@@ -151,7 +151,7 @@ def test_ck_mixin():
     ckm.pos = FineVector(64, 64, 64)
 
     assert ckm.pos.rotate(EAST) == ckm.pos
-    assert ckm.pos.rotate(SOUTH) == ckm.pos.rotate(90)
+    assert ckm.pos.rotate(NORTH) == ckm.pos.rotate(90)
     assert ckm.pos.rotate(90) == FineVector(-64, 64, 64)
 
     # check the general algorithm.
@@ -188,25 +188,25 @@ def test_ck_mixin():
     assert vd == oc
     assert va == od
 
-    ckm.orientation = SOUTH
-    observed_points = list(ckm.x_column(FineVector(0, 0, 0), NORTH, 4))
-    expected_points = [FineVector(71 - i, 64, 64) for i in range(4)]
-    for e, o in zip(expected_points, observed_points):
-        assert e == o
-
-    expected_points = [FineVector(71, 64 + i, 64) for i in range(4)]
+    ckm.orientation = WEST
     observed_points = list(ckm.x_column(FineVector(0, 0, 0), EAST, 4))
-    for e, o in zip(expected_points, observed_points):
+    expected_points = [FineVector(71 - i, 71, 64) for i in range(4)]
+    for e, o in zip(sorted(expected_points), sorted(observed_points)):
         assert e == o
 
-    expected_points = [FineVector(71 + i, 64, 64) for i in range(4)]
-    observed_points = list(ckm.x_column(FineVector(0, 0, 0), SOUTH, 4))
-    for e, o in zip(expected_points, observed_points):
+    expected_points = [FineVector(71, 71 - i, 64) for i in range(4)]
+    observed_points = list(ckm.x_column(FineVector(0, 0, 0), NORTH, 4))
+    for e, o in zip(sorted(expected_points), sorted(observed_points)):
         assert e == o
 
-    expected_points = [FineVector(71, 64 - i, 64) for i in range(4)]
+    expected_points = [FineVector(71 + i, 71, 64) for i in range(4)]
     observed_points = list(ckm.x_column(FineVector(0, 0, 0), WEST, 4))
-    for e, o in zip(expected_points, observed_points):
+    for e, o in zip(sorted(expected_points), sorted(observed_points)):
+        assert e == o
+
+    expected_points = [FineVector(71, 71 + i, 64) for i in range(4)]
+    observed_points = list(ckm.x_column(FineVector(0, 0, 0), SOUTH, 4))
+    for e, o in zip(sorted(expected_points), sorted(observed_points)):
         assert e == o
 
 
@@ -215,7 +215,7 @@ def test_ck_mixin2():
     ckm.pos = FineVector(56, 56, 56)
 
     assert ckm.pos.rotate(EAST) == ckm.pos
-    assert ckm.pos.rotate(SOUTH) == ckm.pos.rotate(90)
+    assert ckm.pos.rotate(NORTH) == ckm.pos.rotate(90)
     assert ckm.pos.rotate(90) == FineVector(-56, 56, 56)
 
 
@@ -311,19 +311,19 @@ def test_ck_wall():
     ckm.pos = CoarseVector(1, 1, 1).fine()
 
     ckm.orientation = EAST
-    vox = VoxelWorld(size=4)
-    ckm.x('wall', vox, SELF, SOUTH)
-
-    for (x, y, z) in vox.world.keys():
-        assert 8 <= x <= 16
-        assert y == 8
-        assert 8 <= z <= 16
-    assert len(vox.world.keys()) == 8 * 8
 
     vox = VoxelWorld(size=4)
     ckm.x('wall', vox, SELF, EAST)
     for (x, y, z) in vox.world.keys():
         assert x == 15
+        assert 8 <= y <= 16
+        assert 8 <= z <= 16
+    assert len(vox.world.keys()) == 8 * 8
+
+    vox = VoxelWorld(size=4)
+    ckm.x('wall', vox, SELF, WEST)
+    for (x, y, z) in vox.world.keys():
+        assert x == 8
         assert 8 <= y <= 16
         assert 8 <= z <= 16
     assert len(vox.world.keys()) == 8 * 8
@@ -337,10 +337,10 @@ def test_ck_wall():
     assert len(vox.world.keys()) == 8 * 8
 
     vox = VoxelWorld(size=4)
-    ckm.x('wall', vox, SELF, WEST)
+    ckm.x('wall', vox, SELF, SOUTH)
     for (x, y, z) in vox.world.keys():
-        assert x == 8
-        assert 8 <= y <= 16
+        assert 8 <= x <= 16
+        assert y == 8
         assert 8 <= z <= 16
     assert len(vox.world.keys()) == 8 * 8
 

@@ -1,6 +1,6 @@
 from redeclipse.objects import cube
 import random
-from redeclipse.vector.orientations import TILE_VOX_OFF, VOXEL_OFFSET, NORTH, SOUTH, EAST, WEST, ABOVE, BELOW, get_vector_rotation
+from redeclipse.vector.orientations import TILE_VOX_OFF, VOXEL_OFFSET, NORTH, SOUTH, EAST, WEST, ABOVE, BELOW, get_vector_rotation, n
 from redeclipse.vector import FineVector
 ROOM_SIZE = 8
 
@@ -187,13 +187,17 @@ class ConstructionKitMixin(object):
 
     def x_wall(self, offset, face, limit_j=8):
         # Get a vector for where we should start drawing.
-        vec = get_vector_rotation(face)
-        print('wall', offset, face, vec)
-
-        # print('wall', offset, face, limit_j, vec)
+        print('s.p', self.pos)
+        print('s.o', n(self.orientation))
+        print('offset', offset)
+        print('face', face, n(face))
+        print('f.90', face.rotate(90), n(face.rotate(90)))
+        # We need a FV that represents where to start drawing.
+        tile_center = self.pos + TILE_VOX_OFF
         for i in range(8):
             # Loop across the 'bottom' edge
-            off = FineVector(i, 0, 0).offset_rotate(vec, offset=TILE_VOX_OFF).offset_rotate(self.orientation, offset=TILE_VOX_OFF)
+            off = FineVector(i, 0, 0).offset_rotate(face.rotate(90), offset=TILE_VOX_OFF)
+            print('off', off)
             # sum these two together to get the offset for a column to start from.
             # print('\t', off)
             # And then yield those.

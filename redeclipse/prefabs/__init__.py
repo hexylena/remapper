@@ -196,7 +196,7 @@ class TestRoom(Room):
 class TestRoom2(Room):
     def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')
-        wall_tex1 = TEXMAN.get_c('wall')
+        wall_tex1 = TEXMAN.get_c('accent')
         wall_tex2 = TEXMAN.get_c('accent')
 
         self.x('floor', world, SELF, tex=floor_tex)

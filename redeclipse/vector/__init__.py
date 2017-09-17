@@ -140,8 +140,8 @@ class BaseVector(object):
         Return a new vector, rotated by the specified
         number of degrees.
 
-        :param deg: degrees (0, 90, 180, ...) or orientation (+x, -x, ...)
-        :type deg: str or int
+        :param deg: angle (EAST, NORTH, WEST, SOUTH)
+        :type deg: redeclipse.vector.CoarseVector
 
         :param offset: point around which to rotate
         :type offset: redeclipse.vector.BaseVector (or child thereof)
@@ -154,6 +154,7 @@ class BaseVector(object):
         :rtype: redeclipse.vector.BaseVector
         """
         # TODO: We could auto-vox_off, not sure if this is useful?
+        # print(self, offset, self + offset, deg)
         return (self + offset).rotate(deg) - offset
 
 
@@ -175,14 +176,10 @@ class AbsoluteVector(BaseVector):
                     positive multiple of 90.
         :type deg: str or int
         """
-        if deg == '+x':
-            deg = 0
-        elif deg == '-y':
-            deg = 90
-        elif deg == '-x':
-            deg = 180
-        elif deg == '+y':
-            deg = 270
+        if not isinstance(deg, int):
+            y = deg.y
+            x = deg.x
+            deg = int(180 * atan2(y, x) / pi)
 
         deg %= 360
 
