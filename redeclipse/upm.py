@@ -2,6 +2,7 @@ import math
 import random
 import copy
 from redeclipse.cli import weighted_choice
+from redeclipse.vector.orientations import NORTH, SOUTH, EAST, WEST
 import logging
 
 
@@ -38,15 +39,15 @@ class UnusedPositionManager:
             if u[1] == p[1]:
                 # If the Y position is the same, must be in X direction
                 if u[0] < p[0]:
-                    return '+x'
+                    return EAST
                 else:
-                    return '-x'
+                    return WEST
             elif u[0] == p[0]:
                 # If the X position is the same, must be in Y direction
                 if u[1] < p[1]:
-                    return '+y'
+                    return NORTH
                 else:
-                    return '-y'
+                    return SOUTH
             # NO SUPPORT for joining parts on a z-axis, joins must be X/Y
             # elif u[0] == p[0] and u[1] == p[1]:
                 # if u[2] < p[2]:

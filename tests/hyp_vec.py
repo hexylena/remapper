@@ -1,4 +1,4 @@
-from redeclipse.vector import rotate_yaw, BaseVector, AbsoluteVector, CoarseVector, FineVector
+from redeclipse.vector import BaseVector
 from hypothesis import given
 import hypothesis.strategies as st
 
@@ -9,6 +9,7 @@ def test_vec_addition(a, b):
     y = BaseVector(b, b, b)
     z = BaseVector(a + b, a + b, a + b)
     assert x + y == z
+
 
 @given(st.integers(), st.integers())
 def test_vec_mul(a, b):

@@ -1,16 +1,4 @@
-from math import sin, cos, pi, floor
-
-
-def rotate_yaw(angle, orientation):
-    if orientation == '+x':
-        return angle % 360
-    elif orientation == '+y':
-        return (angle + 90) % 360
-    elif orientation == '-x':
-        return (angle + 180) % 360
-    elif orientation == '-y':
-        return (angle + 270) % 360
-    raise Exception("Unexpected orientation")
+from math import sin, cos, pi, floor, atan2
 
 
 class BaseVector(object):
@@ -132,19 +120,12 @@ class BaseVector(object):
                   needed.
         :rtype: redeclipse.vector.BaseVector
         """
-        if deg == '+x':
-            deg = 0
-        elif deg == '-y':
-            deg = 90
-        elif deg == '-x':
-            deg = 180
-        elif deg == '+y':
-            deg = 270
-
-        if deg % 90 != 0:
-            raise ValueError("Degree must be a multiple of 90.")
-
-        theta = pi * deg / 180
+        if not isinstance(deg, int):
+            y = deg.y
+            x = deg.x
+            theta = atan2(y, x)
+        else:
+            theta = pi * deg / 180
         # We allow 0.5 increments for properly centered cubes. So we need to do
         # the math in double, round it there, then divide by two to ensure
         # everything is in (0, 0.5, 1, 1.5, ...)

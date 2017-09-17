@@ -1,6 +1,6 @@
 from redeclipse.objects import cube
 import random
-from redeclipse.vector.orientations import TILE_VOX_OFF, VOXEL_OFFSET, NORTH, SOUTH, EAST, WEST, ABOVE
+from redeclipse.vector.orientations import TILE_VOX_OFF, VOXEL_OFFSET, NORTH, SOUTH, EAST, WEST, ABOVE, BELOW, get_vector_rotation
 from redeclipse.vector import FineVector
 ROOM_SIZE = 8
 
@@ -55,17 +55,17 @@ def wall_points(size, direction, limit_j=100, limit_i=100):
             if j > limit_j:
                 continue
 
-            if direction == '-z':
+            if direction == BELOW:
                 yield FineVector(i, j, 0)
-            elif direction == '+z':
+            elif direction == ABOVE:
                 yield FineVector(i, j, size - 1)
-            elif direction == '-y':
+            elif direction == SOUTH:
                 yield FineVector(i, 0, j)
-            elif direction == '+y':
+            elif direction == NORTH:
                 yield FineVector(i, size - 1, j)
-            elif direction == '-x':
+            elif direction == WEST:
                 yield FineVector(0, i, j)
-            elif direction == '+x':
+            elif direction == EAST:
                 yield FineVector(size - 1, i, j)
 
 
@@ -179,7 +179,7 @@ class ConstructionKitMixin(object):
             lop = self.pos + off.offset_rotate(self.orientation, offset=room_center)
             # And then yield those.
             for point in column_points(ROOM_SIZE, NORTH.rotate(self.orientation)):
-                print(point, lop, point + lop)
+                # print(point, lop, point + lop)
                 yield point + lop
 
     def x_low_wall(self, offset, face):
@@ -187,25 +187,18 @@ class ConstructionKitMixin(object):
 
     def x_wall(self, offset, face, limit_j=8):
         # Get a vector for where we should start drawing.
-        if face == SOUTH:
-            vec = 0
-        elif face == EAST:
-            vec = 90
-        elif face == NORTH:
-            vec = 180
-        elif face == WEST:
-            vec = 270
+        vec = get_vector_rotation(face)
+        print('wall', offset, face, vec)
 
-        print('wall', offset, face, limit_j, vec)
+        # print('wall', offset, face, limit_j, vec)
         for i in range(8):
             # Loop across the 'bottom' edge
-            # off = FineVector(i, 0, 0).offset_rotate(vec, offset=TILE_VOX_OFF)
+            off = FineVector(i, 0, 0).offset_rotate(vec, offset=TILE_VOX_OFF).offset_rotate(self.orientation, offset=TILE_VOX_OFF)
             # sum these two together to get the offset for a column to start from.
-            # lop = self.pos + off.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
-            print('\t', FineVector(i, 0, 0).offset_rotate(vec, offset=TILE_VOX_OFF))
+            # print('\t', off)
             # And then yield those.
             for point in column_points(ROOM_SIZE, ABOVE):
-                yield point
+                yield self.pos + off + point
 
     # def x_ring(self, offset, size):
         # # world, FineVector(-2, -2, i), 12, tex=accent_tex)
@@ -217,7 +210,7 @@ class ConstructionKitMixin(object):
     def x_rectangular_prism(self, offset, xyz):
         xyz = xyz.rotate(self.orientation).vox()
         local_position = self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
-        print(local_position, xyz)
+        # print(local_position, xyz)
 
         for point in cube_points(xyz.x, xyz.y, xyz.z):
             yield point + local_position

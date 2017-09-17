@@ -1,3 +1,5 @@
+from math import atan2
+
 from redeclipse.vector import CoarseVector, FineVector
 
 
@@ -11,6 +13,8 @@ WEST = NORTH.rotate(90)
 SOUTH = NORTH.rotate(180)
 #: One (coarse) position east of the current location
 EAST = NORTH.rotate(270)
+#: All the cardinal directions in something iterable
+CARDINALS = [EAST, NORTH, WEST, SOUTH]
 
 #: Northwest of current location
 NORTHWEST = NORTH + WEST
@@ -41,16 +45,6 @@ EAST_FINE = NORTH_FINE.rotate(270)
 ABOVE_FINE = FineVector(0, 0, 1)
 BELOW_FINE = FineVector(0, 0, -1)
 
-#: Map allowing conversion of old style ±xyz to new CoarseVector directions
-VEC_ORIENT_MAP = {
-    '+x': EAST,
-    '-x': WEST,
-    '+y': NORTH,
-    '-y': SOUTH,
-    '+z': ABOVE,
-    '-z': BELOW,
-}
-
 
 def get_vector_rotation(vec):
     """
@@ -62,32 +56,16 @@ def get_vector_rotation(vec):
     :returns: A (degree) direction
     :rtype: int
     """
-    if vec == EAST:
-        return 0
-    elif vec == NORTH:
-        return 90
-    elif vec == WEST:
-        return 180
-    elif vec == SOUTH:
-        return 270
+    return atan2(vec.y, vec.x)
 
 
-def get_orientation_rotation(ori):
-    """
-    Get the rotation from an orientation
-
-    :param ori: A directional orientation ('+x', '-x', ...)
-    :type ori: str
-
-    :returns: A (degree) direction
-    :rtype: int
-    """
-    if ori == '+x':
-        return 0
-    elif ori == '-y':
-        return 90
-    elif ori == '-x':
-        return 180
-    elif ori == '+y':
-        return 270
-    raise Exception("Unknown orientation")
+def rotate_yaw(angle, orientation):
+    if orientation == EAST:
+        return angle % 360
+    elif orientation == NORTH:
+        return (angle + 90) % 360
+    elif orientation == WEST:
+        return (angle + 180) % 360
+    elif orientation == SOUTH:
+        return (angle + 270) % 360
+    raise Exception("Unexpected orientation")

@@ -9,7 +9,7 @@ from redeclipse.voxel import VoxelWorld
 
 def test_wall_points_ltz():
     a = list(wall_points(
-        4, '-z'
+        4, BELOW
     ))
 
     for i in range(4):
@@ -29,7 +29,7 @@ def test_wall_points_gtz():
 
 def test_wall_points_ltx():
     a = list(wall_points(
-        4, '-x'
+        4, WEST
     ))
 
     for i in range(4):
@@ -39,7 +39,7 @@ def test_wall_points_ltx():
 
 def test_wall_points_gtx():
     a = list(wall_points(
-        4, '+x'
+        4, EAST
     ))
 
     for i in range(4):
@@ -49,7 +49,7 @@ def test_wall_points_gtx():
 
 def test_wall_points_lty():
     a = list(wall_points(
-        4, '-y'
+        4, SOUTH
     ))
 
     for i in range(4):
@@ -59,7 +59,7 @@ def test_wall_points_lty():
 
 def test_wall_points_gty():
     a = list(wall_points(
-        4, '+y'
+        4, NORTH
     ))
 
     for i in range(4):
@@ -69,7 +69,7 @@ def test_wall_points_gty():
 
 def test_wall_points_ltz2():
     a = list(wall_points(
-        -4, '-z'
+        -4, BELOW
     ))
 
     for i in range(-4, 0):
@@ -79,7 +79,7 @@ def test_wall_points_ltz2():
 
 def test_wall_points_limit_ij():
     a = list(wall_points(
-        4, '-z', limit_i=2, limit_j=2
+        4, BELOW, limit_i=2, limit_j=2
     ))
 
     for i in range(2):
@@ -150,8 +150,8 @@ def test_ck_mixin():
     ckm = ConstructionKitMixin()
     ckm.pos = FineVector(64, 64, 64)
 
-    assert ckm.pos.rotate('+x') == ckm.pos
-    assert ckm.pos.rotate('-y') == ckm.pos.rotate(90)
+    assert ckm.pos.rotate(EAST) == ckm.pos
+    assert ckm.pos.rotate(SOUTH) == ckm.pos.rotate(90)
     assert ckm.pos.rotate(90) == FineVector(-64, 64, 64)
 
     # check the general algorithm.
@@ -188,7 +188,7 @@ def test_ck_mixin():
     assert vd == oc
     assert va == od
 
-    ckm.orientation = '-y'
+    ckm.orientation = SOUTH
     observed_points = list(ckm.x_column(FineVector(0, 0, 0), NORTH, 4))
     expected_points = [FineVector(71 - i, 64, 64) for i in range(4)]
     for e, o in zip(expected_points, observed_points):
@@ -214,8 +214,8 @@ def test_ck_mixin2():
     ckm = ConstructionKitMixin()
     ckm.pos = FineVector(56, 56, 56)
 
-    assert ckm.pos.rotate('+x') == ckm.pos
-    assert ckm.pos.rotate('-y') == ckm.pos.rotate(90)
+    assert ckm.pos.rotate(EAST) == ckm.pos
+    assert ckm.pos.rotate(SOUTH) == ckm.pos.rotate(90)
     assert ckm.pos.rotate(90) == FineVector(-56, 56, 56)
 
 
@@ -228,7 +228,7 @@ def test_ck_mixin_3():
     # edge, no matter which way it is rotated, the voxels in the cube should
     # never leave the 8x8x8 space.
 
-    for orientation in ('+x', '-x', '+y', '-y'):
+    for orientation in (EAST, WEST, NORTH, SOUTH):
         ckm.orientation = orientation
         # Column straight up from the southwest corner.
         for pt in ckm.x_column(FineVector(1, 1, 0), ABOVE, 8):
@@ -246,13 +246,13 @@ def test_ck_mixin_floorceil():
     # edge, no matter which way it is rotated, the voxels in the cube should
     # never leave the 8x8x8 space.
 
-    for orientation in ('+x', '-x', '+y', '-y'):
+    for orientation in (EAST, WEST, NORTH, SOUTH):
         ckm.orientation = orientation
         # Column straight up from the southwest corner.
         for pt in ckm.x_floor(FineVector(0, 0, 0), 8):
             assert lower_bound <= pt <= upper_bound
 
-    ckm.orientation = '+y'
+    ckm.orientation = NORTH
     # Column straight up from the southwest corner.
     for pt in ckm.x_floor(FineVector(0, 0, 0), 8):
         assert lower_bound <= pt <= upper_bound
@@ -274,7 +274,7 @@ def test_ck_known_func_floor():
     vox = VoxelWorld(size=4)
     ckm = ConstructionKitMixin()
     ckm.pos = CoarseVector(1, 1, 1).fine()
-    for orientation in ('+x', '-x', '+y', '-y'):
+    for orientation in (EAST, WEST, NORTH, SOUTH):
         vox = VoxelWorld(size=4)
         ckm.orientation = orientation
         ckm.x('floor', vox, SELF, size=8)
@@ -293,7 +293,7 @@ def test_ck_ceil():
     vox = VoxelWorld(size=4)
     ckm = ConstructionKitMixin()
     ckm.pos = CoarseVector(1, 1, 1).fine()
-    for orientation in ('+x', '-x', '+y', '-y'):
+    for orientation in (EAST, WEST, NORTH, SOUTH):
         vox = VoxelWorld(size=4)
         ckm.orientation = orientation
         ckm.x('ceiling', vox, SELF, size=8)
@@ -304,23 +304,61 @@ def test_ck_ceil():
 
 
 def test_ck_wall():
+    """
+    Build walls in all sides, in all orientations, etc.
+    """
     ckm = ConstructionKitMixin()
     ckm.pos = CoarseVector(1, 1, 1).fine()
 
-    ckm.orientation = '+x'
+    ckm.orientation = EAST
     vox = VoxelWorld(size=4)
     ckm.x('wall', vox, SELF, SOUTH)
 
-    # for (x, y, z) in vox.world.keys():
-        # assert 8 <= x <= 16
-        # assert y == 8
-        # assert 8 <= z <= 16
+    for (x, y, z) in vox.world.keys():
+        assert 8 <= x <= 16
+        assert y == 8
+        assert 8 <= z <= 16
+    assert len(vox.world.keys()) == 8 * 8
 
     vox = VoxelWorld(size=4)
     ckm.x('wall', vox, SELF, EAST)
-    # for (x, y, z) in vox.world.keys():
-        # assert x == 15
-        # assert 8 <= y <= 16
-        # assert 8 <= z <= 16
+    for (x, y, z) in vox.world.keys():
+        assert x == 15
+        assert 8 <= y <= 16
+        assert 8 <= z <= 16
+    assert len(vox.world.keys()) == 8 * 8
 
-    assert False
+    vox = VoxelWorld(size=4)
+    ckm.x('wall', vox, SELF, NORTH)
+    for (x, y, z) in vox.world.keys():
+        assert 8 <= x <= 16
+        assert y == 15
+        assert 8 <= z <= 16
+    assert len(vox.world.keys()) == 8 * 8
+
+    vox = VoxelWorld(size=4)
+    ckm.x('wall', vox, SELF, WEST)
+    for (x, y, z) in vox.world.keys():
+        assert x == 8
+        assert 8 <= y <= 16
+        assert 8 <= z <= 16
+    assert len(vox.world.keys()) == 8 * 8
+
+
+def test_ck_room_orientation():
+    """
+    This test states that no matter what orientation a room is placed in,
+    assuming it is in the same coarse vector, it should occupy the same
+    space, (8, 16) on x and y.
+    """
+    vox = VoxelWorld(size=4)
+    ckm = ConstructionKitMixin()
+    ckm.pos = CoarseVector(1, 1, 1).fine()
+    for orientation in (EAST, WEST, NORTH, SOUTH):
+        vox = VoxelWorld(size=4)
+        ckm.orientation = orientation
+        ckm.x('floor', vox, SELF, size=8)
+        for (x, y, z) in vox.world.keys():
+            assert 8 <= x < 16
+            assert 8 <= y < 16
+            assert 8 == z

@@ -41,3 +41,21 @@ class Blue(SimpleColourTex):
     r = 0
     g = 0
     b = 1
+
+
+class Yellow(SimpleColourTex):
+    r = 1
+    g = 1
+    b = 0
+
+
+class Magenta(SimpleColourTex):
+    r = 1
+    g = 0
+    b = 1
+
+
+class Cyan(SimpleColourTex):
+    r = 0
+    g = 1
+    b = 1

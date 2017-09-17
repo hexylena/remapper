@@ -1,36 +1,37 @@
 import pytest
 import random
-from redeclipse.vector import rotate_yaw, BaseVector, AbsoluteVector, CoarseVector, FineVector
+from redeclipse.vector import BaseVector, AbsoluteVector, CoarseVector, FineVector
+from redeclipse.vector.orientations import rotate_yaw, NORTH, SOUTH, EAST, WEST
 
 
 def test_rotate():
-    assert rotate_yaw(0, '+x') == 0
-    assert rotate_yaw(90, '+x') == 90
-    assert rotate_yaw(180, '+x') == 180
-    assert rotate_yaw(270, '+x') == 270
-    assert rotate_yaw(360, '+x') == 0
-    assert rotate_yaw(450, '+x') == 90
+    assert rotate_yaw(0, EAST) == 0
+    assert rotate_yaw(90, EAST) == 90
+    assert rotate_yaw(180, EAST) == 180
+    assert rotate_yaw(270, EAST) == 270
+    assert rotate_yaw(360, EAST) == 0
+    assert rotate_yaw(450, EAST) == 90
 
-    assert rotate_yaw(0, '+y') == 90
-    assert rotate_yaw(90, '+y') == 180
-    assert rotate_yaw(180, '+y') == 270
-    assert rotate_yaw(270, '+y') == 0
-    assert rotate_yaw(360, '+y') == 90
-    assert rotate_yaw(450, '+y') == 180
+    assert rotate_yaw(0, NORTH) == 90
+    assert rotate_yaw(90, NORTH) == 180
+    assert rotate_yaw(180, NORTH) == 270
+    assert rotate_yaw(270, NORTH) == 0
+    assert rotate_yaw(360, NORTH) == 90
+    assert rotate_yaw(450, NORTH) == 180
 
-    assert rotate_yaw(0, '-x') == 180
-    assert rotate_yaw(90, '-x') == 270
-    assert rotate_yaw(180, '-x') == 0
-    assert rotate_yaw(270, '-x') == 90
-    assert rotate_yaw(360, '-x') == 180
-    assert rotate_yaw(450, '-x') == 270
+    assert rotate_yaw(0, WEST) == 180
+    assert rotate_yaw(90, WEST) == 270
+    assert rotate_yaw(180, WEST) == 0
+    assert rotate_yaw(270, WEST) == 90
+    assert rotate_yaw(360, WEST) == 180
+    assert rotate_yaw(450, WEST) == 270
 
-    assert rotate_yaw(0, '-y') == 270
-    assert rotate_yaw(90, '-y') == 0
-    assert rotate_yaw(180, '-y') == 90
-    assert rotate_yaw(270, '-y') == 180
-    assert rotate_yaw(360, '-y') == 270
-    assert rotate_yaw(450, '-y') == 0
+    assert rotate_yaw(0, SOUTH) == 270
+    assert rotate_yaw(90, SOUTH) == 0
+    assert rotate_yaw(180, SOUTH) == 90
+    assert rotate_yaw(270, SOUTH) == 180
+    assert rotate_yaw(360, SOUTH) == 270
+    assert rotate_yaw(450, SOUTH) == 0
 
     with pytest.raises(Exception):
         assert rotate_yaw(450, 'y') == 0
@@ -60,12 +61,12 @@ def test_basevector():
         assert v - (x * 3) - (y * 2) - (z * 1) == x
 
         # Rotations
-        assert v.rotate('+x') == v
+        assert v.rotate(EAST) == v
         assert v.rotate(0) == v
         assert v.rotate(360) == v
-        assert v.rotate('-y') == v.rotate(90)
-        assert v.rotate('-x') == v.rotate(90).rotate(90)
-        assert v.rotate('+y') == v.rotate(90).rotate(90).rotate(90)
+        assert v.rotate(SOUTH) == v.rotate(90)
+        assert v.rotate(WEST) == v.rotate(90).rotate(90)
+        assert v.rotate(NORTH) == v.rotate(90).rotate(90).rotate(90)
         # Rotations, pt2 since I screwed them up the first time.
         assert v.rotate(90) == Class(-2, 4, 1)
         assert v.rotate(180) == Class(-4, -2, 1)

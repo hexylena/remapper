@@ -7,8 +7,8 @@ from redeclipse.lighting import PositionBasedLightManager
 from redeclipse.prefabs.distributions import UniformDistributionManager
 # TowerDistributionManager, PlatformDistributionManager
 from redeclipse.prefabs.construction_kit import ConstructionKitMixin
-from redeclipse.vector import CoarseVector, FineVector, rotate_yaw, AbsoluteVector
-from redeclipse.vector.orientations import SELF, \
+from redeclipse.vector import CoarseVector, FineVector, AbsoluteVector
+from redeclipse.vector.orientations import rotate_yaw, SELF, \
     SOUTH, NORTH, WEST, EAST, ABOVE, \
     ABOVE_FINE, NORTHWEST, \
     NORTHEAST, SOUTHWEST, SOUTHEAST, TILE_CENTER, HALF_HEIGHT
@@ -44,7 +44,7 @@ class Room(ConstructionKitMixin):
     tex = TEXMAN.get_c('generic')
     _tp = None
 
-    def __init__(self, pos, orientation='+x', randflags=None):
+    def __init__(self, pos, orientation=EAST, randflags=None):
         self.pos = CoarseVector(*pos)
         self.orientation = orientation
         if randflags:
@@ -124,8 +124,8 @@ class Room(ConstructionKitMixin):
         self.light(xmap)
         tex = TEXMAN.get_c('floor')
 
-        self.x_floor(world, SELF, tex=tex)
-        self.x_ceiling(world, SELF, tex=tex)
+        self.x('floor', world, SELF, tex=tex)
+        self.x('ceiling', world, SELF, tex=tex)
 
 
 class _3X3Room(Room):
@@ -133,7 +133,7 @@ class _3X3Room(Room):
     AltarRoom is currently the only user."""
     room_type = 'platform_setpiece'
 
-    def __init__(self, pos, orientation='+x', randflags=None):
+    def __init__(self, pos, orientation=EAST, randflags=None):
         """Init is kept separate from rendering, because init sets self.pos,
         and we use that when calling self.get_positions(), which is required as
         part of placement, we wouldn't want to place a partial room."""
@@ -175,7 +175,7 @@ class _3X3Room(Room):
 
 
 class TestRoom(Room):
-    def __init__(self, pos, orientation='+x', randflags=None):
+    def __init__(self, pos, orientation=EAST, randflags=None):
         """Init is kept separate from rendering, because init sets self.pos,
         and we use that when calling self.get_positions(), which is required as
         part of placement, we wouldn't want to place a partial room."""
@@ -185,12 +185,25 @@ class TestRoom(Room):
             self._randflags = randflags
 
     def render(self, world, xmap):
-        self.x_floor(world, SELF, tex=TEXMAN.get_c('accent'))
+        self.x('floor', world, SELF, tex=TEXMAN.get_c('accent'))
 
         g = Grenade(
             xyz=self.pos + TILE_CENTER + ABOVE_FINE
         )
         xmap.ents.append(g)
+
+
+class TestRoom2(Room):
+    def render(self, world, xmap):
+        floor_tex = TEXMAN.get_c('floor')
+        wall_tex1 = TEXMAN.get_c('wall')
+        wall_tex2 = TEXMAN.get_c('accent')
+
+        self.x('floor', world, SELF, tex=floor_tex)
+        self.x('floor', world, SELF + EAST, tex=floor_tex)
+        self.x('wall', world, SELF, SOUTH, tex=wall_tex1)
+        self.x('wall', world, SELF, NORTH, tex=wall_tex2)
+        # self.x('wall', world, SELF, WEST, tex=wall_tex2)
 
 
 class NLongCorridor(Room):
@@ -202,7 +215,7 @@ class NLongCorridor(Room):
         True,  # CoverB
     )
 
-    def __init__(self, pos, orientation='+x', randflags=None):
+    def __init__(self, pos, orientation=EAST, randflags=None):
         self.orientation = orientation
         self.pos = CoarseVector(*pos)
         if randflags:
@@ -215,11 +228,11 @@ class NLongCorridor(Room):
     def render(self, world, xmap):
         # First tile
         floor_tex = TEXMAN.get_c('floor')
-        self.x_floor(world, SELF, tex=floor_tex)
+        self.x('floor', world, SELF, tex=floor_tex)
 
         for i in range(1, self.length):
             # Add a floor south of us.
-            self.x_floor(world, NORTH * i, tex=floor_tex)
+            self.x('floor', world, NORTH * i, tex=floor_tex)
 
         # for i in range(0, SIZE * self.length):
             # real_lt = self.pos + FineVector(i, 0, 1).rotate(self.orientation)
@@ -265,7 +278,7 @@ class Corridor2way(Room):
         True,  # no wall / low wall
     )
 
-    def __init__(self, pos, orientation='+x', randflags=None):
+    def __init__(self, pos, orientation=EAST, randflags=None):
         self.pos = CoarseVector(*pos)
         self.orientation = orientation
         if randflags:
@@ -275,14 +288,14 @@ class Corridor2way(Room):
         self.light(xmap)
         floor_tex = TEXMAN.get_c('floor')
 
-        self.x_floor(world, SELF, tex=floor_tex)
+        self.x('floor', world, SELF, tex=floor_tex)
         if self._randflags[0]:
-            self.x_ceiling(world, SELF, tex=floor_tex)
+            self.x('ceiling', world, SELF, tex=floor_tex)
 
         if self._randflags[1]:
             # TODO: low wall (2 high)
-            self.x_low_wall(world, SELF + ABOVE_FINE, EAST)
-            self.x_low_wall(world, SELF + ABOVE_FINE, WEST)
+            self.x('low_wall', world, SELF + ABOVE_FINE, EAST)
+            self.x('low_wall', world, SELF + ABOVE_FINE, WEST)
 
     def _get_doorways(self):
         return [
@@ -294,7 +307,7 @@ class Corridor2way(Room):
 class JumpCorridor3(Room):
     room_type = 'hallway_jump'
 
-    def __init__(self, pos, orientation='+x', randflags=None):
+    def __init__(self, pos, orientation=EAST, randflags=None):
         self.pos = CoarseVector(*pos)
         self.orientation = orientation
         if randflags:
@@ -362,7 +375,7 @@ class JumpCorridorVertical(Room):
         True,  # extra section
     )
 
-    def __init__(self, pos, orientation='+x', roof=False, randflags=None):
+    def __init__(self, pos, orientation=EAST, roof=False, randflags=None):
         self.pos = CoarseVector(*pos)
         self.orientation = orientation
         self.roof = roof
@@ -433,7 +446,7 @@ class JumpCorridorVerticalCenter(JumpCorridorVertical):
         True,  # Tall
     )
 
-    def __init__(self, pos, orientation='+x', roof=False, tex=506, randflags=None):
+    def __init__(self, pos, orientation=EAST, roof=False, tex=506, randflags=None):
         self.pos = CoarseVector(*pos)
         self.orientation = orientation
         self.roof = roof
@@ -503,7 +516,7 @@ class Corridor4way(Room):
         True,  # Wall: B
     )
 
-    def __init__(self, pos, orientation='+x', randflags=None):
+    def __init__(self, pos, orientation=EAST, randflags=None):
         self.orientation = orientation
         self.pos = CoarseVector(*pos)
         if randflags:
@@ -513,22 +526,22 @@ class Corridor4way(Room):
         floor_tex = TEXMAN.get_c('floor')
         column_tex = TEXMAN.get_c('column')
 
-        self.x_floor(world, SELF, tex=floor_tex)
+        self.x('floor', world, SELF, tex=floor_tex)
         if self._randflags[0]:
-            self.x_ceiling(world, SELF, tex=floor_tex)
+            self.x('ceiling', world, SELF, tex=floor_tex)
 
         if not self._randflags[1] and not self._randflags[2]:
             pass
         elif self._randflags[1] and not self._randflags[2]:
-            self.x_rectangular_prism(world, FineVector(0, 0, 0), AbsoluteVector(1, 1, 8), tex=column_tex)
-            self.x_rectangular_prism(world, FineVector(0, 7, 0), AbsoluteVector(1, 1, 8), tex=column_tex)
-            self.x_rectangular_prism(world, FineVector(7, 0, 0), AbsoluteVector(1, 1, 8), tex=column_tex)
-            self.x_rectangular_prism(world, FineVector(7, 7, 0), AbsoluteVector(1, 1, 8), tex=column_tex)
+            self.x('rectangular_prism', world, FineVector(0, 0, 0), AbsoluteVector(1, 1, 8), tex=column_tex)
+            self.x('rectangular_prism', world, FineVector(0, 7, 0), AbsoluteVector(1, 1, 8), tex=column_tex)
+            self.x('rectangular_prism', world, FineVector(7, 0, 0), AbsoluteVector(1, 1, 8), tex=column_tex)
+            self.x('rectangular_prism', world, FineVector(7, 7, 0), AbsoluteVector(1, 1, 8), tex=column_tex)
         elif not self._randflags[1] and self._randflags[2]:
-            self.x_rectangular_prism(world, FineVector(0, 0, 0), AbsoluteVector(1, 1, 2), tex=column_tex)
-            self.x_rectangular_prism(world, FineVector(0, 7, 0), AbsoluteVector(1, 1, 2), tex=column_tex)
-            self.x_rectangular_prism(world, FineVector(7, 0, 0), AbsoluteVector(1, 1, 2), tex=column_tex)
-            self.x_rectangular_prism(world, FineVector(7, 7, 0), AbsoluteVector(1, 1, 2), tex=column_tex)
+            self.x('rectangular_prism', world, FineVector(0, 0, 0), AbsoluteVector(1, 1, 2), tex=column_tex)
+            self.x('rectangular_prism', world, FineVector(0, 7, 0), AbsoluteVector(1, 1, 2), tex=column_tex)
+            self.x('rectangular_prism', world, FineVector(7, 0, 0), AbsoluteVector(1, 1, 2), tex=column_tex)
+            self.x('rectangular_prism', world, FineVector(7, 7, 0), AbsoluteVector(1, 1, 2), tex=column_tex)
         else:
             pass
 
@@ -541,7 +554,7 @@ class SpawnRoom(Room):
         True,  # Two sides open
     )
 
-    def __init__(self, pos, roof=None, orientation='+x', randflags=None):
+    def __init__(self, pos, roof=None, orientation=EAST, randflags=None):
         self.pos = CoarseVector(*pos)
         self.orientation = orientation
         if randflags:
@@ -580,19 +593,19 @@ class SpawnRoom(Room):
 class _LargeRoom(_3X3Room):
     _height = 1
 
-    def __init__(self, pos, roof=False, orientation='+x', randflags=None):
+    def __init__(self, pos, roof=False, orientation=EAST, randflags=None):
         # Push the position
         self.orientation = orientation
         # We (arbitrarily) define pos as the middle of one side.
         self.pos = CoarseVector(*pos)
         # We move it once, in orientation in order to re-center the room?
-        if self.orientation == '+x':
+        if self.orientation == EAST:
             self.pos = self.pos + SOUTH
-        elif self.orientation == '-x':
+        elif self.orientation == WEST:
             self.pos = self.pos + NORTH
-        elif self.orientation == '+y':
+        elif self.orientation == NORTH:
             self.pos = self.pos + WEST
-        elif self.orientation == '-y':
+        elif self.orientation == SOUTH:
             self.pos = self.pos + EAST
         # For bigger rooms, we have to shift them such that the previous_posision matches a doorway.
         if randflags:

@@ -3,6 +3,7 @@ import pytest
 from redeclipse.upm import UnusedPositionManager
 from redeclipse.prefabs import Room
 from redeclipse.vector import CoarseVector
+from redeclipse.vector.orientations import NORTH, SOUTH, EAST, WEST
 
 
 def test_upm():
@@ -31,7 +32,7 @@ def test_upm():
     print(room_a.get_doorways())
 
     assert len(upm.occupied) == 1
-    # [(CV(BV(1, 0, 0)), <redeclipse.prefabs.Room object at 0x7ff4ac1bbda0>, '+x'), (CV(BV(0, 1, 0)), <redeclipse.prefabs.Room object at 0x7ff4ac1bbda0>, '+y')]
+    # [(CV(BV(1, 0, 0)), <redeclipse.prefabs.Room object at 0x7ff4ac1bbda0>, EAST), (CV(BV(0, 1, 0)), <redeclipse.prefabs.Room object at 0x7ff4ac1bbda0>, NORTH)]
     assert len(upm.unoccupied) == 2
 
     upm.register_room(room_b)
@@ -59,22 +60,22 @@ def test_manhattan():
     assert upm.getOrientationToManhattanRoom(
             (0, 0, 0),
             [(1, 0, 0)],
-        ) == '-x'
+        ) == WEST
 
     assert upm.getOrientationToManhattanRoom(
             (1, 0, 0),
             [(0, 0, 0)],
-        ) == '+x'
+        ) == EAST
 
     assert upm.getOrientationToManhattanRoom(
             (0, 0, 0),
             [(0, 1, 0)],
-        ) == '-y'
+        ) == SOUTH
 
     assert upm.getOrientationToManhattanRoom(
             (0, 1, 0),
             [(0, 0, 0)],
-        ) == '+y'
+        ) == NORTH
 
     with pytest.raises(Exception):
         assert upm.getOrientationToManhattanRoom(

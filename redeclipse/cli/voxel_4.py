@@ -4,6 +4,7 @@ from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
+from redeclipse.vector.orientations import EAST
 from tqdm import tqdm
 import argparse
 import random
@@ -153,7 +154,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
 
     if debug:
         for (pos, typ, ori) in upm.unoccupied:
-            r = p.TestRoom(pos, orientation='+x')
+            r = p.TestRoom(pos, orientation=EAST)
             r.render(v, mymap)
 
     from redeclipse.aftereffects import grid  # decay, gradient3

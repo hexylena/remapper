@@ -20,6 +20,9 @@ class BaseTex(object):
 
 class Sky(BaseTex):
     scale = 1
+    r = 0
+    g = 0
+    b = 0
 
     def conf(self, **kwargs):
         return """
@@ -30,6 +33,9 @@ texture c "textures/sky.png" 0 0 0 {0.scale} // 0 {0.__class__}
 
 class Default(BaseTex):
     scale = 1
+    r = 0.5
+    g = 0.5
+    b = 0.5
 
     def conf(self, **kwargs):
         return """

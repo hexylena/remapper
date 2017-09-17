@@ -166,19 +166,58 @@ def growth(world, position_function):
                         )
 
 
-def box(world):
+def box(world, height=None):
     """
     A box added around the edge of the world.
 
     :param world: Input world
     :type world: redeclipse.Map
 
+    :param height: Max height for the box to go to. None means entire area is boxed in.
+    :type height: int or None
+
     :rtype: None
     """
-    for z in tqdm(range(world.size)):
+    max_height = world.size
+    if height:
+        max_height = height
+    for z in tqdm(range(max_height)):
         for x in range(world.size):
             for y in range(world.size):
                 if x == 0 or y == 0 or z == 0 or x == world.size - 1 or y == world.size - 1 or z == world.size - 1:
+                    world.set_point(
+                        x, y, z,
+                        cube.newtexcube(tex=2)
+                    )
+
+
+def box_outline(world, height=None):
+    """
+    An outline of a box (similar to a grid) added around the edge of the world.
+
+    :param world: Input world
+    :type world: redeclipse.Map
+
+    :param height: Max height for the box grid to go to. None means entire area is boxed in.
+    :type height: int or None
+
+    :rtype: None
+    """
+    max_height = world.size
+    if height:
+        max_height = height
+    for z in tqdm(range(max_height)):
+        for x in range(world.size):
+            for y in range(world.size):
+                xa = x == 0
+                ya = y == 0
+                za = z == 0
+                xb = x == world.size - 1
+                yb = y == world.size - 1
+                zb = z == world.size - 1
+
+                # Fun property of booleans, they can be interpreted as ints, 0/1
+                if sum([xa, ya, za, xb, yb, zb]) > 1:
                     world.set_point(
                         x, y, z,
                         cube.newtexcube(tex=2)
