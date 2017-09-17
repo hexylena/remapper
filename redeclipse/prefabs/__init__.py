@@ -196,14 +196,14 @@ class TestRoom(Room):
 class TestRoom2(Room):
     def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')
-        wall_tex1 = TEXMAN.get_c('accent')
-        wall_tex2 = TEXMAN.get_c('accent')
 
         self.x('floor', world, SELF, tex=floor_tex)
-        self.x('floor', world, SELF + EAST, tex=floor_tex)
-        self.x('wall', world, SELF, SOUTH, tex=wall_tex1)
-        self.x('wall', world, SELF, NORTH, tex=wall_tex2)
-        # self.x('wall', world, SELF, WEST, tex=wall_tex2)
+        self.x('floor', world, SELF + EAST, tex=TEXMAN.get_c('accent'))
+
+        self.x('wall', world, SELF, SOUTH, tex=TEXMAN.get('blue'))
+        self.x('wall', world, SELF, NORTH, tex=TEXMAN.get('red'))
+        self.x('wall', world, SELF, WEST, tex=TEXMAN.get('yellow'))
+        self.x('wall', world, SELF, EAST, tex=TEXMAN.get('black'))
 
 
 class NLongCorridor(Room):

@@ -303,7 +303,7 @@ def test_ck_ceil():
             assert 15 == z
 
 
-def test_ck_wall():
+def test_ck_wall_east():
     """
     Build walls in all sides, in all orientations, etc.
     """
@@ -341,6 +341,90 @@ def test_ck_wall():
     for (x, y, z) in vox.world.keys():
         assert 8 <= x <= 16
         assert y == 8
+        assert 8 <= z <= 16
+    assert len(vox.world.keys()) == 8 * 8
+
+
+def test_ck_wall_west():
+    """
+    Build walls in all sides, in all orientations, etc.
+    """
+    ckm = ConstructionKitMixin()
+    ckm.pos = CoarseVector(1, 1, 1).fine()
+
+    ckm.orientation = WEST
+
+    vox = VoxelWorld(size=4)
+    ckm.x('wall', vox, SELF, EAST)
+    for (x, y, z) in vox.world.keys():
+        assert x == 8
+        assert 8 <= y <= 16
+        assert 8 <= z <= 16
+    assert len(vox.world.keys()) == 8 * 8
+
+    vox = VoxelWorld(size=4)
+    ckm.x('wall', vox, SELF, WEST)
+    for (x, y, z) in vox.world.keys():
+        assert x == 15
+        assert 8 <= y <= 16
+        assert 8 <= z <= 16
+    assert len(vox.world.keys()) == 8 * 8
+
+    vox = VoxelWorld(size=4)
+    ckm.x('wall', vox, SELF, NORTH)
+    for (x, y, z) in vox.world.keys():
+        assert 8 <= x <= 16
+        assert y == 8
+        assert 8 <= z <= 16
+    assert len(vox.world.keys()) == 8 * 8
+
+    vox = VoxelWorld(size=4)
+    ckm.x('wall', vox, SELF, SOUTH)
+    for (x, y, z) in vox.world.keys():
+        assert 8 <= x <= 16
+        assert y == 15
+        assert 8 <= z <= 16
+    assert len(vox.world.keys()) == 8 * 8
+
+
+def test_ck_wall_north():
+    """
+    Build walls in all sides, in all orientations, etc.
+    """
+    ckm = ConstructionKitMixin()
+    ckm.pos = CoarseVector(1, 1, 1).fine()
+
+    ckm.orientation = NORTH
+
+    vox = VoxelWorld(size=4)
+    ckm.x('wall', vox, SELF, EAST)
+    for (x, y, z) in vox.world.keys():
+        assert 8 <= x <= 16
+        assert y == 15
+        assert 8 <= z <= 16
+    assert len(vox.world.keys()) == 8 * 8
+
+    vox = VoxelWorld(size=4)
+    ckm.x('wall', vox, SELF, WEST)
+    for (x, y, z) in vox.world.keys():
+        assert 8 <= x <= 16
+        assert y == 8
+        assert 8 <= z <= 16
+    assert len(vox.world.keys()) == 8 * 8
+
+    vox = VoxelWorld(size=4)
+    ckm.x('wall', vox, SELF, NORTH)
+    for (x, y, z) in vox.world.keys():
+        assert x == 8
+        assert 8 <= y <= 16
+        assert 8 <= z <= 16
+    assert len(vox.world.keys()) == 8 * 8
+
+    vox = VoxelWorld(size=4)
+    ckm.x('wall', vox, SELF, SOUTH)
+    for (x, y, z) in vox.world.keys():
+        assert x == 15
+        assert 8 <= y <= 16
         assert 8 <= z <= 16
     assert len(vox.world.keys()) == 8 * 8
 

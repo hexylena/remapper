@@ -31,39 +31,28 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         print("Processing %s" % room_type)
         Room = getattr(p, room_type)
 
-        n = Room(pos=CoarseVector(8, 8, 0), orientation=NORTH)
-        # n.x('column', v, SOUTH + SOUTH, SOUTH, 8)
-        # n.x('column', v, EAST + EAST, EAST, 8)
-        # n.x('column', v, NORTH + NORTH, NORTH, 8)
-
-        # s = Room(pos=CoarseVector(8 - 4, 8, 0), orientation='-x')
-        # # e = Room(pos=CoarseVector(8, 8 + 4, 0), orientation='+x')
-        # # w = Room(pos=CoarseVector(8, 8 - 4, 0), orientation='-x')
-
-        # upm.register_room(n)
-        # upm.register_room(s)
-        # upm.register_room(e)
-        # upm.register_room(w)
+        e = Room(pos=CoarseVector(8 + 2, 8, 0), orientation=EAST)
+        w = Room(pos=CoarseVector(8 - 2, 8, 0), orientation=WEST)
+        n = Room(pos=CoarseVector(8, 8 + 2, 0), orientation=NORTH)
+        s = Room(pos=CoarseVector(8, 8 - 2, 0), orientation=SOUTH)
 
         n.render(v, mymap)
-        n = Room(pos=CoarseVector(8, 4, 0), orientation=SOUTH)
-        n.render(v, mymap)
-        n = Room(pos=CoarseVector(8, 12, 0), orientation=NORTH)
-        n.render(v, mymap)
-        n.x('column', v, NORTH + NORTH, NORTH, 4, tex=p.TEXMAN.get('red'))
-        n.x('column', v, NORTH + NORTH, EAST, 8, tex=p.TEXMAN.get('green'))
-        n.x('column', v, NORTH + NORTH, SOUTH, 4, tex=p.TEXMAN.get('blue'))
-        n.x('column', v, NORTH + NORTH, WEST, 8, tex=p.TEXMAN.get('yellow'))
-        # s.render(v, mymap)
-        # e.render(v, mymap)
-        # w.render(v, mymap)
+        s.render(v, mymap)
+        e.render(v, mymap)
+        w.render(v, mymap)
+
+
+        n.x('column', v, NORTH + EAST + NORTH, NORTH, 6, tex=p.TEXMAN.get('red'))
+        n.x('column', v, NORTH + EAST + NORTH, EAST, 8, tex=p.TEXMAN.get('green'))
+        n.x('column', v, NORTH + EAST + NORTH, SOUTH, 6, tex=p.TEXMAN.get('blue'))
+        n.x('column', v, NORTH + EAST + NORTH, WEST, 4, tex=p.TEXMAN.get('yellow'))
 
         from redeclipse.objects import cube
         for i in range(8):
             for j in range(8):
                 v.set_pointv(
                     CoarseVector(8 + 5, 8, 3) + FineVector(i, j, 0),
-                    cube.newtexcube(tex=1)
+                    cube.newtexcube(tex=p.TEXMAN.get_c('accent'))
                 )
 
         from redeclipse.aftereffects import box_outline

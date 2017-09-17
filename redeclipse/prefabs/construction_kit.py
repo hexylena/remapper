@@ -187,29 +187,19 @@ class ConstructionKitMixin(object):
 
     def x_wall(self, offset, face, limit_j=8):
         # Get a vector for where we should start drawing.
-        print('s.p', self.pos)
-        print('s.o', n(self.orientation))
-        print('offset', offset)
-        print('face', face, n(face))
-        print('f.90', face.rotate(90), n(face.rotate(90)))
-        # We need a FV that represents where to start drawing.
-        tile_center = self.pos + TILE_VOX_OFF
         for i in range(8):
             # Loop across the 'bottom' edge
-            off = FineVector(i, 0, 0).offset_rotate(face.rotate(90), offset=TILE_VOX_OFF)
-            print('off', off)
-            # sum these two together to get the offset for a column to start from.
-            # print('\t', off)
-            # And then yield those.
+            off = offset +  FineVector(0, i, 0)
+            lop = self.pos + off.offset_rotate(self.orientation, offset=TILE_VOX_OFF).offset_rotate(face.rotate(180), offset=TILE_VOX_OFF)
             for point in column_points(ROOM_SIZE, ABOVE):
-                yield self.pos + off + point
+                yield lop + point
 
-    # def x_ring(self, offset, size):
-        # # world, FineVector(-2, -2, i), 12, tex=accent_tex)
-        # yield from self.x_rectangular_prism(offset, FineVector(1, size - 1, 1))
-        # yield from self.x_rectangular_prism(offset, FineVector(size - 1, 1, 1))
-        # yield from self.x_rectangular_prism(offset + FineVector(0, size - 1, 0), FineVector(size, 1, 1))
-        # yield from self.x_rectangular_prism(offset + FineVector(size - 1, 0, 0), FineVector(1, size, 1))
+    def x_ring(self, offset, size):
+        # world, FineVector(-2, -2, i), 12, tex=accent_tex)
+        yield from self.x_rectangular_prism(offset, FineVector(1, size - 1, 1))
+        yield from self.x_rectangular_prism(offset, FineVector(size - 1, 1, 1))
+        yield from self.x_rectangular_prism(offset + FineVector(0, size - 1, 0), FineVector(size, 1, 1))
+        yield from self.x_rectangular_prism(offset + FineVector(size - 1, 0, 0), FineVector(1, size, 1))
 
     def x_rectangular_prism(self, offset, xyz):
         xyz = xyz.rotate(self.orientation).vox()
