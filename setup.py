@@ -16,7 +16,8 @@ REQUIRES = [
     'simplejson',
     'noise',
     'tqdm',
-    'bresenham'
+    'bresenham',
+    'kaitaistruct'
 ]
 
 setup(

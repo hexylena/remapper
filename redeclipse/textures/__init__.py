@@ -242,3 +242,9 @@ class PrimaryThemedTextureManager(ThemedTextureManager):
     from redeclipse.textures import primary, primary_theme
     textures = primary
     theme = primary_theme
+
+
+class MagicaThemedTextureManager(ThemedTextureManager):
+    from redeclipse.textures import magica, magica_theme
+    textures = magica
+    theme = magica_theme

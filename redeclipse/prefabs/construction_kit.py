@@ -216,6 +216,9 @@ class ConstructionKitMixin(object):
                 continue
             world.set_pointv(point, cube.newtexcube(tex=tex))
 
+    def x_cube(self, offset):
+        yield self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
+
     def x_column(self, offset, direction, length):
         local_position = self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
         for point in column_points(length, direction.rotate(self.orientation)):

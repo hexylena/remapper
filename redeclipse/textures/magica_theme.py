@@ -1,0 +1,5 @@
+GenericMaterial = ['auto_1']
+ColumnMaterial = ['auto_2']
+FloorMaterial = ['auto_3']
+WallMaterial = ['auto_4']
+AccentMaterial = ['auto_5']
