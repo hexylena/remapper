@@ -1,8 +1,65 @@
-from redeclipse.objects import cube
 import random
-from redeclipse.vector.orientations import TILE_VOX_OFF, VOXEL_OFFSET, NORTH, SOUTH, EAST, WEST, ABOVE, BELOW, get_vector_rotation, n
+
+from bresenham import bresenham
+
+from redeclipse.objects import cube
 from redeclipse.vector import FineVector
+from redeclipse.vector.orientations import TILE_VOX_OFF, VOXEL_OFFSET, NORTH, SOUTH, EAST, WEST, ABOVE, BELOW, get_vector_rotation, n
 ROOM_SIZE = 8
+
+
+def line_points(start, end):
+    """
+    TODO: this is broken af currently.
+    """
+    print("Line from ", start, 'to', end)
+    if start.x == end.x:
+        return []
+
+    xy = list(bresenham(start.x, start.y, end.x, end.y))
+    xz = list(bresenham(start.x, start.z, end.x, end.z))
+    print(xy)
+    print(xz)
+    # There are gonna be uuuugly cases aren't there :(
+
+    kv = {}
+    for x in range(start.x, end.x + 1):
+        kv[x] = {
+            'y': [],
+            'z': [],
+        }
+    print(kv)
+
+    for pxz in xz:
+        kv[pxz[0]]['z'].append(pxz[1])
+
+    for pxy in xy:
+        kv[pxy[0]]['y'].append(pxy[1])
+
+    # resolve
+    for pt in kv.keys():
+        ys = kv[pt]['y']
+        zs = kv[pt]['z']
+
+        if len(ys) == len(zs):
+            for (y, z) in zip(ys, zs):
+                yield FineVector(pt, y, z)
+        elif len(ys) % len(zs) == 0:
+            # eg. 9ys and 3zs
+            it_size = len(ys) // len(zs)
+            for i in range(len(zs)):
+                for j in range(it_size):
+                    yield FineVector(pt, ys[i + j], zs[i])
+        elif len(zs) % len(ys) == 0:
+            it_size = len(zs) // len(ys)
+            for i in range(len(ys)):
+                for j in range(it_size):
+                    yield FineVector(pt, ys[i], zs[i + j])
+        else:
+            # worst case.
+            for i in range(len(ys)):
+                for j in range(len(zs)):
+                    yield FineVector(pt, ys[i], zs[j])
 
 
 def column_points(size, direction):
@@ -87,22 +144,22 @@ def cube_points(x, y, z):
         x_lower_bound = 0
         x_upper_bound = x
     else:
-        x_lower_bound = x
-        x_upper_bound = 0
+        x_lower_bound = x + 1
+        x_upper_bound = 1
 
     if y > 0:
         y_lower_bound = 0
         y_upper_bound = y
     else:
-        y_lower_bound = y
-        y_upper_bound = 0
+        y_lower_bound = y + 1
+        y_upper_bound = 1
 
     if z > 0:
         z_lower_bound = 0
         z_upper_bound = z
     else:
-        z_lower_bound = z
-        z_upper_bound = 0
+        z_lower_bound = z + 1
+        z_upper_bound = 1
 
     for i in range(x_lower_bound, x_upper_bound):
         for j in range(y_lower_bound, y_upper_bound):
@@ -147,6 +204,12 @@ class ConstructionKitMixin(object):
             tex = kwargs['tex']
             del kwargs['tex']
 
+        if 'subtract' in kwargs:
+            del kwargs['subtract']
+
+        if 'prob' in kwargs:
+            del kwargs['prob']
+
         for point in func(*args, **kwargs):
             if subtract_or_skip(subtract, prob):
                 world.del_pointv(point)
@@ -158,41 +221,39 @@ class ConstructionKitMixin(object):
         for point in column_points(length, direction.rotate(self.orientation)):
             yield point + local_position
 
+    def x_interpolate(self, offset, start, end):
+        start = start.rotate(self.orientation).vox()
+        end = end.rotate(self.orientation).vox()
+        local_position = self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
+
+        for point in line_points(start, end):
+            yield point + local_position
+
+    def x_dotted_column(self, offset, direction, length, on=2, off=2):
+        local_position = self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
+        onoff = [True] * on + [False] * off
+        for idx, point in enumerate(column_points(length, direction.rotate(self.orientation))):
+            if onoff[idx % len(onoff)]:
+                yield point + local_position
+
     def x_ceiling(self, offset, size=ROOM_SIZE):
-        room_center = VOXEL_OFFSET - FineVector(ROOM_SIZE / 2, ROOM_SIZE / 2, 0)
-        for i in range(ROOM_SIZE):
-            # Loop across the 'bottom' edge
-            off = offset + FineVector(i, 0, 7)
-            # sum these two together to get the offset for a column to start from.
-            lop = self.pos + off.offset_rotate(self.orientation, offset=room_center)
-            # And then yield those.
-            for point in column_points(ROOM_SIZE, NORTH.rotate(self.orientation)):
-                yield point + lop
+        yield from self.x_rectangular_prism(offset + FineVector(0, 0, 7), FineVector(size, size, 1))
 
     def x_floor(self, offset, size=ROOM_SIZE):
-        # Get the center for an arbitrary sized room
-        room_center = VOXEL_OFFSET - FineVector(ROOM_SIZE / 2, ROOM_SIZE / 2, 0)
-        for i in range(ROOM_SIZE):
-            # Loop across the 'bottom' edge
-            off = offset + FineVector(i, 0, 0)
-            # sum these two together to get the offset for a column to start from.
-            lop = self.pos + off.offset_rotate(self.orientation, offset=room_center)
-            # And then yield those.
-            for point in column_points(ROOM_SIZE, NORTH.rotate(self.orientation)):
-                # print(point, lop, point + lop)
-                yield point + lop
+        yield from self.x_rectangular_prism(offset, FineVector(size, size, 1))
 
     def x_low_wall(self, offset, face):
-        yield from self.x_wall(offset, face, limit_j=2)
+        yield from self.x_wall(offset, face, limit_j=3)
 
     def x_wall(self, offset, face, limit_j=8):
-        # Get a vector for where we should start drawing.
-        for i in range(8):
-            # Loop across the 'bottom' edge
-            off = offset +  FineVector(0, i, 0)
-            lop = self.pos + off.offset_rotate(self.orientation, offset=TILE_VOX_OFF).offset_rotate(face.rotate(180), offset=TILE_VOX_OFF)
-            for point in column_points(ROOM_SIZE, ABOVE):
-                yield lop + point
+        if face == EAST:
+            yield from self.x_rectangular_prism(offset + FineVector(7, 0, 0), FineVector(1, 8, limit_j))
+        elif face == WEST:
+            yield from self.x_rectangular_prism(offset + FineVector(0, 0, 0), FineVector(1, 8, limit_j))
+        elif face == NORTH:
+            yield from self.x_rectangular_prism(offset + FineVector(0, 7, 0), FineVector(8, 1, limit_j))
+        elif face == SOUTH:
+            yield from self.x_rectangular_prism(offset + FineVector(0, 0, 0), FineVector(8, 1, limit_j))
 
     def x_ring(self, offset, size):
         # world, FineVector(-2, -2, i), 12, tex=accent_tex)
@@ -204,26 +265,6 @@ class ConstructionKitMixin(object):
     def x_rectangular_prism(self, offset, xyz):
         xyz = xyz.rotate(self.orientation).vox()
         local_position = self.pos + offset.offset_rotate(self.orientation, offset=TILE_VOX_OFF)
-        # print(local_position, xyz)
 
         for point in cube_points(xyz.x, xyz.y, xyz.z):
             yield point + local_position
-
-    def x_get_face(self, face):
-        """
-        Get the appropriate translation of ``face`` for ``self.orientation``
-
-        :param face: The face that we want to represent
-        :type face: redeclipse.vector.CoarseVector
-
-
-        >>> f(0, 0, 0).offset_rotate(90, offset=f(-3.5, -3.5, .5))
-        FV(BV(7.0, 0.0, 0.0))
-        >>> f(0, 0, 0).offset_rotate(180, offset=f(-3.5, -3.5, .5))
-        FV(BV(7.0, 7.0, 0.0))
-        >>> f(0, 0, 0).offset_rotate(270, offset=f(-3.5, -3.5, .5))
-        FV(BV(0.0, 7.0, 0.0))
-
-        :returns: New style direction
-        :rtype: redeclipse.vector.CoarseVector
-        """

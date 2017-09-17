@@ -11,7 +11,9 @@ class UnusedPositionManager:
 
     This is closely tied to our prefab model
     """
-    def __init__(self, world_size, mirror=False):
+    def __init__(self, world_size, mirror=False, noclip=False):
+        # Disable occupation tests.
+        self.noclip = noclip
         # Set of occupied positions
         self.occupied = set()
         # Set of doors that we can connect to
@@ -108,7 +110,7 @@ class UnusedPositionManager:
         # unoccupied.
         logging.info("Registering %s which occupies %s", room.__class__.__name__, '|'.join(map(str, used)))
         for position in used:
-            if position in self.occupied:
+            if position in self.occupied and not self.noclip:
                 raise Exception("Occupado %s" % position)
         # Otheriwse, all positions are fine to use.
 
