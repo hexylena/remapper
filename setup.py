@@ -15,7 +15,8 @@ REQUIRES = [
     'enum34',
     'simplejson',
     'noise',
-    'tqdm'
+    'tqdm',
+    'bresenham'
 ]
 
 setup(
