@@ -13,11 +13,35 @@ TEXMAN = AutomatedMagicaTextureManager()
 
 
 class MagicaRoom(Room):
+    """
+    A 'magic' room definition, it should be initialized with the voxel and yml
+    files, but then re_initialized with the real room instantiation.
+    """
 
     def re_init(self, pos, orientation=EAST, randflags=None):
+        """
+        instead of ``r = Stair(pos=...)``, this is called as::
+
+            r = copy.copy(room_base)
+            r.re_init(pos=...)
+
+        it's a bit awkward but it work for now.
+        """
         super().__init__(pos, orientation=orientation, randflags=randflags)
 
+    def __repr__(self):
+        return '<MagicRoom %s ori%s>' % (self.name, self.orientation)
+
     def __init__(self, yml, vox):
+        """
+        The 'false' init method that builds an in-memory room class based on
+        the yml file and the magica voxel model.
+
+        :param str yml: path to a yaml file documenting the room
+        :param str vox: path to a .vox file
+
+        The yaml file is more or less undocumented so far.
+        """
         self.model = Magicavoxel.from_file(vox)
         self.vox = VoxelWorld()
         self._colours = {}
@@ -58,13 +82,22 @@ class MagicaRoom(Room):
         return self.__positions
 
     def render(self, world, xmap):
+        """
+        Render the magic room to the world.
+
+        TODO: broken colours/textures.
+        """
         self.light(xmap)
         for v in self.vox.world:
             (r, g, b) = self._colours[self.vox.world[v]]
-            self.x('cube', world, SELF + FineVector(*v), tex=TEXMAN.get_colour(r, g, b))
+            c = TEXMAN.get_colour(r, g, b)
+            self.x('cube', world, SELF + FineVector(*v), tex=c)
 
 
 def autodiscover():
+    """
+    Automatically load yml/vox pairs from the module.
+    """
     rooms = []
     for yml in glob.glob(os.path.join(ROOMS, '*.yml')):
         room_class = MagicaRoom(yml, yml.replace('.yml', '.vox'))

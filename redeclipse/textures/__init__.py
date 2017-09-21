@@ -154,8 +154,8 @@ class TextureManager:
         self.get('default')
 
     def discover_textures(self):
-        self.texref['sky'] = Sky
-        self.texref['default'] = Default
+        self.texref['sky'] = Sky()
+        self.texref['default'] = Default()
 
     def get(self, name):
         if name not in self.atlas_backref:
@@ -177,7 +177,7 @@ class TextureManager:
         handle = open(filename, 'w')
         handle.write(comment.format(author=author, map_name=map_name))
         for idx, (tex_key, tex) in enumerate(self.atlas.items()):
-            handle.write(tex.conf(tex, idx=idx))
+            handle.write(tex.conf(idx=idx))
         handle.close()
 
     def copy_data(self):
@@ -188,7 +188,7 @@ class TextureManager:
             if not hasattr(tex, 'files'):
                 continue
 
-            for texfile in tex.files(tex):
+            for texfile in tex.files():
                 shutil.copy(
                     os.path.join(os.path.dirname(os.path.realpath(__file__)), tex.srcpath, texfile),
                     os.path.join(outdir, texfile)
@@ -252,20 +252,21 @@ class MagicaThemedTextureManager(ThemedTextureManager):
 
 class AutomatedMagicaTextureManager(TextureManager):
 
-    def add_colour(self, r, g, b):
-        tmp = SimpleColourTex()
-        tmp.r = r
-        tmp.g = g
-        tmp.b = b
-        key = 'c_%s_%s_%s' % (r, g, b)
-        self.texref[key] = tmp
-        return self.texref[key]
-
     def get_colour(self, r, g, b):
-        key = 'c_%s_%s_%s' % (r, g, b)
-        if key not in self.texref:
-            return self.add_colour(r, g, b)
-        return self.texref[key]
+        name = 'c_%s_%s_%s' % (r, g, b)
+        if name not in self.atlas_backref:
+            tmp = SimpleColourTex()
+            tmp.r = r
+            tmp.g = g
+            tmp.b = b
+            self.texref[name] = tmp
+            # Insert tex
+            tex = self.texref[name]
+            pos = len(self.atlas)
+            self.atlas[pos] = tex
+            # Now insert backref
+            self.atlas_backref[name] = pos
+        return self.atlas_backref[name]
 
     def get_c(self, category):
         if category == 'generic':

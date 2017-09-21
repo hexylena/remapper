@@ -25,8 +25,10 @@ def to_magicavoxel(voxel_world, handle, texman):
         return int(x)
 
     for ((x, y, z), value) in voxel_world.world.items():
-        # handle.write(struct.pack('BBBB', m(x), m(y), m(z), m(value.texture[0] + 1)))
-        handle.write(struct.pack('BBBB', m(x), m(y), m(z), 1))
+        if x > 255 or y > 255 or z > 255 or x < 0 or y < 0 or z < 0:
+            continue
+        handle.write(struct.pack('BBBB', m(x), m(y), m(z), m(value.texture[0] + 1)))
+        # handle.write(struct.pack('BBBB', m(x), m(y), m(z), 1))
 
     # colour chunk
     handle.write(struct.pack('4s', b'RGBA'))
