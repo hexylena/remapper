@@ -1,0 +1,16 @@
+---
+name: tree house thing
+doors:
+    - WEST
+    - EAST
+    - NORTH
+    - SOUTH
+occupied: autocalc
+room_type: oriented
+
+#colour_map:
+#   colour2: accent
+#   colour1: floor
+
+#randflags:
+    #handrail: color2

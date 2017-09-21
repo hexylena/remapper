@@ -1,7 +1,7 @@
 import os
 import shutil
 import random
-from redeclipse.textures.basetex import Sky, Default
+from redeclipse.textures.basetex import Sky, Default, SimpleColourTex
 
 comment = """
 // {map_name} by {author} (maps/base)
@@ -248,3 +248,38 @@ class MagicaThemedTextureManager(ThemedTextureManager):
     from redeclipse.textures import magica, magica_theme
     textures = magica
     theme = magica_theme
+
+
+class AutomatedMagicaTextureManager(TextureManager):
+
+    def add_colour(self, r, g, b):
+        tmp = SimpleColourTex()
+        tmp.r = r
+        tmp.g = g
+        tmp.b = b
+        key = 'c_%s_%s_%s' % (r, g, b)
+        self.texref[key] = tmp
+        return self.texref[key]
+
+    def get_colour(self, r, g, b):
+        key = 'c_%s_%s_%s' % (r, g, b)
+        if key not in self.texref:
+            return self.add_colour(r, g, b)
+        return self.texref[key]
+
+    def get_c(self, category):
+        if category == 'generic':
+            return self.get_colour(0, 0, 0)
+        elif category == 'column':
+            return self.get_colour(0.5, 0.5, 0.5)
+        elif category == 'floor':
+            return self.get_colour(0.1, 0.1, 0.1)
+        elif category == 'wall':
+            return self.get_colour(0.9, 0.9, 0.9)
+        elif category == 'accent':
+            return self.get_colour(1, 0, 0)
+
+        return self.get_colour(0, 0, 1)
+
+    def discover_textures(self):
+        super().discover_textures()

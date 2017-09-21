@@ -13,6 +13,8 @@ if parse_version(ks_version) < parse_version('0.7'):
     raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
 
 class Magicavoxel(KaitaiStruct):
+    SIZE = 256
+
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
         self._parent = _parent
@@ -28,7 +30,7 @@ class Magicavoxel(KaitaiStruct):
 
         self.model_size = self._root.SizeChunk(self._io, self, self._root)
         self.model_voxels = self._root.XyziChunk(self._io, self, self._root)
-        self.palette = self._root.PaletteChunk(self._io, self, self._root)
+        self.palette = self._root.PaletteChunk(self._io, self, self._root, size=self.SIZE)
 
     class XyziChunk(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -57,15 +59,15 @@ class Magicavoxel(KaitaiStruct):
 
 
     class PaletteChunk(KaitaiStruct):
-        def __init__(self, _io, _parent=None, _root=None):
+        def __init__(self, _io, _parent=None, _root=None, size=256):
             self._io = _io
             self._parent = _parent
             self._root = _root if _root else self
             self.chunk_identifier = self._io.ensure_fixed_contents(struct.pack('4b', 82, 71, 66, 65))
             self.chunk_size = self._io.read_u4le()
             self.child_chunk_size = self._io.read_u4le()
-            self.colours = [None] * (256)
-            for i in range(256):
+            self.colours = [None] * (size)
+            for i in range(size):
                 self.colours[i] = self._root.Colour(self._io, self, self._root)
 
 

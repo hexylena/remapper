@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import copy
 import argparse
 import random
 import logging
@@ -7,6 +8,7 @@ from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
+from redeclipse.magicavoxel import autodiscover, TEXMAN
 from redeclipse.magicavoxel.writer import to_magicavoxel
 
 from redeclipse.vector import CoarseVector, FineVector, AbsoluteVector
@@ -23,27 +25,25 @@ log = logging.getLogger(__name__)
 def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     random.seed(seed)
 
-    for idx, room_type in enumerate((
-        'Room', 'TestRoom', 'TestRoom2', 'NLongCorridor', 'Corridor4way',
-        'Corridor2way', 'JumpCorridor3', 'JumpCorridorVertical',
-        'JumpCorridorVerticalCenter', 'SpawnRoom', 'PoleRoom',
-        'ImposingBlockRoom', 'ImposingRingRoom', 'AltarRoom', 'Stair',
-        'CrossingWalkways', 'PlusPlatform', 'MultiPlatform', 'DigitalRoom'
-    )):
+    for idx, Room in enumerate(autodiscover()):
         mymap = parse(mpz_in.name)
         upm = UnusedPositionManager(size, mirror=True, noclip=True)
         v = VoxelWorld(size=size)
-        print("Processing %s" % room_type)
-        Room = getattr(p, room_type)
+        print("Processing %s" % Room.name.replace(' ', '_'))
 
         kwargs = Room.randOpts(None)
-        e = Room(pos=CoarseVector(8 + 3, 8, 0), orientation=EAST, **kwargs)
+        e = Room
+        n = copy.copy(e)
+        s = copy.copy(e)
+        w = copy.copy(e)
+
+        e.re_init(pos=CoarseVector(8 + 3, 8, 0), orientation=EAST, **kwargs)
         kwargs = Room.randOpts(None)
-        w = Room(pos=CoarseVector(8 - 3, 8, 0), orientation=WEST, **kwargs)
+        w.re_init(pos=CoarseVector(8 - 3, 8, 0), orientation=WEST, **kwargs)
         kwargs = Room.randOpts(None)
-        n = Room(pos=CoarseVector(8, 8 + 3, 0), orientation=NORTH, **kwargs)
+        n.re_init(pos=CoarseVector(8, 8 + 3, 0), orientation=NORTH, **kwargs)
         kwargs = Room.randOpts(None)
-        s = Room(pos=CoarseVector(8, 8 - 3, 0), orientation=SOUTH, **kwargs)
+        s.re_init(pos=CoarseVector(8, 8 - 3, 0), orientation=SOUTH, **kwargs)
 
         upm.register_room(n)
         upm.register_room(s)
@@ -55,10 +55,10 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         e.render(v, mymap)
         w.render(v, mymap)
 
-        e.x('column', v, NORTH + EAST + NORTH + (ABOVE * 3), EAST, 8, tex=p.TEXMAN.get('green'))
-        e.x('column', v, NORTH + EAST + NORTH + (ABOVE * 3), NORTH, 6, tex=p.TEXMAN.get('red'))
-        e.x('column', v, NORTH + EAST + NORTH + (ABOVE * 3), SOUTH, 6, tex=p.TEXMAN.get('blue'))
-        e.x('column', v, NORTH + EAST + NORTH + (ABOVE * 3), WEST, 4, tex=p.TEXMAN.get('yellow'))
+        e.x('column', v, NORTH + EAST + NORTH + (ABOVE * 3), EAST, 8, tex=TEXMAN.get_colour(1, 0, 0))
+        e.x('column', v, NORTH + EAST + NORTH + (ABOVE * 3), NORTH, 6, tex=TEXMAN.get_colour(1, 1, 0))
+        e.x('column', v, NORTH + EAST + NORTH + (ABOVE * 3), SOUTH, 6, tex=TEXMAN.get_colour(1, 0, 1))
+        e.x('column', v, NORTH + EAST + NORTH + (ABOVE * 3), WEST, 4, tex=TEXMAN.get_colour(0, 1, 1))
 
         from redeclipse.objects import cube
         for i in range(8):
@@ -74,8 +74,8 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         # from redeclipse.aftereffects import box_outline
         # box_outline(v, height=10)
 
-        with open('%03d_%s.vox' % (idx, room_type), 'wb') as handle:
-            to_magicavoxel(v, handle, p.TEXMAN)
+        with open('%03d_%s.vox' % (idx, Room.name.replace(' ', '_')), 'wb') as handle:
+            to_magicavoxel(v, handle, TEXMAN)
 
 
 if __name__ == '__main__':

@@ -7,7 +7,6 @@ from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
-from redeclipse.magicavoxel import to_magicavoxel
 
 from redeclipse.vector import CoarseVector, FineVector, AbsoluteVector
 from redeclipse.vector.orientations import rotate_yaw, SELF, \
