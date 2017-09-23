@@ -22,13 +22,12 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
-def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
-    random.seed(seed)
+def main(mpz_in, redeclipse=None, magica=None):
 
     for idx, Room in enumerate(autodiscover()):
         mymap = parse(mpz_in.name)
-        upm = UnusedPositionManager(size, mirror=True, noclip=True)
-        v = VoxelWorld(size=size)
+        upm = UnusedPositionManager(2**7, mirror=True, noclip=True)
+        v = VoxelWorld(size=2**7)
         print("Processing %s" % Room.name.replace(' ', '_'))
 
         kwargs = Room.randOpts(None)
@@ -71,21 +70,23 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         for (pos, typ, ori) in upm.unoccupied:
             r = p.TestRoom(pos, orientation=EAST)
             r.render(v, mymap)
-        # from redeclipse.aftereffects import box_outline
-        # box_outline(v, height=10)
 
-        with open('%03d_%s.vox' % (idx, Room.name.replace(' ', '_')), 'wb') as handle:
-            to_magicavoxel(v, handle, TEXMAN)
+        if magica:
+            to_magicavoxel(v, magica, TEXMAN)
+
+        if redeclipse:
+            TEXMAN.emit_conf(redeclipse)
+            TEXMAN.copy_data()
+            mymap.world = v.to_octree()
+            mymap.world[0].octsav = 0
+            mymap.write(redeclipse.name)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Add trees to map')
     parser.add_argument('mpz_in', type=argparse.FileType('r'), help='Input .mpz file')
-    parser.add_argument('mpz_out', type=argparse.FileType('w'), help='Output .mpz file')
 
-    parser.add_argument('--size', default=2**8, type=int, help="World size. Danger!")
-    parser.add_argument('--seed', default=42, type=int, help="Random seed")
-    parser.add_argument('--rooms', default=200, type=int, help="Number of rooms to place")
-    parser.add_argument('--debug', action='store_true', help="Debugging")
+    parser.add_argument('--redeclipse', type=argparse.FileType('w'), help='Output .mpz file')
+    parser.add_argument('--magica', type=argparse.FileType('w'), help='Output .vox file')
     args = parser.parse_args()
     main(**vars(args))
