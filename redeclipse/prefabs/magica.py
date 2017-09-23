@@ -1,10 +1,11 @@
+import os
+
 from redeclipse.textures import AutomatedMagicaTextureManager
-from redeclipse.prefab import Room, TEXMAN
+from redeclipse.prefabs import Room, TEXMAN
 from redeclipse.magicavoxel.reader import Magicavoxel
 from redeclipse.voxel import VoxelWorld
 from redeclipse.vector import FineVector
-from redeclipse.vector.orientations import SELF, EAST, SOUTH, ABOVE
-# TowerDistributionManager, PlatformDistributionManager
+from redeclipse.vector.orientations import SELF, EAST, SOUTH, ABOVE, WEST, NORTH
 
 
 class MagicaRoom(Room):
@@ -14,7 +15,7 @@ class MagicaRoom(Room):
     def __repr__(self):
         return '<MagicRoom %s ori%s>' % (self.name, self.orientation)
 
-    def load_model(self, vox):
+    def load_model(self):
         """
         The 'false' init method that builds an in-memory room class based on
         the magica voxel model.
@@ -23,7 +24,7 @@ class MagicaRoom(Room):
 
         The yaml file is more or less undocumented so far.
         """
-        self.model = Magicavoxel.from_file(vox)
+        self.model = Magicavoxel.from_file(self.vox_file)
         self.vox = VoxelWorld()
         self._colours = {}
         for vox in self.model.model_voxels.voxels:
@@ -35,7 +36,7 @@ class MagicaRoom(Room):
 
         self.__doors = []
         for door in self.doors:
-            self.__doors.append(eval(door))
+            self.__doors.append(door)
 
         # Occupied positions are automatically calculated
         self.__positions = []
@@ -52,9 +53,13 @@ class MagicaRoom(Room):
                     )
 
     def _get_doorways(self):
+        if not hasattr(self, 'model'):
+            self.load_model(self.vox_file)
         return self.__doors
 
     def _get_positions(self):
+        if not hasattr(self, 'model'):
+            self.load_model(self.vox_file)
         return self.__positions
 
     def render_extra(self, world, xmap):
@@ -64,7 +69,6 @@ class MagicaRoom(Room):
         """
         Render the magic room to the world.
         """
-
         if not hasattr(self, 'model'):
             self.load_model(self.vox_file)
 
@@ -74,3 +78,15 @@ class MagicaRoom(Room):
             self.x('cube', world, SELF + FineVector(*v), tex=c)
 
         self.render_extra(world, xmap)
+
+
+class castle_gate(MagicaRoom):
+    vox_file = os.path.abspath(__file__).replace('.py', '.vox')
+    name = 'castle_gate'
+    room_type = 'oriented'
+    doors = [
+        WEST + ABOVE,
+        EAST + EAST + EAST + ABOVE,
+        EAST + NORTH,
+        EAST + SOUTH
+    ]
