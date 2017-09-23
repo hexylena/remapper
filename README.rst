@@ -23,7 +23,9 @@ voxel→octree translation routine which allows you to construct simple
 voxel worlds and have them rendered into a redeclipse octree. You could
 theoretically import your minecraft world, if you wished.
 
-See the `maps folder <./maps/>`__ for screenshots and maps you can play
+See the `maps folder <./maps/>`__ for screenshots and maps you can play. See
+the `blog post <https://erasche.github.io/2017/09/23/remapper.html>`__ for more
+information.
 
 Updates
 -------
@@ -62,6 +64,8 @@ pack <http://www.minecraftforum.net/forums/mapping-and-modding/resource-packs/12
 
 Examples
 --------
+
+TODO: update these, none of this works.
 
 .. code:: console
 
