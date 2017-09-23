@@ -1,7 +1,9 @@
 from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
 from redeclipse.entities.weapon import Grenade
-from redeclipse.textures import MagicaThemedTextureManager
+from redeclipse.voxel import VoxelWorld
+from redeclipse.textures import AutomatedMagicaTextureManager
+from redeclipse.magicavoxel.reader import Magicavoxel
 # MinecraftThemedTextureManager, DefaultThemedTextureManager, PaperThemedTextureManager, PrimaryThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
 from redeclipse.prefabs.distributions import UniformDistributionManager
@@ -23,11 +25,13 @@ _BUILTIN_SIZE = 2 ** 7
 _REAL_SIZE = 2 ** 8
 SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
 
+TEXMAN = AutomatedMagicaTextureManager()
 # TEXMAN = MinecraftThemedTextureManager()
 # TEXMAN = DefaultThemedTextureManager()
 # TEXMAN = PaperThemedTextureManager()
 # TEXMAN = PrimaryThemedTextureManager()
-TEXMAN = MagicaThemedTextureManager()
+# TEXMAN = MagicaThemedTextureManager()
+# TEXMAN = MagicaThemedTextureManager()
 LIGHTMAN = PositionBasedLightManager(brightness=1.0, saturation=0.6)
 # LIGHTMAN = None
 # DISTMAN = TowerDistributionManager()
@@ -42,7 +46,7 @@ class Room(ConstructionKitMixin):
     """Base 'room' class which all other room types inherit from
     """
     room_type = 'oriented'
-    tex = TEXMAN.get_c('generic')
+    tex = 1
     _tp = None
 
     def __init__(self, pos, orientation=EAST, randflags=None):
@@ -1195,3 +1199,75 @@ class tree_house_thingy(Room):
         self.x('cube', world, SELF + FineVector(3, 7, 7), tex=TEXMAN.get('auto_26'))
         self.x('cube', world, SELF + FineVector(4, 7, 7), tex=TEXMAN.get('auto_26'))
         self.x('cube', world, SELF + FineVector(5, 7, 7), tex=TEXMAN.get('auto_26'))
+
+
+class MagicaRoom(Room):
+
+    vox_file = None
+
+    def __repr__(self):
+        return '<MagicRoom %s ori%s>' % (self.name, self.orientation)
+
+    def load_model(self, vox):
+        """
+        The 'false' init method that builds an in-memory room class based on
+        the magica voxel model.
+
+        :param str vox: path to a .vox file
+
+        The yaml file is more or less undocumented so far.
+        """
+        self.model = Magicavoxel.from_file(vox)
+        self.vox = VoxelWorld()
+        self._colours = {}
+        for vox in self.model.model_voxels.voxels:
+            self.vox.set_point(vox.x, vox.y, vox.z, vox.c)
+            # For every colour in the palette, register it with the current
+            # class's colour atlas (non-global colour atlas).
+            for idx, colour in enumerate(self.model.palette.colours):
+                self._colours[idx] = (colour.r / 255, colour.g / 255, colour.b / 255)
+
+        self.__doors = []
+        for door in self.doors:
+            self.__doors.append(door)
+
+        # Occupied positions are automatically calculated
+        self.__positions = []
+
+        x_dims = (self.vox.xmax - self.vox.xmin) // 8
+        y_dims = (self.vox.ymax - self.vox.ymin) // 8
+        z_dims = (self.vox.zmax - self.vox.zmin) // 8
+
+        for i in range(x_dims + 1):
+            for j in range(y_dims + 1):
+                for k in range(z_dims + 1):
+                    self.__positions.append(
+                        (EAST * i) + (SOUTH * j) + (ABOVE * k)
+                    )
+
+    def _get_doorways(self):
+        if not hasattr(self, 'model'):
+            self.load_model(self.vox_file)
+        return self.__doors
+
+    def _get_positions(self):
+        if not hasattr(self, 'model'):
+            self.load_model(self.vox_file)
+        return self.__positions
+
+    def render_extra(self, world, xmap):
+        self.light(xmap)
+
+    def render(self, world, xmap):
+        """
+        Render the magic room to the world.
+        """
+        if not hasattr(self, 'model'):
+            self.load_model(self.vox_file)
+
+        for v in self.vox.world:
+            (r, g, b) = self._colours[self.vox.world[v]]
+            c = TEXMAN.get_colour(r, g, b)
+            self.x('cube', world, SELF + FineVector(*v), tex=c)
+
+        self.render_extra(world, xmap)

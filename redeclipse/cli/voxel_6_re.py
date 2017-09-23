@@ -9,9 +9,8 @@ from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
 from redeclipse.cli import weighted_choice
-from redeclipse.magicavoxel import autodiscover, TEXMAN
 from redeclipse.magicavoxel.writer import to_magicavoxel
-from redeclipse.prefabs import STARTING_POSITION
+from redeclipse.prefabs import STARTING_POSITION, TEXMAN
 
 from redeclipse.vector import CoarseVector, FineVector, AbsoluteVector
 from redeclipse.vector.orientations import rotate_yaw, SELF, \
@@ -31,7 +30,11 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
     room_counts = 32
-    possible_rooms = autodiscover()
+
+    from redeclipse.prefabs.castle_gate import castle_gate
+    possible_rooms = [
+        castle_gate
+    ]
 
     def mirror(d):
         if isinstance(d, dict):
@@ -65,12 +68,10 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.
     # We use the spawn room as our base starting room
-    b = copy.copy(possible_rooms[0])
-    b_m = copy.copy(possible_rooms[0])
-    b.re_init(pos=STARTING_POSITION, orientation=EAST)
-    b_m.re_init(pos=mirror(STARTING_POSITION), orientation=EAST)
-    print(b)
-    print(b._get_positions())
+    Room = possible_rooms[0]
+    Room_m = possible_rooms[0]
+    b = Room(pos=STARTING_POSITION, orientation=EAST)
+    b_m = Room_m(pos=mirror(STARTING_POSITION), orientation=EAST)
     # Register our new room
     upm.register_room(b)
     upm.register_room(b_m)
@@ -108,15 +109,13 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             # If we are here, we do have a position + orientation to place in
             kwargs = {'orientation': orientation}
             # Get a random room, influenced by the prev_room
-            _roomClass = random_room(prev_room)
+            roomClass = random_room(prev_room)
             # Then safe to work with it.
-            kwargs.update(_roomClass.randOpts(prev_room))
+            kwargs.update(roomClass.randOpts(prev_room))
             # Copy them here, not sure if makes sense.
-            r = copy.copy(_roomClass)
-            r_m = copy.copy(_roomClass)
             # Initialize room, required to correctly calculate get_positions()
-            r.re_init(pos=position, **kwargs)
-            r_m.re_init(pos=mirror(position), **mirror(kwargs))
+            r = roomClass(pos=position, **kwargs)
+            r_m = roomClass(pos=mirror(position), **mirror(kwargs))
             # Try adding it
             try:
                 if not upm.preregister_rooms(r, r_m):
