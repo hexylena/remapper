@@ -17,25 +17,16 @@ log = logging.getLogger(__name__)
 
 
 def main():
-    base_rooms = [
-        'Room', 'TestRoom', 'TestRoom2', 'NLongCorridor', 'Corridor4way',
-        'Corridor2way', 'JumpCorridor3', 'JumpCorridorVertical',
-        'JumpCorridorVerticalCenter', 'SpawnRoom', 'PoleRoom',
-        'ImposingBlockRoom', 'ImposingRingRoom', 'AltarRoom', 'Stair',
-        'CrossingWalkways', 'PlusPlatform', 'MultiPlatform', 'DigitalRoom'
-    ]
-    base_classes = [getattr(prefabs, room_type) for room_type in base_rooms]
     magica_rooms = [
-        'castle_gate'
+        'castle_wall_section', 'castle_wall_corner', 'castle_wall_entry', 'castle_wall_tower', 'castle_gate'
     ]
     magica_classes = [getattr(magica, room_type) for room_type in magica_rooms]
-
 
     for idx, Room in enumerate(magica_classes):
         mymap = Map('MAPZ', 150, 0, None, 0, [], [], None, None, None)
         upm = UnusedPositionManager(2**7, mirror=True, noclip=True)
         v = VoxelWorld(size=2**7)
-        print("Processing %s" % Room.__name__)
+        logging.info("Processing %s" % Room.__name__)
 
         kwargs = Room.randOpts(None)
         e = Room(pos=CoarseVector(8 + 3, 8, 0), orientation=EAST, **kwargs)

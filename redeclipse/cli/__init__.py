@@ -19,3 +19,19 @@ def weighted_choice(choices):
             return c
         upto += w
     return None
+
+
+def random_room(connecting_room, room_options):
+    """Pick out a random room based on the connecting room and the
+    transition probabilities of that room."""
+    choices = []
+    probs = connecting_room.get_transition_probs()
+    for room in room_options:
+        # Append to our possibilities
+        choices.append((
+            # The room, and the probability of getting that type of room
+            # based on the current room type
+            room, probs.get(room.room_type, 0.1)
+        ))
+
+    return weighted_choice(choices)

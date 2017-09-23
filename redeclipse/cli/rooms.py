@@ -7,27 +7,46 @@ from redeclipse.cli import parse, weighted_choice
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
+from redeclipse.magicavoxel.writer import to_magicavoxel
+from redeclipse.prefabs import STARTING_POSITION, TEXMAN
+
 from redeclipse.vector.orientations import EAST
-# from redeclipse.skybox import MinecraftSky
-from redeclipse.prefabs import STARTING_POSITION
 from redeclipse.vector import CoarseVector
 from tqdm import tqdm
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
-def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
+def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False, magica=None):
     random.seed(seed)
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
     room_counts = 32
 
+    possible_rooms = [
+        p.SpawnRoom,
+        p.Room,
+        p.NLongCorridor,
+        p.Corridor2way,
+        p.JumpCorridor3,
+        p.JumpCorridorVertical,
+        p.Corridor4way,
+        # p.PoleRoom,
+        # p.ImposingBlockRoom,
+        # p.JumpCorridorVerticalCenter,
+        p.PlusPlatform,
+        p.FlatSpace,
+
+        # p.Stair,
+        # p.DigitalRoom,
+        # p.DoricTemple,
+        # p.ImposingRingRoom,
+        # p.ImposingBlockRoom,
+    ]
+
     def mirror(d):
         if isinstance(d, dict):
-            if '-' in kwargs['orientation']:
-                kwargs['orientation'] = kwargs['orientation'].replace('-', '+')
-            else:
-                kwargs['orientation'] = kwargs['orientation'].replace('+', '-')
+            kwargs['orientation'] = kwargs['orientation'].rotate(180)
             return kwargs
         else:
             return CoarseVector(
@@ -39,27 +58,6 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     def random_room(connecting_room):
         """Pick out a random room based on the connecting room and the
         transition probabilities of that room."""
-        possible_rooms = [
-            p.Room,
-            p.NLongCorridor,
-            p.Corridor2way,
-            p.JumpCorridor3,
-            p.JumpCorridorVertical,
-            p.Corridor4way,
-            p.SpawnRoom,
-            # p.PoleRoom,
-            # p.ImposingBlockRoom,
-            # p.JumpCorridorVerticalCenter,
-            p.PlusPlatform,
-            p.FlatSpace,
-
-            # p.Stair,
-            # p.DigitalRoom,
-            # p.DoricTemple,
-            # p.ImposingRingRoom,
-            # p.ImposingBlockRoom,
-        ]
-
         choices = []
         probs = connecting_room.get_transition_probs()
         for room in possible_rooms:
@@ -78,8 +76,10 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.
     # We use the spawn room as our base starting room
-    b = p.SpawnRoom(pos=STARTING_POSITION, orientation="+y")
-    b_m = p.SpawnRoom(pos=mirror(STARTING_POSITION), orientation="-y")
+    Room = possible_rooms[0]
+    Room_m = possible_rooms[0]
+    b = Room(pos=STARTING_POSITION, orientation=EAST)
+    b_m = Room_m(pos=mirror(STARTING_POSITION), orientation=EAST)
     # Register our new room
     upm.register_room(b)
     upm.register_room(b_m)
@@ -157,21 +157,27 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     # box(v)
 
     # Emit config + textures
-    p.TEXMAN.emit_conf(mpz_out)
-    p.TEXMAN.copy_data()
+    TEXMAN.emit_conf(mpz_out)
+    TEXMAN.copy_data()
     # mymap.skybox(MinecraftSky('/home/hxr/games/redeclipse-1.5.3/'))
 
     # Standard code to render octree to file.
 
-    # mymap.world = v.to_octree()
-    # mymap.world[0].octsav = 0
-    # mymap.write(mpz_out.name)
+    if magica:
+        to_magicavoxel(v, magica, TEXMAN)
+        print('voxel')
+
+    mymap.world = v.to_octree()
+    mymap.world[0].octsav = 0
+    mymap.write(mpz_out.name)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Add trees to map')
     parser.add_argument('mpz_in', type=argparse.FileType('r'), help='Input .mpz file')
     parser.add_argument('mpz_out', type=argparse.FileType('w'), help='Output .mpz file')
+
+    parser.add_argument('--magica', type=argparse.FileType('w'), help='Output .vox file')
 
     parser.add_argument('--size', default=2**8, type=int, help="World size. Danger!")
     parser.add_argument('--seed', default=42, type=int, help="Random seed")

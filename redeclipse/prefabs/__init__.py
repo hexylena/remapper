@@ -13,7 +13,7 @@ from redeclipse.vector import CoarseVector, FineVector
 from redeclipse.vector.orientations import rotate_yaw, SELF, \
     SOUTH, NORTH, WEST, EAST, ABOVE, \
     ABOVE_FINE, NORTHWEST, \
-    NORTHEAST, SOUTHWEST, SOUTHEAST, TILE_CENTER, HALF_HEIGHT
+    NORTHEAST, SOUTHWEST, SOUTHEAST, TILE_CENTER, HALF_HEIGHT, n
 
 import random # noqa
 # import math
@@ -79,11 +79,12 @@ class Room(ConstructionKitMixin):
         your doorways. Everyone will call this and have access to shifted
         values.
         """
-        # log.debug('doors', self.orientation, self._get_doorways(), [
-            # self.pos + q.rotate(self.orientation) for q in self._get_doorways()
-        # ])
         return [
-            self.pos + q.rotate(self.orientation) for q in self._get_doorways()
+            {
+                'orientation': q['orientation'].rotate(self.orientation),
+                'offset': self.pos + q['offset'].rotate(self.orientation)
+            }
+            for q in self._get_doorways()
         ]
 
     def _get_positions(self):

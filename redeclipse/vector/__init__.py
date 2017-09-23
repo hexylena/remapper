@@ -249,6 +249,13 @@ class FineVector(BaseVector):
             a.z - b.z,
         )
 
+    def coarse(self):
+        return CoarseVector(
+            self.x // 8,
+            self.y // 8,
+            self.z // 8
+        )
+
 
 class CoarseVector(BaseVector):
 

@@ -1,66 +1,35 @@
 #!/usr/bin/env python
-import copy
 import argparse
 import random
 import logging
 from redeclipse.voxel import VoxelWorld
-from redeclipse.cli import parse
+from redeclipse.cli import parse, weighted_choice, random_room
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
-from redeclipse.cli import weighted_choice
 from redeclipse.magicavoxel.writer import to_magicavoxel
 from redeclipse.prefabs import STARTING_POSITION, TEXMAN
+from redeclipse.prefabs import magica as m
 
-from redeclipse.vector import CoarseVector, FineVector, AbsoluteVector
-from redeclipse.vector.orientations import rotate_yaw, SELF, \
-    SOUTH, NORTH, WEST, EAST, ABOVE, \
-    ABOVE_FINE, NORTHWEST, \
-    NORTHEAST, SOUTHWEST, SOUTHEAST, TILE_CENTER, HALF_HEIGHT
-# from redeclipse.skybox import MinecraftSky
-from redeclipse.vector import CoarseVector, FineVector
+from redeclipse.vector.orientations import EAST, n, CARDINALS, NORTH
+from redeclipse.vector import CoarseVector
 
 from tqdm import tqdm
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
-def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
+def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False, magica=None):
     random.seed(seed)
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
     room_counts = 32
 
-    from redeclipse.prefabs.castle_gate import castle_gate
-    possible_rooms = [
-        castle_gate
+    magica_rooms = [
+        'castle_small_deis', 'castle_wall_section', 'castle_wall_corner',
+        'castle_wall_entry', 'castle_wall_tower', #'castle_gate'
     ]
-
-    def mirror(d):
-        if isinstance(d, dict):
-            kwargs['orientation'] = kwargs['orientation'].rotate(180)
-            return kwargs
-        else:
-            return CoarseVector(
-                room_counts - d[0],
-                room_counts - d[1],
-                d[2]
-            )
-
-    def random_room(connecting_room):
-        """Pick out a random room based on the connecting room and the
-        transition probabilities of that room."""
-        choices = []
-        probs = connecting_room.get_transition_probs()
-        for room in possible_rooms:
-            # Append to our possibilities
-            choices.append((
-                # The room, and the probability of getting that type of room
-                # based on the current room type
-                room, probs.get(room.room_type, 0.1)
-            ))
-
-        return weighted_choice(choices)
+    possible_rooms = [getattr(m, room_type) for room_type in magica_rooms]
 
     # Initialize
     upm = UnusedPositionManager(size, mirror=True)
@@ -68,16 +37,12 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.
     # We use the spawn room as our base starting room
-    Room = possible_rooms[0]
-    Room_m = possible_rooms[0]
+    Room = m.castle_small_deis
     b = Room(pos=STARTING_POSITION, orientation=EAST)
-    b_m = Room_m(pos=mirror(STARTING_POSITION), orientation=EAST)
     # Register our new room
     upm.register_room(b)
-    upm.register_room(b_m)
     # Render it to the map
     b.render(v, mymap)
-    b_m.render(v, mymap)
     # Convert rooms to int
     rooms = int(rooms)
     sunlight = Sunlight(
@@ -87,6 +52,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
         offset=45,  # top
     )
     mymap.ents.append(sunlight)
+    patience = 500
 
     room_count = 0
 
@@ -97,9 +63,11 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
             if room_count >= rooms:
                 logging.info("Placed enough rooms")
                 break
+
             # Pick a random position for this notional room to go
             try:
-                (position, prev_room, orientation) = upm.nonrandom_position(upm.nrp_flavour_center_hole)
+                (prev_room_door, prev_room, prev_room_orientation) = upm.nonrandom_position(upm.nrp_flavour_center_hole)
+                # print('chosen door', prev_room_door, prev_room, n(prev_room_orientation))
             except Exception as e:
                 # If we have no more positions left, break.
                 print("Possibly run out of positions before placing all rooms. Try a different seed?")
@@ -107,31 +75,61 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
                 break
 
             # If we are here, we do have a position + orientation to place in
-            kwargs = {'orientation': orientation}
             # Get a random room, influenced by the prev_room
-            roomClass = random_room(prev_room)
-            # Then safe to work with it.
+            roomClass = random_room(prev_room, possible_rooms)
+
+            # This is TEMPORARY. We randomly orient a room first, hopefully we can find an acceptable door.
+            kwargs = {'orientation': random.choice(CARDINALS)}
             kwargs.update(roomClass.randOpts(prev_room))
-            # Copy them here, not sure if makes sense.
-            # Initialize room, required to correctly calculate get_positions()
-            r = roomClass(pos=position, **kwargs)
-            r_m = roomClass(pos=mirror(position), **mirror(kwargs))
-            # Try adding it
+            # Initialize room, required to correctly calculate get_positions()/get_doorways()
+            r = roomClass(pos=CoarseVector(2, 2, 3), **kwargs)
+
+            # We've already picked a prev_room_door (and we know its orientation)
+            # Now we pick a door on the new room we'll place.
+            roomClass_doors = r.get_doorways()
+            # print('possible doors on new ', [{'off': x['offset'], 'ori': n(x['orientation'])} for x in roomClass_doors])
+            # Shuffle it.
+            random.shuffle(roomClass_doors)
+            # Find a door that is facing in the opposite direction as prev_room_orientation
+            options = [x for x in roomClass_doors if x['orientation'] == prev_room_orientation.rotate(180)]
+            # print('possible doors in dir ', [{'off': x['offset'], 'ori': n(x['orientation'])} for x in options])
+            if len(options) == 0:
+                # No match, continue
+                # print("Nothing works here.")
+                patience -= 1
+                if patience < 0:
+                    break
+
+                continue
+
+            # Chose a door on our new room that's in the correct orientation
+            chosen_door = options[0]
+
+            # print('old room pos', prev_room.pos)
+            # print('new room pos', r.pos)
+
+            # print('old chosen door', prev_room_door, n(prev_room_orientation))
+            # print('new chosen door', chosen_door['offset'], n(chosen_door['orientation']))
+            # Room offset
+            room_offset = chosen_door['offset'] - prev_room_door + prev_room_orientation
+            # print('must_shift', room_offset)
+            r = roomClass(pos=CoarseVector(2, 2, 3) - room_offset, **kwargs)
+            # print('old room pos', prev_room.pos)
+            # print('new room pos', r.pos)
+
             try:
-                if not upm.preregister_rooms(r, r_m):
-                    log.info("would fail on one or more rooms")
+                if not upm.preregister_rooms(r):
+                    # log.info("would fail on one or more rooms")
                     continue
 
                 # This step might raise an exception
                 upm.register_room(r)
-                upm.register_room(r_m)
 
                 pbar.update(2)
                 pbar.set_description('%3d' % v.zmax)
                 # If we get here, we've placed successfully so bump count + render
-                room_count += 2
+                room_count += 1
                 r.render(v, mymap)
-                r_m.render(v, mymap)
             except Exception as e:
                 # We have failed to register the room because
                 # it does not fit here.
@@ -151,24 +149,28 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False):
     # box(v)
 
     # Emit config + textures
-    TEXMAN.emit_conf(mpz_out)
-    TEXMAN.copy_data()
     # mymap.skybox(MinecraftSky('/home/hxr/games/redeclipse-1.5.3/'))
 
     # Standard code to render octree to file.
 
-    with open('tmp.vox', 'wb') as handle:
-        to_magicavoxel(v, handle, TEXMAN)
-    print('voxle')
-    mymap.world = v.to_octree()
-    mymap.world[0].octsav = 0
-    mymap.write(mpz_out.name)
+    if magica:
+        to_magicavoxel(v, magica, TEXMAN)
+
+    if mpz_out:
+        TEXMAN.emit_conf(mpz_out)
+        TEXMAN.copy_data()
+
+        mymap.world = v.to_octree()
+        mymap.world[0].octsav = 0
+        mymap.write(mpz_out.name)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Add trees to map')
     parser.add_argument('mpz_in', type=argparse.FileType('r'), help='Input .mpz file')
-    parser.add_argument('mpz_out', type=argparse.FileType('w'), help='Output .mpz file')
+    parser.add_argument('--mpz_out', type=argparse.FileType('w'), help='Output .mpz file')
+
+    parser.add_argument('--magica', type=argparse.FileType('wb'), help='Output .vox file')
 
     parser.add_argument('--size', default=2**8, type=int, help="World size. Danger!")
     parser.add_argument('--seed', default=42, type=int, help="Random seed")

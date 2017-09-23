@@ -22,42 +22,6 @@ class UnusedPositionManager:
         # Special restrictions on mirror-mode
         self.mirror = mirror
 
-    def getOrientationToManhattanRoom(self, p, used):
-        """Get the orientation from the previous room to the door.
-
-        This informs which orientation we should place the next piece in, in
-        order to have it line up. If the door is in the X axis previously, the
-        next piece placed should also be in the X axis
-
-        :param used: array of used positions
-        :type used: list
-
-        :param p: previous room
-        :type p: redeclipse.prefabs.Room
-        """
-        for u in used:
-            # For a set of "used" positions, only ONE block should be directly
-            # next to the previous one (we don't do crazy U shaped things yet.)
-            if u[1] == p[1]:
-                # If the Y position is the same, must be in X direction
-                if u[0] < p[0]:
-                    return EAST
-                else:
-                    return WEST
-            elif u[0] == p[0]:
-                # If the X position is the same, must be in Y direction
-                if u[1] < p[1]:
-                    return NORTH
-                else:
-                    return SOUTH
-            # NO SUPPORT for joining parts on a z-axis, joins must be X/Y
-            # elif u[0] == p[0] and u[1] == p[1]:
-                # if u[2] < p[2]:
-                    # return '-z'
-                # else:
-                    # return '+z'
-        raise Exception("UNKNOWN")
-
     def is_legal(self, position):
         """Is the position within the bounds of the map.
 
@@ -84,7 +48,7 @@ class UnusedPositionManager:
         :returns: Whether or not it is OK to register this room.
         :rtype: boolean
         """
-        logging.info("Prereg: %s", '|'.join([x.__class__.__name__ for x in rooms]))
+        # logging.info("Prereg: %s", '|'.join([x.__class__.__name__ for x in rooms]))
         tmp_occupied = copy.deepcopy(self.occupied)
         for room in rooms:
             used = room.get_positions()
@@ -106,9 +70,10 @@ class UnusedPositionManager:
         :rtype: None
         """
         used = room.get_positions()
+        # print('used', used)
         # First, we need to check that ALL of those positions are
         # unoccupied.
-        logging.info("Registering %s which occupies %s", room.__class__.__name__, '|'.join(map(str, used)))
+        # logging.info("Registering %s which occupies %s", room.__class__.__name__, '|'.join(map(str, used)))
         for position in used:
             if position in self.occupied and not self.noclip:
                 raise Exception("Occupado %s" % position)
@@ -125,13 +90,11 @@ class UnusedPositionManager:
         doors = room.get_doorways()
         # logging.info("DOORS: %s", list(map(str, doors)))
         for position in doors:
-            # logging.info("  pos: %s %s", position, self.is_legal(position))
+            # logging.info("  pos: %s => leg:%s occ:%s", position['offset'], self.is_legal(position['offset']), position['offset'] in self.occupied)
             # If that door position is not occupied by something else
-            if position not in self.occupied and self.is_legal(position):
-                # Get the orientation to the previous room
-                orientation = self.getOrientationToManhattanRoom(position, used)
+            if self.is_legal(position['offset']):
                 # and cache in our doorway list
-                self.unoccupied.append((position, room, orientation))
+                self.unoccupied.append((position['offset'], room, position['orientation']))
 
     def random_position(self):
         """Select a random doorway to use
@@ -214,3 +177,14 @@ class UnusedPositionManager:
             return self.unoccupied[wc]
         else:
             raise Exception("No more space!")
+
+    def mirror(cls, d):
+        if isinstance(d, dict):
+            d['orientation'] = d['orientation'].rotate(180)
+            return d
+        else:
+            return CoarseVector(
+                room_counts - d[0],
+                room_counts - d[1],
+                d[2]
+            )
