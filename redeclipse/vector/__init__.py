@@ -158,47 +158,6 @@ class BaseVector(object):
         return (self + offset).rotate(deg) - offset
 
 
-class AbsoluteVector(BaseVector):
-    """
-    This is a derivative of BaseVector specifically for some odd circumstances,
-    namely making rectangular prisms. It has odd rotational semantics
-    specifically for use there.
-    """
-
-    def __hash__(self):
-        return (1 << 31) + (floor(self.x) << 20) + (floor(self.y) << 10) + floor(self.z)
-
-    def rotate(self, deg):
-        """
-        Obtain a rotated version of self by deg
-
-        :param deg: Angle to rotate (clockwise). Can either be ±x/y, or a
-                    positive multiple of 90.
-        :type deg: str or int
-        """
-        if not isinstance(deg, int):
-            y = deg.y
-            x = deg.x
-            deg = int(180 * atan2(y, x) / pi)
-
-        deg %= 360
-
-        if deg == 0:
-            return AbsoluteVector(self.x, self.y, self.z)
-        elif deg == 90:
-            return AbsoluteVector(-self.y, self.x, self.z)
-        elif deg == 180:
-            return AbsoluteVector(-self.x, -self.y, self.z)
-        elif deg == 270:
-            return AbsoluteVector(self.y, -self.x, self.z)
-        else:
-            raise ValueError("Degree must be a multiple of 90.")
-
-    def __repr__(self):
-        rp = super().__repr__()
-        return 'AV(%s)' % rp
-
-
 class FineVector(BaseVector):
 
     def __hash__(self):
@@ -255,6 +214,9 @@ class FineVector(BaseVector):
             self.y // 8,
             self.z // 8
         )
+
+    def entity(self):
+        return self.fine() * 4
 
 
 class CoarseVector(BaseVector):
@@ -327,3 +289,6 @@ class CoarseVector(BaseVector):
             )
         else:
             raise Exception("Unsupported operand")
+
+    def entity(self):
+        return self.fine() * 4

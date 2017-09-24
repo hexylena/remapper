@@ -1,5 +1,6 @@
 import os
 
+from redeclipse.entities.weapon import Grenade
 from redeclipse.prefabs import Room, TEXMAN, LIGHTMAN
 from redeclipse.magicavoxel.reader import Magicavoxel
 from redeclipse.voxel import VoxelWorld
@@ -106,18 +107,22 @@ class castle_gate(MagicaRoom):
     vox_file = os.path.abspath(__file__).replace('magica.py', 'castle_gate.vox')
     room_type = 'oriented'
 
-    boundary_additions = {
-        'NORTH': 5,
-        'SOUTH': 5,
-    }
+    # boundary_additions = {
+        # 'NORTH': 5,
+        # 'SOUTH': 5,
+    # }
 
     doors = [
         {'orientation': WEST, 'offset': WEST + NORTH + ABOVE},
         {'orientation': EAST, 'offset': EAST + EAST + EAST + NORTH + ABOVE},
-        {'orientation': NORTH, 'offset': EAST + NORTH + NORTH},
-        {'orientation': SOUTH, 'offset': EAST},
+        {'orientation': NORTH, 'offset': EAST + NORTH + NORTH + NORTH},
+        {'orientation': SOUTH, 'offset': EAST + SOUTH},
     ]
 
+    def render_extra(self, world, xmap):
+        # self.light(xmap)
+        LIGHTMAN.light(xmap, self.pos + EAST)
+        # LIGHTMAN.light(xmap, position.rotate(self.orientation))
 
 class castle_wall_section(MagicaRoom):
     name = 'castle_wall_section'

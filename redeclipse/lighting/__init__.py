@@ -43,8 +43,8 @@ class LightManager:
 
         if autocenter:
             pos = position + TILE_CENTER + HALF_HEIGHT
-        else:
-            pos = position.fine()
+
+        pos = position.fine() * 2
 
         if colour_override:
             (red, green, blue) = colour_override
@@ -81,6 +81,13 @@ class LightManager:
         :returns: An appropriately configured light entity
         :rtype: redeclipse.entities.Light
         """
+
+        # Current
+        print(position)
+        # Before
+        tmp = position.coarse()
+        print(tmp)
+        print(tmp * 8 * 1/2)
         return Light(
             xyz=position,
             # Colours
