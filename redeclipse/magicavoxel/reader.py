@@ -1,16 +1,12 @@
-# This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
-
-import array
 import struct
-import zlib
-from enum import Enum
 from pkg_resources import parse_version
 
-from kaitaistruct import __version__ as ks_version, KaitaiStruct, KaitaiStream, BytesIO
+from kaitaistruct import __version__ as ks_version, KaitaiStruct
 
 
 if parse_version(ks_version) < parse_version('0.7'):
     raise Exception("Incompatible Kaitai Struct Python API: 0.7 or later is required, but you have %s" % (ks_version))
+
 
 class Magicavoxel(KaitaiStruct):
     SIZE = 256
@@ -45,8 +41,6 @@ class Magicavoxel(KaitaiStruct):
             for i in range(self.num_voxels):
                 self.voxels[i] = self._root.Voxels(self._io, self, self._root)
 
-
-
     class Colour(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -56,7 +50,6 @@ class Magicavoxel(KaitaiStruct):
             self.g = self._io.read_u1()
             self.b = self._io.read_u1()
             self.a = self._io.read_u1()
-
 
     class PaletteChunk(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None, size=256):
@@ -70,8 +63,6 @@ class Magicavoxel(KaitaiStruct):
             for i in range(size):
                 self.colours[i] = self._root.Colour(self._io, self, self._root)
 
-
-
     class Voxels(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
@@ -81,7 +72,6 @@ class Magicavoxel(KaitaiStruct):
             self.y = self._io.read_u1()
             self.z = self._io.read_u1()
             self.c = self._io.read_u1()
-
 
     class SizeChunk(KaitaiStruct):
         def __init__(self, _io, _parent=None, _root=None):
@@ -94,6 +84,3 @@ class Magicavoxel(KaitaiStruct):
             self.x = self._io.read_u4le()
             self.y = self._io.read_u4le()
             self.z = self._io.read_u4le()
-
-
-

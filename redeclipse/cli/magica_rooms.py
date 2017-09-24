@@ -2,17 +2,16 @@
 import argparse
 import random
 import logging
+
 from redeclipse.voxel import VoxelWorld
-from redeclipse.cli import parse, random_room
+from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
-from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
 from redeclipse.magicavoxel.writer import to_magicavoxel
 from redeclipse.prefabs import STARTING_POSITION, TEXMAN
 from redeclipse.prefabs import magica as m
 
-from redeclipse.vector.orientations import EAST, CARDINALS
-from redeclipse.vector import CoarseVector
+from redeclipse.vector.orientations import EAST
 
 from tqdm import tqdm
 logging.basicConfig(level=logging.INFO)
@@ -26,7 +25,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False, magica=Non
 
     magica_rooms = [
         'castle_gate', 'castle_gate_simple', 'castle_large',
-        'castle_wall_corner', #'castle_small_deis',
+        'castle_wall_corner',  # 'castle_small_deis',
         'castle_wall_end_cliff', 'castle_wall_entry',
         'castle_wall_section', 'castle_wall_section_endcap',
         'castle_wall_section_long', 'castle_wall_section_long_damaged',
@@ -35,7 +34,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False, magica=Non
     possible_rooms = [getattr(m, room_type) for room_type in magica_rooms]
 
     magica_endcaps = ['castle_wall_end_cliff', 'castle_wall_section_endcap']
-    possible_endcaps = [getattr(m, room_type) for room_type in magica_rooms]
+    possible_endcaps = [getattr(m, room_type) for room_type in magica_endcaps]
 
     # Initialize
     upm = UnusedPositionManager(size, mirror=True)

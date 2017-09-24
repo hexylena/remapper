@@ -3,8 +3,10 @@ import sys
 import argparse
 import logging
 import os
+
 from redeclipse.magicavoxel.reader import Magicavoxel
 from redeclipse.voxel import VoxelWorld
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
@@ -27,7 +29,7 @@ def main(mv_in):
 
     print("Pallette")
     for idx, colour in enumerate(model.palette.colours):
-        if colour.r != 0 or colour.g !=0 or colour.b != 0:
+        if colour.r != 0 or colour.g != 0 or colour.b != 0:
             print("C[%s] = (%s, %s, %s)" % (idx, colour.r, colour.g, colour.b))
 
     for z in range(world.zmin, world.zmax + 1):

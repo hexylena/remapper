@@ -1,11 +1,10 @@
 import os
 
-from redeclipse.entities.weapon import Grenade
 from redeclipse.prefabs import Room, TEXMAN, LIGHTMAN
 from redeclipse.magicavoxel.reader import Magicavoxel
 from redeclipse.voxel import VoxelWorld
 from redeclipse.vector import FineVector, CoarseVector
-from redeclipse.vector.orientations import SELF, EAST, SOUTH, ABOVE, WEST, NORTH, n, HALF_HEIGHT, NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST
+from redeclipse.vector.orientations import SELF, EAST, SOUTH, ABOVE, WEST, NORTH, n, NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST
 
 
 class MagicaRoom(Room):
@@ -44,21 +43,6 @@ class MagicaRoom(Room):
         self.__doors = []
         for door in self.doors:
             self.__doors.append(door)
-
-        # Occupied positions are automatically calculated
-        self.__positions = []
-
-        x_dims = (
-            self.vox.xmax - self.vox.xmin +
-            self.boundary_additions.get('EAST', 0) +
-            self.boundary_additions.get('WEST', 0)
-        ) // 8
-        y_dims = (
-            self.vox.ymax - self.vox.ymin +
-            self.boundary_additions.get('NORTH', 0) +
-            self.boundary_additions.get('SOUTH', 0)
-        ) // 8
-        z_dims = (self.vox.zmax - self.vox.zmin) // 8
 
         # We'll calculate a unique list of coarse vectors which are occupied
         self.__positions = []
@@ -325,4 +309,3 @@ class wooden_bridge(MagicaRoom):
     def render_extra(self, world, xmap):
         LIGHTMAN.light(xmap, self.pos + ABOVE)
         LIGHTMAN.light(xmap, self.pos + (EAST + EAST + ABOVE).rotate(self.orientation))
-

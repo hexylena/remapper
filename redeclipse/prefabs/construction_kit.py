@@ -4,7 +4,7 @@ from bresenham import bresenham
 
 from redeclipse.objects import cube
 from redeclipse.vector import FineVector
-from redeclipse.vector.orientations import TILE_VOX_OFF, VOXEL_OFFSET, NORTH, SOUTH, EAST, WEST, ABOVE, BELOW, get_vector_rotation, n
+from redeclipse.vector.orientations import TILE_VOX_OFF, NORTH, SOUTH, EAST, WEST, ABOVE, BELOW
 ROOM_SIZE = 8
 
 

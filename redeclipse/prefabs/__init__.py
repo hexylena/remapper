@@ -1,9 +1,7 @@
 from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
 from redeclipse.entities.weapon import Grenade
-from redeclipse.voxel import VoxelWorld
 from redeclipse.textures import AutomatedMagicaTextureManager
-from redeclipse.magicavoxel.reader import Magicavoxel
 # MinecraftThemedTextureManager, DefaultThemedTextureManager, PaperThemedTextureManager, PrimaryThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
 from redeclipse.prefabs.distributions import UniformDistributionManager, TowerDistributionManager, PlatformDistributionManager, CastleDistributionManager  # NOQA
@@ -12,7 +10,7 @@ from redeclipse.vector import CoarseVector, FineVector
 from redeclipse.vector.orientations import rotate_yaw, SELF, \
     SOUTH, NORTH, WEST, EAST, ABOVE, \
     ABOVE_FINE, NORTHWEST, \
-    NORTHEAST, SOUTHWEST, SOUTHEAST, TILE_CENTER, HALF_HEIGHT, n
+    NORTHEAST, SOUTHWEST, SOUTHEAST, TILE_CENTER, HALF_HEIGHT
 
 import random # noqa
 # import math

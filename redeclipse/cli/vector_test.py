@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import copy
 import argparse
 import logging
 from redeclipse.voxel import VoxelWorld
@@ -9,7 +8,7 @@ from redeclipse.prefabs import magica as m, TEXMAN
 from redeclipse.upm import UnusedPositionManager
 from redeclipse.magicavoxel.writer import to_magicavoxel
 
-from redeclipse.vector import CoarseVector, FineVector
+from redeclipse.vector import CoarseVector
 from redeclipse.vector.orientations import SOUTH, NORTH, WEST, EAST, ABOVE
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)

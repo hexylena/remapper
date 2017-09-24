@@ -39,7 +39,7 @@ def to_magicavoxel(voxel_world, handle, texman):
         return int(255 * x)
 
     for idx, (tex_key, tex) in enumerate(texman.atlas.items()):
-        handle.write(struct.pack('BBBB', n(tex.r), n(tex.g), n(tex.b), 255)) # white
+        handle.write(struct.pack('BBBB', n(tex.r), n(tex.g), n(tex.b), 255))  # white
 
     for i in range(255 - len(texman.atlas)):
-        handle.write(struct.pack('BBBB', 0, 0, 0, 255)) # white
+        handle.write(struct.pack('BBBB', 0, 0, 0, 255))  # white
