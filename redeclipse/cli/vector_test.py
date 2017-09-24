@@ -15,12 +15,13 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
-def main(mpz_in, redeclipse=None, magica=None):
-    Room = m.castle_gate
+# 2 ** 7 = 16 rooms
+def main(mpz_in, redeclipse=None, magica=None, world_size=2**7):
+    Room = m.castle_large
 
     mymap = parse(mpz_in.name)
-    upm = UnusedPositionManager(2**7, mirror=True, noclip=True)
-    v = VoxelWorld(size=2**7)
+    upm = UnusedPositionManager(world_size, mirror=True, noclip=True)
+    v = VoxelWorld(size=world_size)
 
     kwargs = Room.randOpts(None)
     e = Room(pos=CoarseVector(8 + 3, 8, 0), orientation=EAST, **kwargs)
@@ -46,13 +47,9 @@ def main(mpz_in, redeclipse=None, magica=None):
     e.x('column', v, NORTH + EAST + NORTH + (ABOVE * 3), SOUTH, 6, tex=TEXMAN.get_colour(1, 0, 1))
     e.x('column', v, NORTH + EAST + NORTH + (ABOVE * 3), WEST, 4, tex=TEXMAN.get_colour(0, 1, 1))
 
-    from redeclipse.objects import cube
-    for i in range(8):
-        for j in range(8):
-            v.set_pointv(
-                CoarseVector(8, 8, 3) + (EAST * 5) + FineVector(i, j, 0),
-                cube.newtexcube(tex=p.TEXMAN.get_c('accent'))
-            )
+    for i in range(world_size // 8):
+        q = p.Room(pos=CoarseVector(i, i, 1), orientation=EAST)
+        q.render(v, mymap)
 
     # for (pos, typ, ori) in upm.unoccupied:
         # r = p.TestRoom(pos, orientation=EAST)

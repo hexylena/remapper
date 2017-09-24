@@ -7,9 +7,7 @@ from redeclipse.entities import Light
 from redeclipse.vector.orientations import TILE_CENTER, HALF_HEIGHT
 
 SIZE = 8
-_BUILTIN_SIZE = 2 ** 7
-_REAL_SIZE = 2 ** 8
-SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
+SIZE_OFFSET = 1
 
 
 class LightManager:
@@ -17,15 +15,16 @@ class LightManager:
     A lighting manager for a map
     """
 
-    def __init__(self, brightness=1.0, saturation=1.0):
+    def __init__(self, brightness=1.0, saturation=1.0, world_size=2**7):
         """
         :param float brightness: The brightness of the map
         :param float saturation: The saturation level for the lights
         """
         self.brightness = brightness
         self.saturation = saturation
+        self._world_size_factor = world_size / 2 ** 6
 
-    def light(self, xmap, position, colour_override=None, autocenter=True):
+    def light(self, xmap, position, colour_override=None, autocenter=True, size_factor=1):
         """
         :param xmap: A redeclipse map object, the light will be attached to the entity list.
         :type xmap: redeclipse.Map
@@ -44,14 +43,12 @@ class LightManager:
         if autocenter:
             pos = position + TILE_CENTER + HALF_HEIGHT
 
-        pos = position.fine() * 2
-
         if colour_override:
             (red, green, blue) = colour_override
         else:
             (red, green, blue) = self.hue(pos)
 
-        light = self.get_light(pos, red, green, blue)
+        light = self.get_light(pos, red, green, blue, size_factor=size_factor)
         xmap.ents.append(light)
 
     def hue(self, pos):
@@ -67,7 +64,7 @@ class LightManager:
         """
         return (255, 255, 255)
 
-    def get_light(self, position, red, green, blue):
+    def get_light(self, position, red, green, blue, size_factor=1):
         """
         Return a light entity for a position and colour
 
@@ -81,22 +78,15 @@ class LightManager:
         :returns: An appropriately configured light entity
         :rtype: redeclipse.entities.Light
         """
-
-        # Current
-        print(position)
-        # Before
-        tmp = position.coarse()
-        print(tmp)
-        print(tmp * 8 * 1/2)
         return Light(
-            xyz=position,
+            xyz=position.entity() / self._world_size_factor,
             # Colours
             red=red,
             green=green,
             blue=blue,
             # Make it a relatively small light, nice intimate feel without
             # washing out.
-            radius=SIZE_OFFSET * 64,
+            radius=SIZE_OFFSET * 64 * size_factor,
         )
 
 

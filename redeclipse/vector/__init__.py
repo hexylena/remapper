@@ -161,7 +161,7 @@ class BaseVector(object):
 class FineVector(BaseVector):
 
     def __hash__(self):
-        return (2 << 31) + (floor(self.x) << 20) + (floor(self.y) << 10) + floor(self.z)
+        return (1 << 31) + (floor(self.x) << 20) + (floor(self.y) << 10) + floor(self.z)
 
     def __eq__(self, other):
         if isinstance(other, CoarseVector):
@@ -222,7 +222,7 @@ class FineVector(BaseVector):
 class CoarseVector(BaseVector):
 
     def __hash__(self):
-        return (3 << 31) + (floor(self.x) << 20) + (floor(self.y) << 10) + floor(self.z)
+        return (2 << 31) + (floor(self.x) << 20) + (floor(self.y) << 10) + floor(self.z)
 
     def __eq__(self, other):
         if isinstance(other, CoarseVector):

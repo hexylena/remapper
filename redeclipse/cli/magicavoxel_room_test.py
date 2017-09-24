@@ -17,9 +17,12 @@ log = logging.getLogger(__name__)
 
 def main():
     magica_rooms = [
-        'castle_small_deis', 'castle_wall_section', 'castle_wall_corner',
-        'castle_wall_entry', 'castle_wall_tower', 'castle_gate', 'castle_large',
-        'castle_gate_simple'
+        'castle_gate', 'castle_gate_simple', #'castle_large',
+        'castle_small_deis', 'castle_wall_corner',
+        'castle_wall_end_cliff', 'castle_wall_entry',
+        'castle_wall_section', 'castle_wall_section_endcap',
+        'castle_wall_section_long', 'castle_wall_section_long_damaged',
+        'castle_wall_section_tjoint', 'castle_wall_tower',
     ]
     magica_classes = [getattr(magica, room_type) for room_type in magica_rooms]
 

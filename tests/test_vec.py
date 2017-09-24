@@ -1,6 +1,6 @@
 import pytest
 import random
-from redeclipse.vector import BaseVector, AbsoluteVector, CoarseVector, FineVector
+from redeclipse.vector import BaseVector, CoarseVector, FineVector
 from redeclipse.vector.orientations import rotate_yaw, NORTH, SOUTH, EAST, WEST
 
 
@@ -38,7 +38,7 @@ def test_rotate():
 
 
 def test_basevector():
-    for idx, Class in enumerate((BaseVector, AbsoluteVector, FineVector, CoarseVector)):
+    for idx, Class in enumerate((BaseVector, FineVector, CoarseVector)):
         v = Class(4, 2, 1)
         w = Class(4, 2, 1)
         u = Class(2, 4, 1)

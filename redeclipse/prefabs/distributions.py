@@ -201,3 +201,35 @@ class PlatformDistributionManager(DistributionManager):
         ('vertical', 'stair'): 1.0,
         ('vertical', 'vertical'): 0.1,
     }
+
+
+class CastleDistributionManager(DistributionManager):
+    mirror = True
+    transition_probabilities = {
+        ('hallway', 'hallway'): 1,
+        ('hallway', 'hallway_setpiece'): 0.3,
+        ('hallway', 'setpiece_small'): 0.1,
+        ('hallway', 'setpiece_medium'): 0.1,
+        ('hallway', 'setpiece_large'): 0.05,
+        ('hallway', 'stair'): 0.7,
+
+        ('hallway_setpiece', 'hallway_setpiece'): 0.1,
+        ('hallway_setpiece', 'setpiece_large'): 0.1,
+        ('hallway_setpiece', 'setpiece_medium'): 0.1,
+        ('hallway_setpiece', 'setpiece_small'): 0.1,
+        ('hallway_setpiece', 'stair'): 1,
+
+        ('setpiece_large', 'setpiece_large'): 0.1,
+        ('setpiece_large', 'setpiece_medium'): 0.1,
+        ('setpiece_large', 'setpiece_small'): 0.1,
+        ('setpiece_large', 'stair'): 0.1,
+
+        ('setpiece_medium', 'setpiece_medium'): 0.1,
+        ('setpiece_medium', 'setpiece_small'): 0.1,
+        ('setpiece_medium', 'stair'): 0.1,
+
+        ('setpiece_small', 'setpiece_small'): 0.1,
+        ('setpiece_small', 'stair'): 0.1,
+
+        ('stair', 'stair'): 1,
+    }

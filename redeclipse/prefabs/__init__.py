@@ -6,7 +6,7 @@ from redeclipse.textures import AutomatedMagicaTextureManager
 from redeclipse.magicavoxel.reader import Magicavoxel
 # MinecraftThemedTextureManager, DefaultThemedTextureManager, PaperThemedTextureManager, PrimaryThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
-from redeclipse.prefabs.distributions import UniformDistributionManager, TowerDistributionManager, PlatformDistributionManager  # NOQA
+from redeclipse.prefabs.distributions import UniformDistributionManager, TowerDistributionManager, PlatformDistributionManager, CastleDistributionManager  # NOQA
 from redeclipse.prefabs.construction_kit import ConstructionKitMixin
 from redeclipse.vector import CoarseVector, FineVector
 from redeclipse.vector.orientations import rotate_yaw, SELF, \
@@ -31,12 +31,10 @@ TEXMAN = AutomatedMagicaTextureManager()
 # TEXMAN = PrimaryThemedTextureManager()
 # TEXMAN = MagicaThemedTextureManager()
 
-LIGHTMAN = PositionBasedLightManager(brightness=1.0, saturation=0.6)
-# LIGHTMAN = None
-# DISTMAN = TowerDistributionManager()
-DISTMAN = PlatformDistributionManager()
-# DISTMAN = UniformDistributionManager()
-STARTING_POSITION = CoarseVector(4, 4, 3)
+LIGHTMAN = PositionBasedLightManager(brightness=1.0, saturation=0.6, world_size=2**8)
+DISTMAN = CastleDistributionManager()
+
+STARTING_POSITION = CoarseVector(8, 8, 3)
 
 
 # Room is an object, but is also inherits from CKM which inherits from object,
@@ -65,10 +63,10 @@ class Room(ConstructionKitMixin):
         Return the set of possible doorways as offsets to self.pos. DO NOT include self.pos
         """
         return [
-            NORTH,
-            SOUTH,
-            EAST,
-            WEST
+            {'orientation': NORTH, 'offset': NORTH},
+            {'orientation': SOUTH, 'offset': SOUTH},
+            {'orientation': EAST, 'offset': EAST},
+            {'orientation': WEST, 'offset': WEST},
         ]
 
     def get_doorways(self):
@@ -147,10 +145,10 @@ class _3X3Room(Room):
 
     def _get_doorways(self):
         return [
-            NORTH * 2,
-            SOUTH * 2,
-            EAST * 2,
-            WEST * 2,
+            {'orientation': NORTH, 'offset': NORTH * 2},
+            {'orientation': SOUTH, 'offset': SOUTH * 2},
+            {'orientation': EAST, 'offset': EAST * 2},
+            {'orientation': WEST, 'offset': WEST * 2},
         ]
 
     def _get_positions(self):
@@ -259,8 +257,8 @@ class NLongCorridor(Room):
 
     def _get_doorways(self):
         return [
-            WEST,
-            EAST * self.length
+            {'orientation': WEST, 'offset': WEST},
+            {'orientation': EAST, 'offset': EAST * self.length},
         ]
 
 
@@ -291,8 +289,8 @@ class Corridor2way(Room):
 
     def _get_doorways(self):
         return [
-            WEST,
-            EAST
+            {'orientation': WEST, 'offset': WEST},
+            {'orientation': EAST, 'offset': EAST},
         ]
 
 
@@ -356,8 +354,8 @@ class JumpCorridor3(Room):
 
     def _get_doorways(self):
         return [
-            WEST,
-            EAST * 3
+            {'orientation': WEST, 'offset': WEST},
+            {'orientation': EAST, 'offset': EAST * 3},
         ]
 
 
@@ -427,8 +425,8 @@ class JumpCorridorVertical(Room):
 
     def _get_doorways(self):
         return [
-            WEST,
-            WEST + ABOVE + ABOVE
+            {'orientation': WEST, 'offset': WEST},
+            {'orientation': WEST, 'offset': WEST + ABOVE + ABOVE},
         ]
 
 
@@ -489,15 +487,15 @@ class JumpCorridorVerticalCenter(JumpCorridorVertical):
 
     def _get_doorways(self):
         return [
-            NORTH,
-            SOUTH,
-            EAST,
-            WEST,
+            {'orientation': NORTH, 'offset': NORTH},
+            {'orientation': SOUTH, 'offset': SOUTH},
+            {'orientation': EAST, 'offset': EAST},
+            {'orientation': WEST, 'offset': WEST},
 
-            NORTH + ABOVE * (self.length + 1),
-            SOUTH + ABOVE * (self.length + 1),
-            EAST + ABOVE * (self.length + 1),
-            WEST + ABOVE * (self.length + 1),
+            {'orientation': NORTH, 'offset': NORTH + ABOVE * (self.length + 1)},
+            {'orientation': SOUTH, 'offset': SOUTH + ABOVE * (self.length + 1)},
+            {'orientation': EAST, 'offset': EAST + ABOVE * (self.length + 1)},
+            {'orientation': WEST, 'offset': WEST + ABOVE * (self.length + 1)},
         ]
 
 
@@ -575,9 +573,13 @@ class SpawnRoom(Room):
         self.light(xmap)
 
     def _get_doorways(self):
-        doors = [EAST]
+        doors = [
+            {'orientation': EAST, 'offset': EAST},
+        ]
         if self._randflags[0]:
-            doors += [WEST]
+            doors += [
+                {'orientation': WEST, 'offset': WEST},
+            ]
         return doors
 
 
@@ -842,7 +844,10 @@ class Stair(Room):
             # self.x('interpolate', world, SELF, FineVector(0, 0, 2), FineVector(7, 0, 9), tex=floor_tex)
 
     def _get_doorways(self):
-        return [WEST, EAST + ABOVE]
+        return [
+            {'orientation': WEST, 'offset': WEST},
+            {'orientation': EAST, 'offset': EAST + ABOVE},
+        ]
 
     def _get_positions(self):
         return [SELF, ABOVE]
@@ -880,16 +885,16 @@ class CrossingWalkways(_LargeRoom):
 
     def _get_doorways(self):
         doors = [
-            SOUTH + SOUTH,
-            NORTH + NORTH,
-            EAST + EAST + ABOVE,
-            WEST + WEST + ABOVE,
+            {'orientation': SOUTH, 'offset': SOUTH + SOUTH},
+            {'orientation': NORTH, 'offset': NORTH + NORTH},
+            {'orientation': EAST, 'offset': EAST + EAST + ABOVE},
+            {'orientation': WEST, 'offset': WEST + WEST + ABOVE},
         ]
 
         if self._randflags[0]:
             doors += [
-                SOUTH + SOUTH + ABOVE + ABOVE,
-                NORTH + NORTH + ABOVE + ABOVE,
+                {'orientation': SOUTH, 'offset': SOUTH + SOUTH + ABOVE + ABOVE},
+                {'orientation': NORTH, 'offset': NORTH + NORTH + ABOVE + ABOVE},
             ]
         return doors
 
@@ -915,10 +920,10 @@ class PlusPlatform(_LargeRoom):
 
     def _get_doorways(self):
         return [
-            NORTH * 2,
-            SOUTH * 2,
-            EAST * 2,
-            WEST * 2
+            {'orientation': NORTH, 'offset': NORTH * 2},
+            {'orientation': SOUTH, 'offset': SOUTH * 2},
+            {'orientation': EAST, 'offset': EAST * 2},
+            {'orientation': WEST, 'offset': WEST * 2},
         ]
 
 
@@ -952,19 +957,19 @@ class MultiPlatform(_LargeRoom):
     def _get_doorways(self):
         return [
             # four center sides
-            SOUTH + SOUTH,
-            NORTH + NORTH,
-            EAST + EAST,
-            WEST + WEST,
+            {'orientation': SOUTH, 'offset': SOUTH + SOUTH},
+            {'orientation': NORTH, 'offset': NORTH + NORTH},
+            {'orientation': EAST, 'offset': EAST + EAST},
+            {'orientation': WEST, 'offset': WEST + WEST},
 
             # First real above, ignoring half height ones.
-            NORTHWEST + NORTH + ABOVE,
-            NORTHWEST + WEST + ABOVE,
-            SOUTHEAST + SOUTH + ABOVE,
-            SOUTHEAST + EAST + ABOVE,
+            {'orientation': NORTH, 'offset': NORTHWEST + NORTH + ABOVE},
+            {'orientation': WEST, 'offset': NORTHWEST + WEST + ABOVE},
+            {'orientation': SOUTH, 'offset': SOUTHEAST + SOUTH + ABOVE},
+            {'orientation': EAST, 'offset': SOUTHEAST + EAST + ABOVE},
 
-            WEST + WEST + ABOVE + ABOVE,
-            EAST + EAST + ABOVE + ABOVE,
+            {'orientation': WEST, 'offset': WEST + WEST + ABOVE + ABOVE},
+            {'orientation': EAST, 'offset': EAST + EAST + ABOVE + ABOVE},
         ]
 
     def light(self, xmap):

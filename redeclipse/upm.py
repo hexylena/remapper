@@ -1,9 +1,10 @@
 import math
 import random
-import copy
+from redeclipse.cli import random_room
 from redeclipse.cli import weighted_choice
-from redeclipse.vector.orientations import NORTH, SOUTH, EAST, WEST
-import logging
+from redeclipse.vector import CoarseVector
+from redeclipse.vector.orientations import EAST, CARDINALS
+from redeclipse.prefabs import TestRoom
 
 
 class UnusedPositionManager:
@@ -49,15 +50,15 @@ class UnusedPositionManager:
         :rtype: boolean
         """
         # logging.info("Prereg: %s", '|'.join([x.__class__.__name__ for x in rooms]))
-        tmp_occupied = copy.deepcopy(self.occupied)
+        added_occupied = set()
         for room in rooms:
             used = room.get_positions()
             # First, we need to check that ALL of those positions are
             # unoccupied.
             for position in used:
-                if position in tmp_occupied:
+                if position in self.occupied or position in added_occupied:
                     return False
-            tmp_occupied = tmp_occupied.union(used)
+            added_occupied = added_occupied.union(set(used))
         return True
 
     def register_room(self, room):
@@ -70,14 +71,12 @@ class UnusedPositionManager:
         :rtype: None
         """
         used = room.get_positions()
-        # print('used', used)
         # First, we need to check that ALL of those positions are
         # unoccupied.
-        # logging.info("Registering %s which occupies %s", room.__class__.__name__, '|'.join(map(str, sorted(used))))
         for position in used:
             if position in self.occupied and not self.noclip:
                 raise Exception("Occupado %s" % position)
-        # Otheriwse, all positions are fine to use.
+        # Otherwise, all positions are fine to use.
 
         self.occupied = self.occupied.union(used)
         # Remove occupied positions from possibilities
@@ -171,9 +170,8 @@ class UnusedPositionManager:
             (idx, flavour_function(*posD[0]))
             for idx, posD in enumerate(self.unoccupied)
         ]
-
         wc = weighted_choice(choices)
-        if len(self.occupied) > 0:
+        if len(self.unoccupied) > 0:
             return self.unoccupied[wc]
         else:
             raise Exception("No more space!")
@@ -183,8 +181,68 @@ class UnusedPositionManager:
             d['orientation'] = d['orientation'].rotate(180)
             return d
         else:
+            # TODO: dependent on world size.
             return CoarseVector(
-                room_counts - d[0],
-                room_counts - d[1],
+                32 - d[0],
+                32 - d[1],
                 d[2]
             )
+
+    def room_localization(self, possible_rooms):
+        # Pick a random position for this notional room to go
+        (prev_room_door, prev_room, prev_room_orientation) = self.nonrandom_position(self.nrp_flavour_plain)
+
+        # If we are here, we do have a position + orientation to place in
+        # Get a random room, influenced by the prev_room
+        roomClass = random_room(prev_room, possible_rooms)
+
+        # We loop over a (random permutation) of the possible orientations in
+        # order to identify at least one with a plausible door. Shuffling *may*
+        # not be necessary but it doesn't hurt anything.
+        for orientation in random.sample(CARDINALS, 4):
+            kwargs = {'orientation': orientation}
+            # Initialize room, required to correctly calculate get_positions()/get_doorways()
+            r = roomClass(pos=CoarseVector(2, 2, 3), **kwargs)
+            # We've already picked a prev_room_door (and we know its orientation)
+            # Now we pick a door on the new room we'll place.
+            roomClass_doors = r.get_doorways()
+            # Find a door that is facing in the opposite direction as prev_room_orientation
+            options = [x for x in roomClass_doors if x['orientation'] == prev_room_orientation.rotate(180)]
+            # If we don't have any options, continue, let's try a different orientation.
+            if len(options) == 0:
+                continue
+            # If we do have doors though, choose a door on our new room that's
+            # in the correct orientation
+            for chosen_door in options:
+                # Room offset
+                room_offset = chosen_door['offset'] - prev_room_door + prev_room_orientation
+                # Add our random options
+                kwargs.update(roomClass.randOpts(prev_room))
+                # Last, we yield all possible versions of this room (in case
+                # some of them don't fit.)
+                r = roomClass(pos=CoarseVector(2, 2, 3) - room_offset, **kwargs)
+                # If the room can be registered in this position, safely, ONLY
+                # then do we yield it.
+                if self.preregister_rooms(r):
+                    yield r
+
+    def endcap(self, debug=False, possible_endcaps=[]):
+        if debug:
+            for (pos, typ, ori) in self.unoccupied:
+                r = TestRoom(pos, orientation=EAST)
+                yield r
+        else:
+            for (prev_room_door, prev_room, prev_room_orientation) in self.unoccupied:
+                # Pick a random room class
+                roomClass = random.choice(possible_endcaps)
+                for c in CARDINALS:
+                    r = roomClass(pos=CoarseVector(2, 2, 3), orientation=c)
+                    # There will only be one door.
+                    roomClass_doors = r.get_doorways()
+                    options = [x for x in roomClass_doors if x['orientation'] == prev_room_orientation.rotate(180)]
+                    if len(options) == 0:
+                        continue
+                    chosen_door = options[0]
+                    room_offset = chosen_door['offset'] - prev_room_door + prev_room_orientation
+                    r = roomClass(pos=CoarseVector(2, 2, 3) - room_offset, orientation=c)
+                    yield r
