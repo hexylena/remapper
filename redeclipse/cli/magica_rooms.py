@@ -27,7 +27,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False, magica=Non
 
     magica_rooms = [
         'castle_small_deis', 'castle_wall_section', 'castle_wall_corner',
-        'castle_wall_entry', 'castle_wall_tower', #'castle_gate'
+        'castle_wall_entry', 'castle_wall_tower', 'castle_large', 'castle_gate_simple',
     ]
     possible_rooms = [getattr(m, room_type) for room_type in magica_rooms]
 
@@ -52,7 +52,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False, magica=Non
         offset=45,  # top
     )
     mymap.ents.append(sunlight)
-    patience = 500
+    patience = 400
 
     room_count = 0
 
@@ -60,6 +60,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False, magica=Non
     with tqdm(total=rooms) as pbar:
         while True:
             # Continually try and place rooms until we hit 200.
+            print(room_count, patience)
             if room_count >= rooms:
                 logging.info("Placed enough rooms")
                 break
@@ -123,9 +124,10 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False, magica=Non
                     continue
 
                 # This step might raise an exception
+                print(r)
                 upm.register_room(r)
 
-                pbar.update(2)
+                pbar.update(1)
                 pbar.set_description('%3d' % v.zmax)
                 # If we get here, we've placed successfully so bump count + render
                 room_count += 1

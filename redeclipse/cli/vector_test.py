@@ -8,7 +8,6 @@ from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
-from redeclipse.magicavoxel import autodiscover, TEXMAN
 from redeclipse.magicavoxel.writer import to_magicavoxel
 
 from redeclipse.vector import CoarseVector, FineVector, AbsoluteVector
@@ -24,7 +23,7 @@ log = logging.getLogger(__name__)
 
 def main(mpz_in, redeclipse=None, magica=None):
 
-    for idx, Room in enumerate(autodiscover()):
+    for idx, Room in enumerate([]):
         mymap = parse(mpz_in.name)
         upm = UnusedPositionManager(2**7, mirror=True, noclip=True)
         v = VoxelWorld(size=2**7)

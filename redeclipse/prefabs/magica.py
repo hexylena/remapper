@@ -1,7 +1,6 @@
 import os
 
-from redeclipse.textures import AutomatedMagicaTextureManager
-from redeclipse.prefabs import Room, TEXMAN
+from redeclipse.prefabs import Room, TEXMAN, LIGHTMAN
 from redeclipse.magicavoxel.reader import Magicavoxel
 from redeclipse.voxel import VoxelWorld
 from redeclipse.vector import FineVector, CoarseVector
@@ -21,6 +20,7 @@ class MagicaRoom(Room):
     ]
 
     def __init__(self, pos, roof=False, orientation=EAST, randflags=None):
+        self._off = FineVector(self.boundary_additions.get('WEST', 0), self.boundary_additions.get('SOUTH', 0), 0).rotate(orientation)
         self.orientation = orientation
         self.pos = CoarseVector(*pos)
         if randflags:
@@ -96,7 +96,7 @@ class MagicaRoom(Room):
         for v in self.vox.world:
             (r, g, b) = self._colours[self.vox.world[v]]
             c = TEXMAN.get_colour(r, g, b)
-            self.x('cube', world, SELF + FineVector(*v), tex=c)
+            self.x('cube', world, SELF + FineVector(*v) + self._off, tex=c)
 
         self.render_extra(world, xmap)
 
@@ -107,25 +107,16 @@ class castle_gate(MagicaRoom):
     room_type = 'oriented'
 
     boundary_additions = {
-        'NORTH': 6,
-        'SOUTH': 6,
+        'NORTH': 5,
+        'SOUTH': 5,
     }
 
     doors = [
         {'orientation': WEST, 'offset': WEST + NORTH + ABOVE},
-        # {'orientation': EAST, 'offset': EAST + EAST + EAST + NORTH + ABOVE},
-        # {'orientation': NORTH, 'offset': EAST + NORTH + NORTH + NORTH},
-        # {'orientation': SOUTH, 'offset': EAST + SOUTH},
+        {'orientation': EAST, 'offset': EAST + EAST + EAST + NORTH + ABOVE},
+        {'orientation': NORTH, 'offset': EAST + NORTH + NORTH},
+        {'orientation': SOUTH, 'offset': EAST},
     ]
-
-    def __init__(self, pos, orientation=EAST, randflags=None):
-        print(pos)
-        self.pos = CoarseVector(*pos) #- FineVector(self.boundary_additions.get('WEST', 0), self.boundary_additions.get('SOUTH', 0), 0).rotate(orientation)
-        print(self.pos)
-
-        self.orientation = orientation
-        if randflags:
-            self._randflags = randflags
 
 
 class castle_wall_section(MagicaRoom):
@@ -152,7 +143,7 @@ class castle_wall_corner(MagicaRoom):
 
 class castle_wall_entry(MagicaRoom):
     name = 'castle_wall_entry'
-    room_type = 'vertical'
+    room_type = 'stair'
     vox_file = os.path.abspath(__file__).replace('magica.py', 'castle_wall_entry.vox')
 
     doors = [
@@ -185,3 +176,34 @@ class castle_small_deis(MagicaRoom):
         {'orientation': NORTH, 'offset': NORTH},
         {'orientation': SOUTH, 'offset': SOUTH},
     ]
+
+
+class castle_large(MagicaRoom):
+    name = 'castle_large'
+    vox_file = os.path.abspath(__file__).replace('magica.py', 'castle_large.vox')
+    room_type = 'platform_setpiece'
+
+    doors = [
+        {'orientation': WEST, 'offset': WEST + (NORTH * 2) + ABOVE},
+        {'orientation': EAST, 'offset': (EAST * 5) + (NORTH * 2)},
+        {'orientation': NORTH, 'offset': (NORTH * 5) + ABOVE + (EAST * 2)},
+        {'orientation': SOUTH, 'offset': SOUTH + ABOVE + (EAST * 2)},
+    ]
+
+
+class castle_gate_simple(MagicaRoom):
+    name = 'castle_gate_simple'
+    vox_file = os.path.abspath(__file__).replace('magica.py', 'castle_gate_simple.vox')
+    room_type = 'platform_setpiece'
+
+    doors = [
+        {'orientation': WEST, 'offset': WEST + ABOVE},
+        {'orientation': EAST, 'offset': EAST + EAST + EAST + ABOVE},
+        {'orientation': NORTH, 'offset': EAST + NORTH},
+        {'orientation': SOUTH, 'offset': EAST + SOUTH},
+    ]
+
+    def render_extra(self, world, xmap):
+        # self.light(xmap)
+        LIGHTMAN.light(xmap, self.pos + EAST)
+        # LIGHTMAN.light(xmap, position.rotate(self.orientation))

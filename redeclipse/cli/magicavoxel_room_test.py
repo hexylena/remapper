@@ -4,11 +4,10 @@ import logging
 
 from redeclipse import prefabs, Map
 from redeclipse.prefabs import magica
-from redeclipse.cli import parse
 from redeclipse.magicavoxel.writer import to_magicavoxel
 from redeclipse.upm import UnusedPositionManager
-from redeclipse.vector import CoarseVector, FineVector
-from redeclipse.vector.orientations import SOUTH, NORTH, WEST, EAST, ABOVE
+from redeclipse.vector import CoarseVector
+from redeclipse.vector.orientations import SOUTH, NORTH, WEST, EAST
 from redeclipse.voxel import VoxelWorld
 # from redeclipse.skybox import MinecraftSky
 
@@ -18,7 +17,9 @@ log = logging.getLogger(__name__)
 
 def main():
     magica_rooms = [
-        'castle_wall_section', 'castle_wall_corner', 'castle_wall_entry', 'castle_wall_tower', 'castle_gate'
+        'castle_small_deis', 'castle_wall_section', 'castle_wall_corner',
+        'castle_wall_entry', 'castle_wall_tower', 'castle_gate', 'castle_large',
+        'castle_gate_simple'
     ]
     magica_classes = [getattr(magica, room_type) for room_type in magica_rooms]
 

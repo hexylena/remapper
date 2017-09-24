@@ -9,21 +9,17 @@ def test_imports():
     import redeclipse
     import redeclipse.aftereffects
     import redeclipse.cli
-    import redeclipse.cli.cfg_gen
+    import redeclipse.cli
     import redeclipse.cli.from_json
     import redeclipse.cli.iso
-    import redeclipse.cli.mod_cubes
-    import redeclipse.cli.t_mv
-    import redeclipse.cli.t_textures
-    import redeclipse.cli.t_town
-    import redeclipse.cli.t_vector
-    import redeclipse.cli.terrain
+    import redeclipse.cli.magica_rooms
+    import redeclipse.cli.magicavoxel_info
+    import redeclipse.cli.magicavoxel_room_test
+    import redeclipse.cli.perlin
+    import redeclipse.cli.rooms
+    import redeclipse.cli.snow_forest
     import redeclipse.cli.to_json
-    import redeclipse.cli.voxel_1
-    import redeclipse.cli.voxel_2
-    import redeclipse.cli.voxel_3
-    import redeclipse.cli.voxel_4
-    import redeclipse.cli.voxel_5
+    import redeclipse.cli.vector_test
     import redeclipse.entities
     import redeclipse.entities.model
     import redeclipse.entities.weapon

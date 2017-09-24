@@ -6,8 +6,7 @@ from redeclipse.textures import AutomatedMagicaTextureManager
 from redeclipse.magicavoxel.reader import Magicavoxel
 # MinecraftThemedTextureManager, DefaultThemedTextureManager, PaperThemedTextureManager, PrimaryThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
-from redeclipse.prefabs.distributions import UniformDistributionManager
-# TowerDistributionManager, PlatformDistributionManager
+from redeclipse.prefabs.distributions import UniformDistributionManager, TowerDistributionManager, PlatformDistributionManager  # NOQA
 from redeclipse.prefabs.construction_kit import ConstructionKitMixin
 from redeclipse.vector import CoarseVector, FineVector
 from redeclipse.vector.orientations import rotate_yaw, SELF, \
@@ -35,8 +34,8 @@ TEXMAN = AutomatedMagicaTextureManager()
 LIGHTMAN = PositionBasedLightManager(brightness=1.0, saturation=0.6)
 # LIGHTMAN = None
 # DISTMAN = TowerDistributionManager()
-# DISTMAN = PlatformDistributionManager()
-DISTMAN = UniformDistributionManager()
+DISTMAN = PlatformDistributionManager()
+# DISTMAN = UniformDistributionManager()
 STARTING_POSITION = CoarseVector(4, 4, 3)
 
 

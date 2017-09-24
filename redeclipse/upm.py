@@ -73,7 +73,7 @@ class UnusedPositionManager:
         # print('used', used)
         # First, we need to check that ALL of those positions are
         # unoccupied.
-        # logging.info("Registering %s which occupies %s", room.__class__.__name__, '|'.join(map(str, used)))
+        # logging.info("Registering %s which occupies %s", room.__class__.__name__, '|'.join(map(str, sorted(used))))
         for position in used:
             if position in self.occupied and not self.noclip:
                 raise Exception("Occupado %s" % position)
@@ -92,7 +92,7 @@ class UnusedPositionManager:
         for position in doors:
             # logging.info("  pos: %s => leg:%s occ:%s", position['offset'], self.is_legal(position['offset']), position['offset'] in self.occupied)
             # If that door position is not occupied by something else
-            if self.is_legal(position['offset']):
+            if self.is_legal(position['offset']) and not position['offset'] in self.occupied:
                 # and cache in our doorway list
                 self.unoccupied.append((position['offset'], room, position['orientation']))
 

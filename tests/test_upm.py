@@ -53,38 +53,3 @@ def test_flavours():
     assert upm.nrp_flavour_vertical(0, 0, 1) == 1
 
     assert upm.nrp_flavour_plain(0, 0, 1) == 1
-
-
-def test_manhattan():
-    upm = UnusedPositionManager(16)
-    assert upm.getOrientationToManhattanRoom(
-            (0, 0, 0),
-            [(1, 0, 0)],
-        ) == WEST
-
-    assert upm.getOrientationToManhattanRoom(
-            (1, 0, 0),
-            [(0, 0, 0)],
-        ) == EAST
-
-    assert upm.getOrientationToManhattanRoom(
-            (0, 0, 0),
-            [(0, 1, 0)],
-        ) == SOUTH
-
-    assert upm.getOrientationToManhattanRoom(
-            (0, 1, 0),
-            [(0, 0, 0)],
-        ) == NORTH
-
-    with pytest.raises(Exception):
-        assert upm.getOrientationToManhattanRoom(
-                (1, 1, 0),
-                [(0, 0, 0)],
-            )
-
-    with pytest.raises(Exception):
-        assert upm.getOrientationToManhattanRoom(
-                (1, 1, 0),
-                [],
-            )
