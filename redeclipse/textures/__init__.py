@@ -244,12 +244,6 @@ class PrimaryThemedTextureManager(ThemedTextureManager):
     theme = primary_theme
 
 
-class MagicaThemedTextureManager(ThemedTextureManager):
-    from redeclipse.textures import magica, magica_theme
-    textures = magica
-    theme = magica_theme
-
-
 class AutomatedMagicaTextureManager(TextureManager):
 
     def get_colour(self, r, g, b):
