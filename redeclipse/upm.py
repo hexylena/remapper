@@ -50,6 +50,9 @@ class UnusedPositionManager:
         :returns: Whether or not it is OK to register this room.
         :rtype: boolean
         """
+        return self._preregister_rooms(*rooms)
+
+    def _preregister_rooms(self, *rooms):
         # logging.info("Prereg: %s", '|'.join([x.__class__.__name__ for x in rooms]))
         added_occupied = set()
         for room in rooms:
@@ -75,6 +78,9 @@ class UnusedPositionManager:
 
         :rtype: None
         """
+        return self._register_room(room)
+
+    def _register_room(self, room):
         used = room.get_positions()
         # First, we need to check that ALL of those positions are
         # unoccupied.
