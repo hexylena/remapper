@@ -29,9 +29,9 @@ theoretically import your minecraft world, if you wished.
 Updates
 -------
 
-See the `maps folder <./maps/>`__ for screenshots and maps you can play. See
-the `blog post <https://erasche.github.io/2017/09/23/remapper.html>`__ for more
-information.
+See the `maps folder <./maps/>`__ for screenshots and assorted maps you can
+play. See the `blog post <https://erasche.github.io/2017/09/23/remapper.html>`__
+for more information and a history of ``remapper``.
 
 Examples
 --------
