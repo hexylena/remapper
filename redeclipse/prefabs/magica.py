@@ -1,11 +1,8 @@
-import os
-
 from redeclipse.prefabs import Room, TEXMAN
 from redeclipse.magicavoxel.reader import Magicavoxel
 from redeclipse.voxel import VoxelWorld
 from redeclipse.vector import FineVector, CoarseVector
-from redeclipse.vector.orientations import SELF, EAST, SOUTH, ABOVE, WEST, NORTH, n, NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST
-from redeclipse.vector.orientations import rotate_yaw
+from redeclipse.vector.orientations import SELF, EAST, SOUTH, WEST, NORTH, n
 
 
 class MagicaRoom(Room):

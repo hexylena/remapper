@@ -4,7 +4,8 @@ from redeclipse.prefabs import LIGHTMAN
 from redeclipse.prefabs import TEXMAN
 from redeclipse.prefabs.magica import MagicaRoom
 from redeclipse.vector import FineVector
-from redeclipse.vector.orientations import EAST, SOUTH, ABOVE, WEST, NORTH, TILE_CENTER
+from redeclipse.vector.orientations import EAST, TILE_CENTER
+
 
 # p.Room, p.NLongCorridor, p.Corridor2way,
 # p.JumpCorridor3, p.JumpCorridorVertical, p.Corridor4way, p.PoleRoom,

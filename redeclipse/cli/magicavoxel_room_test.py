@@ -4,14 +4,13 @@ import logging
 
 from redeclipse import prefabs
 # We must override this ASAP since everyone else (e.g. prefabs) also imports the TEXMAN from prefab.
-from redeclipse.textures import DefaultThemedTextureManager, PrimaryThemedTextureManager, RainbowPukeTextureManager
-prefabs.TEXMAN = RainbowPukeTextureManager()
+from redeclipse.textures import DefaultThemedTextureManager, PrimaryThemedTextureManager, RainbowPukeTextureManager  # noqa
+prefabs.TEXMAN = RainbowPukeTextureManager()  # noqa
 # Back to our normally scheduled imports.
 from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
 from redeclipse.magicavoxel.writer import to_magicavoxel
-from redeclipse.prefabs import castle, dungeon, spacestation, original
-from redeclipse.prefabs import magica as m
+from redeclipse.prefabs import castle, dungeon, spacestation, original  # noqa
 from redeclipse.upm import UnusedPositionManager
 from redeclipse.vector import CoarseVector
 from redeclipse.vector.orientations import EAST

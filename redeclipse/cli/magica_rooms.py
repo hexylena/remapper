@@ -8,17 +8,15 @@ from redeclipse import prefabs
 # from redeclipse.textures import DefaultThemedTextureManager, PrimaryThemedTextureManager, RainbowPukeTextureManager
 # prefabs.TEXMAN = RainbowPukeTextureManager()
 # Back to our normally scheduled imports.
-from redeclipse.voxel import VoxelWorld
 from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
-from redeclipse.upm import UnusedPositionManager
 from redeclipse.magicavoxel.writer import to_magicavoxel
 from redeclipse.prefabs import STARTING_POSITION
-from redeclipse.prefabs import castle, dungeon, spacestation, original
-
+from redeclipse.prefabs import castle, dungeon, spacestation, original  # noqa
+from redeclipse.upm import UnusedPositionManager
 from redeclipse.vector.orientations import EAST
+from redeclipse.voxel import VoxelWorld
 
-from tqdm import tqdm
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 

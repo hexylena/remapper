@@ -3,7 +3,7 @@ import argparse
 import random
 import logging
 from redeclipse.voxel import VoxelWorld
-from redeclipse.cli import parse, weighted_choice, place_rooms
+from redeclipse.cli import parse, place_rooms
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
@@ -39,6 +39,7 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False, magica=Non
         p.ImposingRingRoom,
         p.ImposingBlockRoom,
     ]
+    possible_endcaps = [p.SpawnRoom]
     # Initialize
     upm = UnusedPositionManager(size, mirror=4)
 
