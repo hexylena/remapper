@@ -117,12 +117,12 @@ class castle_wall_entry(MagicaRoom):
     vox_file = os.path.abspath(__file__).replace('__init__.py', 'castle_wall_entry.vox')
 
     doors = [
-        {'orientation': WEST, 'offset': WEST},
-        {'orientation': EAST, 'offset': EAST + ABOVE},
+        {'orientation': WEST, 'offset': WEST + ABOVE},
+        {'orientation': EAST, 'offset': EAST + ABOVE + ABOVE},
     ]
 
     def render_extra(self, world, xmap):
-        LIGHTMAN.light(xmap, self.pos + ABOVE)
+        LIGHTMAN.light(xmap, self.pos + ABOVE + ABOVE)
 
 
 class castle_wall_section(MagicaRoom):
@@ -191,7 +191,7 @@ class castle_wall_section_tjoint(MagicaRoom):
     doors = [
         {'orientation': WEST, 'offset': WEST + ABOVE},
         {'orientation': EAST, 'offset': EAST * 3 + ABOVE},
-        {'orientation': SOUTH, 'offset': EAST + NORTH + NORTH + ABOVE},
+        {'orientation': NORTH, 'offset': EAST + NORTH + NORTH + ABOVE},
     ]
 
     def render_extra(self, world, xmap):

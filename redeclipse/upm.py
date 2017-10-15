@@ -1,4 +1,5 @@
 import copy
+from collections import OrderedDict
 from tqdm import tqdm
 import math
 import random
@@ -234,48 +235,70 @@ class UnusedPositionManager:
             ))
         return self.weighted_choice(choices)
 
-    def room_localization(self, possible_rooms):
+    def random_room_stream(self, connecting_room, room_options):
+        # We need to get the complete set of rooms, in a randomly shuffled
+        # fashion. Previously we'd just try again and again on a position to
+        # fit a room on there. Sometimes this would succeed, sometimes it would
+        # failure and we'd have unbounded execution time.
+        choices = []
+        probs = connecting_room.get_transition_probs()
+
+        # We'll need integer probabilities for the shuffling, so use min and mult everything.
+        minimum_prob = min([probs.get(room.room_type, 0.1) for room in room_options])
+
+        for room in room_options:
+            # Number of times we'd like to see this room.
+            frequency = int(probs.get(room.room_type, 0.1) / minimum_prob)
+            # Append that many rooms
+            for n in range(frequency):
+                choices.append(room)
+
+        # >>> OrderedDict([(x,  True) for x in [1,2,23,3,5,34,5,5, 6]])
+        # OrderedDict([(1, True), (2, True), (23, True), (3, True), (5, True), (34, True), (6, True)])
+
+        # Now that we've got a set of rooms with many dupes, we'll shuffle it.
+        choices = OrderedDict([(room, True) for room in random.sample(choices, len(choices))]).keys()
+        return choices
+
+    def room_localization(self, possible_rooms, prev_room_door, prev_room, prev_room_orientation):
         """
         Given a set of possible rooms, this will randomly choose a
         location, and emit a stream of orientations for rooms that could
         be attached.
         """
-        # Pick a random position for this notional room to go
-        (prev_room_door, prev_room, prev_room_orientation) = self.nonrandom_position(self.nrp_flavour_plain)
 
         # If we are here, we do have a position + orientation to place in
-        # Get a random room, influenced by the prev_room
-        roomClass = self.random_room(prev_room, possible_rooms)
-
-        # We loop over a (random permutation) of the possible orientations in
-        # order to identify at least one with a plausible door. Shuffling *may*
-        # not be necessary but it doesn't hurt anything.
-        for orientation in random.sample(CARDINALS, 4):
-            kwargs = {'orientation': orientation}
-            # Initialize room, required to correctly calculate get_positions()/get_doorways()
-            r = roomClass(pos=CoarseVector(2, 2, 3), **kwargs)
-            # We've already picked a prev_room_door (and we know its orientation)
-            # Now we pick a door on the new room we'll place.
-            roomClass_doors = r.get_doorways()
-            # Find a door that is facing in the opposite direction as prev_room_orientation
-            options = [x for x in roomClass_doors if x['orientation'] == prev_room_orientation.rotate(180)]
-            # If we don't have any options, continue, let's try a different orientation.
-            if len(options) == 0:
-                continue
-            # If we do have doors though, choose a door on our new room that's
-            # in the correct orientation
-            for chosen_door in options:
-                # Room offset
-                room_offset = chosen_door['offset'] - prev_room_door + prev_room_orientation
-                # Add our random options
-                kwargs.update(roomClass.randOpts(prev_room))
-                # Last, we yield all possible versions of this room (in case
-                # some of them don't fit.)
-                r = roomClass(pos=CoarseVector(2, 2, 3) - room_offset, **kwargs)
-                # If the room can be registered in this position, safely, ONLY
-                # then do we yield it.
-                if self.preregister_room(r):
-                    yield r
+        # Get the COMPLETE set of rooms, influenced by the prev_room
+        for roomClass in self.random_room_stream(prev_room, possible_rooms):
+            # We loop over a (random permutation) of the possible orientations in
+            # order to identify at least one with a plausible door. Shuffling *may*
+            # not be necessary but it doesn't hurt anything.
+            for orientation in random.sample(CARDINALS, 4):
+                kwargs = {'orientation': orientation}
+                # Initialize room, required to correctly calculate get_positions()/get_doorways()
+                r = roomClass(pos=CoarseVector(2, 2, 3), **kwargs)
+                # We've already picked a prev_room_door (and we know its orientation)
+                # Now we pick a door on the new room we'll place.
+                roomClass_doors = r.get_doorways()
+                # Find a door that is facing in the opposite direction as prev_room_orientation
+                options = [x for x in roomClass_doors if x['orientation'] == prev_room_orientation.rotate(180)]
+                # If we don't have any options, continue, let's try a different orientation.
+                if len(options) == 0:
+                    continue
+                # If we do have doors though, choose a door on our new room that's
+                # in the correct orientation
+                for chosen_door in options:
+                    # Room offset
+                    room_offset = chosen_door['offset'] - prev_room_door + prev_room_orientation
+                    # Add our random options
+                    kwargs.update(roomClass.randOpts(prev_room))
+                    # Last, we yield all possible versions of this room (in case
+                    # some of them don't fit.)
+                    r = roomClass(pos=CoarseVector(2, 2, 3) - room_offset, **kwargs)
+                    # If the room can be registered in this position, safely, ONLY
+                    # then do we yield it.
+                    if self.preregister_room(r):
+                        yield r
 
     def _room_cap_debug(self, pos, typ, ori):
         return TestRoom(pos, orientation=EAST)
@@ -311,7 +334,6 @@ class UnusedPositionManager:
                     yield r
 
     def place_rooms(self, v, mymap, debug, possible_rooms, rooms=10):
-        prev_room = None
         room_count = 0
         logging.info("Placing rooms")
         with tqdm(total=rooms) as pbar:
@@ -321,24 +343,29 @@ class UnusedPositionManager:
                     logging.info("Placed enough rooms")
                     break
 
-                try:
-                    notional_rooms = self.room_localization(possible_rooms)
-                    for r in notional_rooms:
-                        to_render = self.register_room(r)
-                        [m.render(v, mymap) for m in to_render]
-
-                        pbar.update(self.mirror)
-                        pbar.set_description('z:%3d u:%d o:%d' % (v.zmax, len(self.unoccupied), len(self.occupied)))
-                        # If we get here, we've placed successfully so bump count + render
-                        room_count += self.mirror
-                        # After we place the first one, break out of this
-                        # for loop since the rest of the options are just
-                        # different orientations of the same thing.
-                        break
-                    else:
-                        # This room doesn't fit here, we'll try again.
-                        pass
-                except Exception as e:
-                    # If we have no more positions left, break.
-                    logging.exception("Possibly run out of positions before placing all rooms. Try a different seed? %s", e)
+                if len(self.unoccupied) == 0:
+                    logging.info("Ran out of unoccupied positions")
                     break
+
+                # Pick a random position for this notional room to go
+                (prev_room_door, prev_room, prev_room_orientation) = self.nonrandom_position(self.nrp_flavour_vertical)
+                for r in self.room_localization(possible_rooms, prev_room_door, prev_room, prev_room_orientation):
+                    to_render = self.register_room(r)
+                    [m.render(v, mymap) for m in to_render]
+
+                    pbar.update(self.mirror)
+                    pbar.set_description('z:%3d u:%d o:%d' % (v.zmax, len(self.unoccupied), len(self.occupied)))
+                    # If we get here, we've placed successfully so bump count + render
+                    room_count += self.mirror
+                    # After we place the first one, break out of this
+                    # for loop since the rest of the options are just
+                    # different orientations of the same thing.
+                    break
+                else:
+                    # There are NO rooms which fit here, so we need to remove
+                    # this from our positions so we don't bother trying again.
+                    self.unoccupied = [
+                        (d, r, o) for (d, r, o) in self.unoccupied
+                        if (d, r, o) != (prev_room_door, prev_room, prev_room_orientation)
+                    ]
+                    logging.info("No rooms fit here, removing")
