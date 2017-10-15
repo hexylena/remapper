@@ -32,9 +32,10 @@ class UnusedPositionManager:
         :returns: Whether or not that position is legal to occuply.
         :rtype: boolean
         """
-        return 0 <= position.x <= 16 and \
-            0 <= position.y <= 16 and \
-            0 <= position.z <= 16
+        # TODO: dependent on world size.
+        return 0 <= position.x <= 32 and \
+            0 <= position.y <= 32 and \
+            0 <= position.z <= 32
 
     def preregister_rooms(self, *rooms):
         """
@@ -59,6 +60,10 @@ class UnusedPositionManager:
                 if position in self.occupied or position in added_occupied:
                     return False
             added_occupied = added_occupied.union(set(used))
+            # Don't add the room if the door is off the edge.
+            for door in room.get_doorways():
+                if not self.is_legal(door['offset']):
+                    return False
         return True
 
     def register_room(self, room):
@@ -226,23 +231,35 @@ class UnusedPositionManager:
                 if self.preregister_rooms(r):
                     yield r
 
+    def _room_cap_debug(self, pos, typ, ori):
+        return TestRoom(pos, orientation=EAST)
+
+    def _room_cap_real(self, prev_room_door, prev_room, prev_room_orientation, possible_endcaps=None):
+        # Pick a random room class
+        for roomClass in random.sample(possible_endcaps, len(possible_endcaps)):
+            # Test all the orientations
+            for c in CARDINALS:
+                r = roomClass(pos=CoarseVector(2, 2, 3), orientation=c)
+                # There will only be one door.
+                roomClass_doors = r.get_doorways()
+                options = [x for x in roomClass_doors if x['orientation'] == prev_room_orientation.rotate(180)]
+                if len(options) == 0:
+                    continue
+                chosen_door = options[0]
+                room_offset = chosen_door['offset'] - prev_room_door + prev_room_orientation
+                r = roomClass(pos=CoarseVector(2, 2, 3) - room_offset, orientation=c)
+                # Make sure it fits!
+                for pos in r.get_positions():
+                    if not self.is_legal(pos) and not pos in self.occupied:
+                        continue
+                return r
+
     def endcap(self, debug=False, possible_endcaps=[]):
         if debug:
             for (pos, typ, ori) in self.unoccupied:
-                r = TestRoom(pos, orientation=EAST)
-                yield r
+                yield self._room_cap_debug(pos, typ, ori)
         else:
-            for (prev_room_door, prev_room, prev_room_orientation) in self.unoccupied:
-                # Pick a random room class
-                roomClass = random.choice(possible_endcaps)
-                for c in CARDINALS:
-                    r = roomClass(pos=CoarseVector(2, 2, 3), orientation=c)
-                    # There will only be one door.
-                    roomClass_doors = r.get_doorways()
-                    options = [x for x in roomClass_doors if x['orientation'] == prev_room_orientation.rotate(180)]
-                    if len(options) == 0:
-                        continue
-                    chosen_door = options[0]
-                    room_offset = chosen_door['offset'] - prev_room_door + prev_room_orientation
-                    r = roomClass(pos=CoarseVector(2, 2, 3) - room_offset, orientation=c)
+            for (pos, typ, ori) in self.unoccupied:
+                r = self._room_cap_real(pos, typ, ori, possible_endcaps=possible_endcaps)
+                if r:
                     yield r

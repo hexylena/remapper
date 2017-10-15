@@ -18,22 +18,29 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
-def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False, magica=None):
+def main(mpz_in, mpz_out, size=2**8, seed=42, rooms=200, debug=False, magica=None):
     random.seed(seed)
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
 
     magica_rooms = [
-        'castle_gate', 'castle_gate_simple', 'castle_large',
-        'castle_wall_corner',  # 'castle_small_deis',
-        'castle_wall_end_cliff', 'castle_wall_entry',
-        'castle_wall_section', 'castle_wall_section_endcap',
-        'castle_wall_section_long', 'castle_wall_section_long_damaged',
-        'castle_wall_section_tjoint', 'castle_wall_tower', 'wooden_bridge'
+        # 'castle_gate', 'castle_gate_simple', 'castle_large',
+        # 'castle_wall_corner',  # 'castle_small_deis',
+        # 'castle_wall_end_cliff', 'castle_wall_entry',
+        # 'castle_wall_section', 'castle_wall_section_endcap',
+        # 'castle_wall_section_long', 'castle_wall_section_long_damaged',
+        # 'castle_wall_section_tjoint', 'castle_wall_tower', 'wooden_bridge',
+        # 'dungeon_2x2', 'dungeon_junction', 'dungeon_stair2',
+        # 'dungeon_walkway', 'dungeon_walkway3',
+        'station_tube1', 'station_tube3', 'station_tube_jumpx',
+        'station_tubeX', 'station_endcap', 'station_right', 'station_ring',
+        'station_ring_vertical', 'station_sphere', 'station_sphere_slice',
+        'station_stair2',
     ]
     possible_rooms = [getattr(m, room_type) for room_type in magica_rooms]
 
-    magica_endcaps = ['castle_wall_end_cliff', 'castle_wall_section_endcap']
+    # magica_endcaps = ['castle_wall_end_cliff', 'castle_wall_section_endcap']
+    magica_endcaps = ['station_endcap']
     possible_endcaps = [getattr(m, room_type) for room_type in magica_endcaps]
 
     # Initialize
