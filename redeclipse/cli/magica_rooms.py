@@ -44,7 +44,7 @@ def main(mpz_in, mpz_out, size=2**8, seed=42, rooms=200, debug=False, magica=Non
     possible_endcaps = [getattr(m, room_type) for room_type in magica_endcaps]
 
     # Initialize
-    upm = UnusedPositionManager(size, mirror=True)
+    upm = UnusedPositionManager(size, mirror=2)
 
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.

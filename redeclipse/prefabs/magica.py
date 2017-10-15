@@ -29,7 +29,7 @@ class MagicaRoom(Room):
             self._randflags = randflags
 
     def __repr__(self):
-        return '<MagicaRoom %s facing:%s>' % (self.name, n(self.orientation))
+        return '<MagicaRoom %s facing:%s,pos:%s>' % (self.name, n(self.orientation), self.pos)
 
     def load_model(self):
         self.model = Magicavoxel.from_file(self.vox_file)

@@ -1,3 +1,4 @@
+import copy
 import math
 import random
 from redeclipse.cli import random_room
@@ -12,7 +13,7 @@ class UnusedPositionManager:
 
     This is closely tied to our prefab model
     """
-    def __init__(self, world_size, mirror=False, noclip=False):
+    def __init__(self, world_size, mirror=1, noclip=False):
         # Disable occupation tests.
         self.noclip = noclip
         # Set of occupied positions
@@ -20,8 +21,14 @@ class UnusedPositionManager:
         # Set of doors that we can connect to
         self.unoccupied = []
         self.world_size = world_size
-        # Special restrictions on mirror-mode
+        # Mirror mode, only defined for values 1, 2, 4
         self.mirror = mirror
+        if self.mirror == 1:
+            self.mirror_rotations = [0]
+        elif self.mirror == 2:
+            self.mirror_rotations = [0, 180]
+        elif self.mirror == 4:
+            self.mirror_rotations = [0, 90, 180, 270]
 
     def is_legal(self, position):
         """Is the position within the bounds of the map.
@@ -37,7 +44,15 @@ class UnusedPositionManager:
             0 <= position.y <= 32 and \
             0 <= position.z <= 32
 
-    def preregister_rooms(self, *rooms):
+    def _yield_mirrored(self, room):
+        for orientation in self.mirror_rotations:
+            room_copy = copy.deepcopy(room)
+            # Offset rotate around the center of the map
+            room_copy.pos = room_copy.pos.offset_rotate(orientation, offset=CoarseVector(-16, -16, 0))
+            room_copy.orientation = room_copy.orientation.rotate(orientation)
+            yield room_copy
+
+    def preregister_rooms(self, room):
         """
         Register positions occupied by this room, but don't *actually*
         do it, only attempt to do it in a temporary manner. Useful for
@@ -50,9 +65,10 @@ class UnusedPositionManager:
         :returns: Whether or not it is OK to register this room.
         :rtype: boolean
         """
-        return self._preregister_rooms(*rooms)
+        new_rooms = self._yield_mirrored(room)
+        return self._preregister_rooms(new_rooms)
 
-    def _preregister_rooms(self, *rooms):
+    def _preregister_rooms(self, rooms):
         # logging.info("Prereg: %s", '|'.join([x.__class__.__name__ for x in rooms]))
         added_occupied = set()
         for room in rooms:
@@ -78,7 +94,9 @@ class UnusedPositionManager:
 
         :rtype: None
         """
-        return self._register_room(room)
+        for r in self._yield_mirrored(room):
+            self._register_room(r)
+            yield r
 
     def _register_room(self, room):
         used = room.get_positions()
@@ -256,7 +274,7 @@ class UnusedPositionManager:
                 r = roomClass(pos=CoarseVector(2, 2, 3) - room_offset, orientation=c)
                 # Make sure it fits!
                 for pos in r.get_positions():
-                    if not self.is_legal(pos) and not pos in self.occupied:
+                    if not self.is_legal(pos) and pos not in self.occupied:
                         continue
                 return r
 

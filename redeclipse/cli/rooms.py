@@ -71,21 +71,17 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False, magica=Non
         return weighted_choice(choices)
 
     # Initialize
-    upm = UnusedPositionManager(size, mirror=True)
+    upm = UnusedPositionManager(size, mirror=2)
 
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.
     # We use the spawn room as our base starting room
     Room = possible_rooms[0]
-    Room_m = possible_rooms[0]
     b = Room(pos=STARTING_POSITION, orientation=EAST)
-    b_m = Room_m(pos=mirror(STARTING_POSITION), orientation=EAST)
     # Register our new room
     upm.register_room(b)
-    upm.register_room(b_m)
     # Render it to the map
     b.render(v, mymap)
-    b_m.render(v, mymap)
     # Convert rooms to int
     rooms = int(rooms)
     sunlight = Sunlight(
@@ -121,23 +117,20 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False, magica=Non
             kwargs.update(roomClass.randOpts(prev_room))
             # Initialize room, required to correctly calculate get_positions()
             r = roomClass(pos=position, **kwargs)
-            r_m = roomClass(pos=mirror(position), **mirror(kwargs))
             # Try adding it
             try:
-                if not upm.preregister_rooms(r, r_m):
+                if not upm.preregister_rooms(r):
                     log.info("would fail on one or more rooms")
                     continue
 
                 # This step might raise an exception
                 upm.register_room(r)
-                upm.register_room(r_m)
 
                 pbar.update(2)
                 pbar.set_description('%3d' % v.zmax)
                 # If we get here, we've placed successfully so bump count + render
                 room_count += 2
                 r.render(v, mymap)
-                r_m.render(v, mymap)
             except Exception as e:
                 # We have failed to register the room because
                 # it does not fit here.

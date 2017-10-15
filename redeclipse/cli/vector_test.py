@@ -19,27 +19,13 @@ def main(mpz_in, redeclipse=None, magica=None, world_size=2**7):
     Room = m.castle_large
 
     mymap = parse(mpz_in.name)
-    upm = UnusedPositionManager(world_size, mirror=True, noclip=True)
+    upm = UnusedPositionManager(world_size, mirror=4, noclip=True)
     v = VoxelWorld(size=world_size)
 
     kwargs = Room.randOpts(None)
     e = Room(pos=CoarseVector(8 + 3, 8, 0), orientation=EAST, **kwargs)
-    kwargs = Room.randOpts(None)
-    w = Room(pos=CoarseVector(8 - 3, 8, 0), orientation=WEST, **kwargs)
-    kwargs = Room.randOpts(None)
-    n = Room(pos=CoarseVector(8, 8 + 3, 0), orientation=NORTH, **kwargs)
-    kwargs = Room.randOpts(None)
-    s = Room(pos=CoarseVector(8, 8 - 3, 0), orientation=SOUTH, **kwargs)
-
-    upm.register_room(n)
-    upm.register_room(s)
     upm.register_room(e)
-    upm.register_room(w)
-
-    n.render(v, mymap)
-    s.render(v, mymap)
     e.render(v, mymap)
-    w.render(v, mymap)
 
     e.x('column', v, NORTH + EAST + NORTH + (ABOVE * 3), EAST, 8, tex=TEXMAN.get_colour(1, 0, 0))
     e.x('column', v, NORTH + EAST + NORTH + (ABOVE * 3), NORTH, 6, tex=TEXMAN.get_colour(1, 1, 0))
