@@ -3,10 +3,10 @@ from redeclipse.voxel import VoxelWorld
 from redeclipse.cli import parse
 from redeclipse.objects import cube
 import argparse
-import sys # noqa
-import random # noqa
-import math # noqa
-import noise # noqa
+import sys  # noqa
+import random  # noqa
+import math  # noqa
+import noise  # noqa
 random.seed(22)
 IJ_SIZE = 2**7
 K_SIZE = 50

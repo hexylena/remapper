@@ -70,6 +70,7 @@ class VSlot:
 
 
 class SurfaceInfo:
+
     def __init__(self, lmid0, lmid1, verts, numverts):
         self.lmid = [lmid0, lmid1]
         self.verts = verts
@@ -95,6 +96,7 @@ class SurfaceInfo:
 
 
 class vertinfo:
+
     def __init__(self, x, y, z, u, v, norm):
         self.x = x
         self.y = y
@@ -132,6 +134,7 @@ class SlotShaderParam:
 
 
 class cubext:
+
     def __init__(self, old=None, maxverts=0):
         if old:
             self.va = old['va']
@@ -166,6 +169,7 @@ class cubext:
 
 
 class cubeedge:
+
     def __init__(self, next, offset, size, index, flags):
         self.next = next
         self.offset = offset
@@ -175,6 +179,7 @@ class cubeedge:
 
 
 class cube:
+
     def __init__(self):
         # points to 8 cube structures which are its children, or NULL. -Z first, then -Y, -X
         self.children = None

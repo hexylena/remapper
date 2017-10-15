@@ -29,6 +29,7 @@ class Magicavoxel(KaitaiStruct):
         self.palette = self._root.PaletteChunk(self._io, self, self._root, size=self.SIZE)
 
     class XyziChunk(KaitaiStruct):
+
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
@@ -42,6 +43,7 @@ class Magicavoxel(KaitaiStruct):
                 self.voxels[i] = self._root.Voxels(self._io, self, self._root)
 
     class Colour(KaitaiStruct):
+
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
@@ -52,6 +54,7 @@ class Magicavoxel(KaitaiStruct):
             self.a = self._io.read_u1()
 
     class PaletteChunk(KaitaiStruct):
+
         def __init__(self, _io, _parent=None, _root=None, size=256):
             self._io = _io
             self._parent = _parent
@@ -64,6 +67,7 @@ class Magicavoxel(KaitaiStruct):
                 self.colours[i] = self._root.Colour(self._io, self, self._root)
 
     class Voxels(KaitaiStruct):
+
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent
@@ -74,6 +78,7 @@ class Magicavoxel(KaitaiStruct):
             self.c = self._io.read_u1()
 
     class SizeChunk(KaitaiStruct):
+
         def __init__(self, _io, _parent=None, _root=None):
             self._io = _io
             self._parent = _parent

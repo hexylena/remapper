@@ -1,7 +1,7 @@
 from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
 from redeclipse.entities.weapon import Grenade
-from redeclipse.textures import AutomatedMagicaTextureManager #, RainbowPukeTextureManager
+from redeclipse.textures import AutomatedMagicaTextureManager  # , RainbowPukeTextureManager
 # MinecraftThemedTextureManager, DefaultThemedTextureManager, PaperThemedTextureManager, PrimaryThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
 from redeclipse.prefabs.distributions import UniformDistributionManager, TowerDistributionManager, PlatformDistributionManager, CastleDistributionManager  # NOQA
@@ -12,7 +12,7 @@ from redeclipse.vector.orientations import rotate_yaw, SELF, \
     ABOVE_FINE, NORTHWEST, \
     NORTHEAST, SOUTHWEST, SOUTHEAST, TILE_CENTER, HALF_HEIGHT
 
-import random # noqa
+import random  # noqa
 # import math
 import copy
 random.seed(22)
@@ -173,6 +173,7 @@ class _3X3Room(Room):
 
 
 class TestRoom(Room):
+
     def __init__(self, pos, orientation=EAST, randflags=None):
         """Init is kept separate from rendering, because init sets self.pos,
         and we use that when calling self.get_positions(), which is required as
@@ -192,6 +193,7 @@ class TestRoom(Room):
 
 
 class TestRoom2(Room):
+
     def render(self, world, xmap):
         floor_tex = TEXMAN.get_c('floor')
 
@@ -837,7 +839,7 @@ class Stair(Room):
         self.x('rectangular_prism', world, FineVector(7, 0, 7), FineVector(1, 8, 1), tex=floor_tex)
 
         # if self._randflags[0]:
-            # self.x('interpolate', world, SELF, FineVector(0, 0, 2), FineVector(7, 0, 9), tex=floor_tex)
+        # self.x('interpolate', world, SELF, FineVector(0, 0, 2), FineVector(7, 0, 9), tex=floor_tex)
 
     def _get_doorways(self):
         return [

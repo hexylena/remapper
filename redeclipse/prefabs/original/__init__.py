@@ -57,4 +57,3 @@ class spawn_room(OriginalRoom):
         xmap.ents.append(PlayerSpawn(
             xyz=self.pos + TILE_CENTER + FineVector(0, 0, 1)
         ))
-

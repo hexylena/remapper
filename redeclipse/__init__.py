@@ -330,6 +330,7 @@ class Map:
 
 
 class MapParser(object):
+
     def __read_custom(self, pattern, width):
         val = struct.unpack(pattern, self.bytes[self.index:self.index + width])
         self.index += width

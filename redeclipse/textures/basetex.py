@@ -97,6 +97,7 @@ texture s "{0.basepath}/{0.s}"
 
 
 class BumpSpecMapWorld(DefaultBumpSpecMapWorld):
+
     def files(self):
         yield self.c
         yield self.n
@@ -132,6 +133,7 @@ texture z "{0.basepath}/{0.z}"\n""".format(self, idx=idx)
 
 
 class BumpSpecMapParallaxWorld(DefaultBumpSpecMapParallaxWorld):
+
     def files(self):
         yield self.c
         yield self.n
@@ -174,6 +176,7 @@ texture g "{0.basepath}/{0.g}"\n""".format(self, idx=idx)
 
 
 class BumpSpecMapParallaxGlowWorld(DefaultBumpSpecMapParallaxGlowWorld):
+
     def files(self):
         yield self.c
         yield self.n

@@ -15,6 +15,7 @@ class UnusedPositionManager:
 
     This is closely tied to our prefab model
     """
+
     def __init__(self, world_size, mirror=1, noclip=False):
         # Disable occupation tests.
         self.noclip = noclip

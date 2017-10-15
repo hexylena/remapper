@@ -145,6 +145,7 @@ class TextureManager:
         texture z "dziq/boards01_b.jpg"
         texture s "dziq/boards01_s.jpg"
     """
+
     def __init__(self):
         self.atlas = {}
         self.atlas_backref = {}

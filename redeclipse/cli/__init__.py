@@ -9,4 +9,3 @@ log = logging.getLogger(__name__)
 def parse(input):
     mp = MapParser()
     return mp.read(input)
-

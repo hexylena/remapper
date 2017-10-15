@@ -94,6 +94,7 @@ class PositionBasedLightManager(LightManager):
     """
     A lighting manager for a map which returns a different colour based on position.
     """
+
     def hue(self, pos):
         """
         Get a hue for a position. This returns a coloured light that changes hue gradually over x/y/z

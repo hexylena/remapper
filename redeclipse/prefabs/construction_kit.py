@@ -192,6 +192,7 @@ class ConstructionKitMixin(object):
     A mixin for constructing things in the VoxelWorld. The code is still
     a bit messy...
     """
+
     def x(self, construction, world, *args, **kwargs):
         funcname = 'x_' + construction
         if not hasattr(self, funcname):
