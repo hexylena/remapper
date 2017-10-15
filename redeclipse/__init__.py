@@ -98,7 +98,6 @@ class Map:
         self.meta['numents'] = len(self.ents)
         for key in self.meta:
             if key in ('gameident', 'skybox', 'z'):
-                print(key, self.meta[key])
                 self._write_str(handle, tb(self.meta[key]))
             else:
                 self._write_int(handle, self.meta[key])
@@ -126,7 +125,6 @@ class Map:
                 raise Exception("Can't handle " + var_type)
 
         # Texmru
-        print(self.texmru)
         self._write_ushort(handle, len(self.texmru))  # nummru
         for value in self.texmru:
             self._write_ushort(handle, value)
@@ -327,7 +325,6 @@ class Map:
         """
         Attach a skybox to the map
         """
-        print(sb.get_short_path())
         # pass
         self.meta['skybox'] = sb.get_short_path()
 
@@ -603,7 +600,6 @@ class MapParser(object):
             else:
                 # Cannot recover
                 raise Exception("Don't know how to handle map prop type %s", var_type)
-            # print(var_name_len, var_name, var_type, var_val)
 
             map_vars[var_name] = var_val
 

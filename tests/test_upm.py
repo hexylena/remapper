@@ -22,8 +22,8 @@ def test_upm():
     assert upm.is_legal(CoarseVector(16, 16, 16))
     assert not upm.is_legal(CoarseVector(17, 17, 17))
 
-    assert upm.preregister_rooms(room_a)
-    assert not upm.preregister_rooms(room_a, room_a)
+    assert upm.preregister_room(room_a)
+    assert not upm.preregister_room(room_a, room_a)
 
     upm.register_room(room_a)
     with pytest.raises(Exception):

@@ -5,7 +5,7 @@ docs:
 	cd docs && $(MAKE) html
 
 
-GOX_FILES := $(wildcard redeclipse/prefabs/*.gox)
+GOX_FILES := $(wildcard redeclipse/prefabs/original/*.gox) $(wildcard redeclipse/prefabs/spacestation/*.gox)
 VOX_FILES := $(GOX_FILES:.gox=.vox)
 
 vox_files: $(VOX_FILES)

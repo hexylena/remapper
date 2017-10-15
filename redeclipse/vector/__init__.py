@@ -154,7 +154,6 @@ class BaseVector(object):
         :rtype: redeclipse.vector.BaseVector
         """
         # TODO: We could auto-vox_off, not sure if this is useful?
-        # print(self, offset, self + offset, deg)
         return (self + offset).rotate(deg) - offset
 
 

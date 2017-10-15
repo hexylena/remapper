@@ -1,5 +1,6 @@
 import os
 import shutil
+import colorsys
 import random
 from redeclipse.textures.basetex import Sky, Default, SimpleColourTex
 
@@ -174,11 +175,10 @@ class TextureManager:
 
     def emit_conf(self, map_output_path, author="Python", map_name="test", ):
         filename = map_output_path.name.replace('.mpz', '.cfg')
-        handle = open(filename, 'w')
-        handle.write(comment.format(author=author, map_name=map_name))
-        for idx, (tex_key, tex) in enumerate(self.atlas.items()):
-            handle.write(tex.conf(idx=idx))
-        handle.close()
+        with open(filename, 'w') as handle:
+            handle.write(comment.format(author=author, map_name=map_name))
+            for idx, (tex_key, tex) in enumerate(self.atlas.items()):
+                handle.write(tex.conf(idx=idx))
 
     def copy_data(self):
         outdir = "/home/hxr/games/redeclipse-1.5.3/data/hxr/textures/"
@@ -217,7 +217,7 @@ class ThemedTextureManager(TextureManager):
             mod = getattr(self.textures, cls)
             if 'type' in str(type(mod)):
                 if any(['redeclipse.textures.' in str(c) for c in mod.__bases__]):
-                    self.texref[cls.lower()] = mod
+                    self.texref[cls.lower()] = mod()
 
 
 class MinecraftThemedTextureManager(ThemedTextureManager):
@@ -247,6 +247,9 @@ class PrimaryThemedTextureManager(ThemedTextureManager):
 class AutomatedMagicaTextureManager(TextureManager):
 
     def get_colour(self, r, g, b):
+        return self._get_colour(r, g, b)
+
+    def _get_colour(self, r, g, b):
         name = 'c_%s_%s_%s' % (r, g, b)
         if name not in self.atlas_backref:
             tmp = SimpleColourTex()
@@ -278,3 +281,20 @@ class AutomatedMagicaTextureManager(TextureManager):
 
     def discover_textures(self):
         super().discover_textures()
+
+
+class RainbowPukeTextureManager(AutomatedMagicaTextureManager):
+    """Kanker."""
+
+    def get_c(self, category):
+        # Ignore category.
+        hue = random.randint(0, 64) * 4
+        (red, grn, blu) = colorsys.hsv_to_rgb(hue / 256, 1, 255)
+        colour = self.get_colour(red / 255, grn / 255, blu / 255)
+        return colour
+
+    def get_colour(self, r, g, b):
+        hue = random.randint(0, 64) * 4
+        (red, grn, blu) = colorsys.hsv_to_rgb(hue / 256, 1, 255)
+        colour = self._get_colour(red / 255, grn / 255, blu / 255)
+        return colour

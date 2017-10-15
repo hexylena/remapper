@@ -1,7 +1,7 @@
 from redeclipse.entities import Light, PlayerSpawn, Pusher
 from redeclipse.entities.model import MapModel
 from redeclipse.entities.weapon import Grenade
-from redeclipse.textures import AutomatedMagicaTextureManager
+from redeclipse.textures import AutomatedMagicaTextureManager, RainbowPukeTextureManager
 # MinecraftThemedTextureManager, DefaultThemedTextureManager, PaperThemedTextureManager, PrimaryThemedTextureManager
 from redeclipse.lighting import PositionBasedLightManager
 from redeclipse.prefabs.distributions import UniformDistributionManager, TowerDistributionManager, PlatformDistributionManager, CastleDistributionManager  # NOQA
@@ -22,7 +22,8 @@ _BUILTIN_SIZE = 2 ** 7
 _REAL_SIZE = 2 ** 8
 SIZE_OFFSET = _BUILTIN_SIZE / _REAL_SIZE
 
-TEXMAN = AutomatedMagicaTextureManager()
+# TEXMAN = AutomatedMagicaTextureMaiager()
+TEXMAN = RainbowPukeTextureManager()
 # TEXMAN = MinecraftThemedTextureManager()
 # TEXMAN = DefaultThemedTextureManager()
 # TEXMAN = PaperThemedTextureManager()
@@ -87,9 +88,6 @@ class Room(ConstructionKitMixin):
 
     def get_positions(self):
         """Positions occupied by this unit"""
-        # print('pos', self.orientation, self._get_positions(), [
-            # p.rotate(self.orientation) + self.pos for p in self._get_positions()
-        # ])
         return [
             self.pos + p.rotate(self.orientation) for p in self._get_positions()
         ]

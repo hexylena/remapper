@@ -17,7 +17,7 @@ def main(mv_in):
     except:
         Magicavoxel.SIZE = 255
         model = Magicavoxel.from_file(mv_in)
-        print("Odd: colours were shorter than expected.")
+        log.error("Odd: colours were shorter than expected.")
 
     classname = os.path.splitext(os.path.basename(mv_in))[0]
 

@@ -100,11 +100,6 @@ def grid(world, size=24):
             (z % size == 0 and y % size == 0) or \
             (z % size == 0 and x % size == 0)
 
-    print(
-        world.zmax, world.zmin,
-        world.ymax, world.ymin,
-        world.xmax, world.xmin,
-    )
     for z in tqdm(range(world.zmax)):
         for x in range(world.size):
             for y in range(world.size):

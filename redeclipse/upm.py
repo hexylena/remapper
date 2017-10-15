@@ -1,11 +1,12 @@
 import copy
+from tqdm import tqdm
 import math
 import random
-from redeclipse.cli import random_room
-from redeclipse.cli import weighted_choice
 from redeclipse.vector import CoarseVector
 from redeclipse.vector.orientations import EAST, CARDINALS
 from redeclipse.prefabs import TestRoom
+import logging
+log = logging.getLogger(__name__)
 
 
 class UnusedPositionManager:
@@ -52,7 +53,7 @@ class UnusedPositionManager:
             room_copy.orientation = room_copy.orientation.rotate(orientation)
             yield room_copy
 
-    def preregister_rooms(self, room):
+    def preregister_room(self, room):
         """
         Register positions occupied by this room, but don't *actually*
         do it, only attempt to do it in a temporary manner. Useful for
@@ -66,9 +67,9 @@ class UnusedPositionManager:
         :rtype: boolean
         """
         new_rooms = self._yield_mirrored(room)
-        return self._preregister_rooms(new_rooms)
+        return self._preregister_room(new_rooms)
 
-    def _preregister_rooms(self, rooms):
+    def _preregister_room(self, rooms):
         # logging.info("Prereg: %s", '|'.join([x.__class__.__name__ for x in rooms]))
         added_occupied = set()
         for room in rooms:
@@ -199,31 +200,52 @@ class UnusedPositionManager:
             (idx, flavour_function(*posD[0]))
             for idx, posD in enumerate(self.unoccupied)
         ]
-        wc = weighted_choice(choices)
+        wc = self.weighted_choice(choices)
         if len(self.unoccupied) > 0:
             return self.unoccupied[wc]
         else:
             raise Exception("No more space!")
 
-    def mirror(cls, d):
-        if isinstance(d, dict):
-            d['orientation'] = d['orientation'].rotate(180)
-            return d
-        else:
-            # TODO: dependent on world size.
-            return CoarseVector(
-                32 - d[0],
-                32 - d[1],
-                d[2]
-            )
+    @classmethod
+    def weighted_choice(cls, choices):
+        """Weighted random distribution. Given a list like [('a', 1), ('b', 2)]
+        will return a 33% of the time and b 66% of the time."""
+        # http://stackoverflow.com/a/3679747
+        total = sum(w for c, w in choices)
+        r = random.uniform(0, total)
+        upto = 0
+        for c, w in choices:
+            if upto + w >= r:
+                return c
+            upto += w
+        return None
+
+    def random_room(self, connecting_room, room_options):
+        """Pick out a random room based on the connecting room and the
+        transition probabilities of that room."""
+        choices = []
+        probs = connecting_room.get_transition_probs()
+        for room in room_options:
+            # Append to our possibilities
+            choices.append((
+                # The room, and the probability of getting that type of room
+                # based on the current room type
+                room, probs.get(room.room_type, 0.1)
+            ))
+        return self.weighted_choice(choices)
 
     def room_localization(self, possible_rooms):
+        """
+        Given a set of possible rooms, this will randomly choose a
+        location, and emit a stream of orientations for rooms that could
+        be attached.
+        """
         # Pick a random position for this notional room to go
         (prev_room_door, prev_room, prev_room_orientation) = self.nonrandom_position(self.nrp_flavour_plain)
 
         # If we are here, we do have a position + orientation to place in
         # Get a random room, influenced by the prev_room
-        roomClass = random_room(prev_room, possible_rooms)
+        roomClass = self.random_room(prev_room, possible_rooms)
 
         # We loop over a (random permutation) of the possible orientations in
         # order to identify at least one with a plausible door. Shuffling *may*
@@ -252,7 +274,7 @@ class UnusedPositionManager:
                 r = roomClass(pos=CoarseVector(2, 2, 3) - room_offset, **kwargs)
                 # If the room can be registered in this position, safely, ONLY
                 # then do we yield it.
-                if self.preregister_rooms(r):
+                if self.preregister_room(r):
                     yield r
 
     def _room_cap_debug(self, pos, typ, ori):
@@ -280,10 +302,43 @@ class UnusedPositionManager:
 
     def endcap(self, debug=False, possible_endcaps=[]):
         if debug:
-            for (pos, typ, ori) in self.unoccupied:
+            for (pos, typ, ori) in tqdm(self.unoccupied):
                 yield self._room_cap_debug(pos, typ, ori)
         else:
-            for (pos, typ, ori) in self.unoccupied:
+            for (pos, typ, ori) in tqdm(self.unoccupied):
                 r = self._room_cap_real(pos, typ, ori, possible_endcaps=possible_endcaps)
                 if r:
                     yield r
+
+    def place_rooms(self, v, mymap, debug, possible_rooms, rooms=10):
+        prev_room = None
+        room_count = 0
+        logging.info("Placing rooms")
+        with tqdm(total=rooms) as pbar:
+            while True:
+                # Continually try and place rooms until we hit 200.
+                if room_count >= rooms:
+                    logging.info("Placed enough rooms")
+                    break
+
+                try:
+                    notional_rooms = self.room_localization(possible_rooms)
+                    for r in notional_rooms:
+                        to_render = self.register_room(r)
+                        [m.render(v, mymap) for m in to_render]
+
+                        pbar.update(self.mirror)
+                        pbar.set_description('z:%3d u:%d o:%d' % (v.zmax, len(self.unoccupied), len(self.occupied)))
+                        # If we get here, we've placed successfully so bump count + render
+                        room_count += self.mirror
+                        # After we place the first one, break out of this
+                        # for loop since the rest of the options are just
+                        # different orientations of the same thing.
+                        break
+                    else:
+                        # This room doesn't fit here, we'll try again.
+                        pass
+                except Exception as e:
+                    # If we have no more positions left, break.
+                    logging.exception("Possibly run out of positions before placing all rooms. Try a different seed? %s", e)
+                    break
