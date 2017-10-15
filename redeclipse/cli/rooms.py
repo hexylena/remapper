@@ -3,7 +3,7 @@ import argparse
 import random
 import logging
 from redeclipse.voxel import VoxelWorld
-from redeclipse.cli import parse, place_rooms
+from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
 from redeclipse import prefabs as p
 from redeclipse.upm import UnusedPositionManager
@@ -59,7 +59,8 @@ def main(mpz_in, mpz_out, size=2**7, seed=42, rooms=200, debug=False, magica=Non
     )
     mymap.ents.append(sunlight)
 
-    place_rooms(upm, v, mymap, debug, rooms=rooms)
+    # TODO: This isn't called correctly
+    upm.place_rooms(v, mymap, debug, rooms=rooms)
 
     # Apply endcaps
     for room in upm.endcap(debug=debug, possible_endcaps=possible_endcaps):
