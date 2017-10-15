@@ -10,6 +10,9 @@ Redeclipse map library |travis| |docs|
 .. figure:: ./maps/hxr-4-straumsvik.screenshot.png
    :alt: 
 
+.. figure:: ./maps/hxr-8-mannheim-large.png
+   :alt: 
+
 Library to read and write Red Eclipse maps. It isn't polished, but is
 "good enough". My gaming group and I play "sniper-counter-sniper", a
 very unusual mode for most people who play redeclipse. It involves
@@ -23,61 +26,21 @@ voxel→octree translation routine which allows you to construct simple
 voxel worlds and have them rendered into a redeclipse octree. You could
 theoretically import your minecraft world, if you wished.
 
+Updates
+-------
+
 See the `maps folder <./maps/>`__ for screenshots and maps you can play. See
 the `blog post <https://erasche.github.io/2017/09/23/remapper.html>`__ for more
 information.
 
-Updates
--------
-
-Some new features and new rooms:
-
-.. figure:: ./maps/straumsvik.screenshot.png
-   :alt: 
-
-First enjoyable map: Trollskogen
-
-.. figure:: ./maps/trollskogen-big.png
-   :alt: 
-
-Second enjoyable map: Bergen
-
-.. figure:: ./maps/bergen-big.png
-   :alt: 
-
-Third map: Lillehammer (with day/night versions)
-
-|image0| |image1|
-
-Screenshots from development:
-
-|image2| |image3|
-
-Humble beginnings:
-
-.. figure:: ./media/random.png
-   :alt: 
-
-The textures in the above map were built from `havenlau's rounded pixel
-texture
-pack <http://www.minecraftforum.net/forums/mapping-and-modding/resource-packs/1237362-32x-64x-1-0-0-rounded-pixel-under-construction>`__
-
 Examples
 --------
 
-TODO: update these, none of this works.
-
 .. code:: console
 
-    $ redeclipse_voxel_2 ./test/empty.mpz ~/.redeclipse/maps/minecraft.mpz
-    $ redeclipse_cfg_gen my-texture-directory/ > ~/.redeclipse/maps/minecraft.cfg
+    $ python redeclipse/cli/magica_rooms.py maps/empty-day.mpz --seed 3 --magica out.vox --rooms 200 --mpz_out ~/.redeclipse/maps/test.mpz
 
 License
 =======
 
 GPLv3
-
-.. |image0| image:: ./maps/lillehammer-day-2.png
-.. |image1| image:: ./maps/lillehammer-night-2.png
-.. |image2| image:: ./maps/sandvika.png
-.. |image3| image:: ./maps/fjell-big.png
