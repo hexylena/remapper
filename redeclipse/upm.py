@@ -23,6 +23,8 @@ class UnusedPositionManager:
         self.occupied = set()
         # Set of doors that we can connect to
         self.unoccupied = []
+        # Set of all rooms rendered to the map
+        self.rooms = []
         self.world_size = world_size
         # Mirror mode, only defined for values 1, 2, 4
         self.mirror = mirror
@@ -99,10 +101,10 @@ class UnusedPositionManager:
         """
         for r in self._yield_mirrored(room):
             self._register_room(r)
-            yield r
 
     def _register_room(self, room):
         used = room.get_positions()
+        self.rooms.append(room)
         # First, we need to check that ALL of those positions are
         # unoccupied.
         for position in used:
@@ -309,6 +311,7 @@ class UnusedPositionManager:
         for roomClass in random.sample(possible_endcaps, len(possible_endcaps)):
             # Test all the orientations
             for c in CARDINALS:
+                # 2,2,3 is not a special value, it could be anything.
                 r = roomClass(pos=CoarseVector(2, 2, 3), orientation=c)
                 # There will only be one door.
                 roomClass_doors = r.get_doorways()
@@ -318,23 +321,29 @@ class UnusedPositionManager:
                 chosen_door = options[0]
                 room_offset = chosen_door['offset'] - prev_room_door + prev_room_orientation
                 r = roomClass(pos=CoarseVector(2, 2, 3) - room_offset, orientation=c)
-                # Make sure it fits!
-                for pos in r.get_positions():
-                    if not self.is_legal(pos) and pos not in self.occupied:
-                        continue
+                # Ensure all room positions are legal
+                if not all([self.is_legal(pos) for pos in r.get_positions()]):
+                    continue
+
+                # Ensure all room positions are not occupied
+                if not all([pos not in self.occupied for pos in r.get_positions()]):
+                    continue
+
                 return r
 
     def endcap(self, debug=False, possible_endcaps=[]):
         if debug:
             for (pos, typ, ori) in tqdm(self.unoccupied):
-                yield self._room_cap_debug(pos, typ, ori)
+                r = self._room_cap_debug(pos, typ, ori)
+                if r:
+                    self._register_room(r)
         else:
             for (pos, typ, ori) in tqdm(self.unoccupied):
                 r = self._room_cap_real(pos, typ, ori, possible_endcaps=possible_endcaps)
                 if r:
-                    yield r
+                    self._register_room(r)
 
-    def place_rooms(self, v, mymap, debug, possible_rooms, rooms=10):
+    def place_rooms(self, debug, possible_rooms, rooms=10):
         room_count = 0
         logging.info("Placing rooms")
         with tqdm(total=rooms) as pbar:
@@ -351,11 +360,10 @@ class UnusedPositionManager:
                 # Pick a random position for this notional room to go
                 (prev_room_door, prev_room, prev_room_orientation) = self.nonrandom_position(self.nrp_flavour_vertical)
                 for r in self.room_localization(possible_rooms, prev_room_door, prev_room, prev_room_orientation):
-                    to_render = self.register_room(r)
-                    [m.render(v, mymap) for m in to_render]
+                    self.register_room(r)
 
                     pbar.update(self.mirror)
-                    pbar.set_description('z:%3d u:%d o:%d' % (v.zmax, len(self.unoccupied), len(self.occupied)))
+                    pbar.set_description('u:%d o:%d r:%d' % (len(self.unoccupied), len(self.occupied), len(self.rooms)))
                     # If we get here, we've placed successfully so bump count + render
                     room_count += self.mirror
                     # After we place the first one, break out of this
@@ -370,3 +378,4 @@ class UnusedPositionManager:
                         if (d, r, o) != (prev_room_door, prev_room, prev_room_orientation)
                     ]
                     logging.info("No rooms fit here, removing")
+

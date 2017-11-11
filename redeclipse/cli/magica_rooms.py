@@ -57,7 +57,8 @@ def main(mpz_in, mpz_out, size=2**8, seed=42, rooms=200, debug=False, magica=Non
     # We use the spawn room as our base starting room
     Room = castle.castle_small_deis
     b = Room(pos=STARTING_POSITION, orientation=EAST)
-    [m.render(v, mymap) for m in upm.register_room(b)]
+    upm.register_room(b)
+
     # Convert rooms to int
     rooms = int(rooms)
     sunlight = Sunlight(
@@ -67,10 +68,15 @@ def main(mpz_in, mpz_out, size=2**8, seed=42, rooms=200, debug=False, magica=Non
         offset=45,  # top
     )
     mymap.ents.append(sunlight)
-    upm.place_rooms(v, mymap, debug, possible_rooms, rooms=rooms)
 
+    # Place all rooms
+    upm.place_rooms(debug, possible_rooms, rooms=rooms)
     # Apply endcaps
-    for room in upm.endcap(debug=debug, possible_endcaps=possible_endcaps):
+    upm.endcap(debug=debug, possible_endcaps=possible_endcaps)
+
+    # Now we get around to actually rendering the rooms, allowing us to do
+    # modifications to their models before we render to our VoxelWorld.
+    for room in upm.rooms:
         room.render(v, mymap)
 
     # from redeclipse.aftereffects import box_outline
