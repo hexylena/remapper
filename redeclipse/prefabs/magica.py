@@ -89,9 +89,19 @@ class MagicaRoom(Room):
         """
         pass
 
+    def render_individual_voxel(self, v, world):
+        """
+        Render a vector to a world (auto-translating the colour).
+
+        This was abstracted into a separate function to permit effects such as the decaying.
+        """
+        (r, g, b) = self._colours[self.vox.world[v]]
+        c = self.colour_to_texture(r, g, b)
+        self.x('cube', world, SELF + FineVector(*v) + self._off, tex=c)
+
     def render(self, world, xmap):
         """
-        Render the magic room to the world.
+        Render the magica room to the world.
         """
         if not hasattr(self, 'model'):
             self.load_model()
@@ -100,8 +110,6 @@ class MagicaRoom(Room):
         self.initialize_textures()
 
         for v in self.vox.world:
-            (r, g, b) = self._colours[self.vox.world[v]]
-            c = self.colour_to_texture(r, g, b)
-            self.x('cube', world, SELF + FineVector(*v) + self._off, tex=c)
+            self.render_individual_voxel(v, world)
 
         self.render_extra(world, xmap)

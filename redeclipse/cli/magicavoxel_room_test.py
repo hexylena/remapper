@@ -5,7 +5,7 @@ import logging
 from redeclipse import prefabs
 # We must override this ASAP since everyone else (e.g. prefabs) also imports the TEXMAN from prefab.
 from redeclipse.textures import DefaultThemedTextureManager, PrimaryThemedTextureManager, RainbowPukeTextureManager  # noqa
-prefabs.TEXMAN = RainbowPukeTextureManager()  # noqa
+prefabs.TEXMAN = PrimaryThemedTextureManager()  # noqa
 # Back to our normally scheduled imports.
 from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
