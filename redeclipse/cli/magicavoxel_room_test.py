@@ -24,7 +24,6 @@ def main(magica=False, redeclipse=False):
     magica_classes = [
         # # Original
         # original.spawn_room
-        castle.castle_wall_section_x
         # # Castle
         # castle.castle_gate, castle.castle_gate_simple,
         # castle.castle_large, castle.castle_wall_corner,
@@ -33,6 +32,8 @@ def main(magica=False, redeclipse=False):
         # castle.castle_wall_section_long_damaged,
         # castle.castle_wall_section_tjoint, castle.castle_wall_tower,
         # castle.wooden_bridge,
+        # castle.castle_wall_section_x
+        castle.castle_flag_room,
         # # Dungeon
         # dungeon.dungeon_2x2, dungeon.dungeon_junction, dungeon.dungeon_stair2,
         # dungeon.dungeon_walkway, dungeon.dungeon_walkway3,

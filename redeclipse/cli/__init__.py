@@ -44,7 +44,6 @@ def output(v, mymap, upm, prefabs, args):
         for a, b in upm.links:
             la = upm.occupied.get(a, None)
             lb = upm.occupied.get(b, None)
-            print(a, la, b, lb)
 
             data['links'].append({
                 'source': id(la),

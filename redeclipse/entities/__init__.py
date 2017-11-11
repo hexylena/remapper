@@ -162,7 +162,6 @@ class Pusher(Entity):
 class TeamFlag(Entity):
 
     def __init__(self, xyz, team=1, yaw=0, pitch=0, modes=2, muts=0, id=0, links=None, reserved=None):
-        print(xyz, team, yaw, pitch, modes, muts, id, links, reserved)
         xyz = xyz.fine() * 4
         self.o = ivec3(*xyz)
         self.type = EntType.ET_AFFINITY
