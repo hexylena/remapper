@@ -4,8 +4,6 @@ import logging
 
 from redeclipse import prefabs
 # We must override this ASAP since everyone else (e.g. prefabs) also imports the TEXMAN from prefab.
-from redeclipse.textures import DefaultThemedTextureManager, PrimaryThemedTextureManager, RainbowPukeTextureManager  # noqa
-prefabs.TEXMAN = PrimaryThemedTextureManager()  # noqa
 # Back to our normally scheduled imports.
 from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
@@ -25,7 +23,8 @@ def main(magica=False, redeclipse=False):
     # Override texman
     magica_classes = [
         # # Original
-        original.spawn_room
+        # original.spawn_room
+        castle.castle_wall_section_x
         # # Castle
         # castle.castle_gate, castle.castle_gate_simple,
         # castle.castle_large, castle.castle_wall_corner,
@@ -53,9 +52,10 @@ def main(magica=False, redeclipse=False):
 
         kwargs = Room.randOpts(None)
         e = Room(pos=CoarseVector(8 + 3, 8, 1), orientation=EAST, **kwargs)
-        [m.render(v, mymap) for m in upm.register_room(e)]
+        upm.register_room(e)
+        upm.endcap(debug=True, possible_endcaps=[])
 
-        for room in upm.endcap(debug=True, possible_endcaps=[]):
+        for room in upm.rooms:
             room.render(v, mymap)
 
         if magica:

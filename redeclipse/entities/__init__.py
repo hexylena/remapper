@@ -38,6 +38,10 @@ class Entity:
             self.attr_annotations = [
                 'radius', 'red', 'green', 'blue', 'flare', 'flarescale',
             ]
+        elif self.type == EntType.ET_AFFINITY:
+            self.attr_annotations = [
+                'team', 'yaw', 'pitch', 'modes', 'muts', 'id'
+            ]
 
         else:
             raise Exception("Cannot serialize %s, please specify attrs", self.type)
@@ -150,6 +154,23 @@ class Pusher(Entity):
         ]
         self.attrs = [
             yaw, pitch, force, maxrad, minrad, type
+        ]
+        self.links = [] if links is None else links
+        self.reserved = [0, 0, 0] if reserved is None else reserved
+
+
+class TeamFlag(Entity):
+
+    def __init__(self, xyz, team=1, yaw=0, pitch=0, modes=2, muts=0, id=0, links=None, reserved=None):
+        print(xyz, team, yaw, pitch, modes, muts, id, links, reserved)
+        xyz = xyz.fine() * 4
+        self.o = ivec3(*xyz)
+        self.type = EntType.ET_AFFINITY
+        self.attr_annotations = [
+            'team', 'yaw', 'pitch', 'modes', 'muts', 'id'
+        ]
+        self.attrs = [
+            team, yaw, pitch, modes, muts, id
         ]
         self.links = [] if links is None else links
         self.reserved = [0, 0, 0] if reserved is None else reserved

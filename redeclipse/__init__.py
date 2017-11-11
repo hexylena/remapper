@@ -4,6 +4,7 @@ import struct
 from collections import OrderedDict
 from redeclipse.enums import EntType, Faces, VTYPE, OCT, TextNum
 from redeclipse.objects import VSlot, SlotShaderParam, cube, SurfaceInfo
+from redeclipse.vector import FineVector
 from redeclipse.entities import Entity
 from tqdm import tqdm
 import simplejson as json
@@ -541,7 +542,7 @@ class MapParser(object):
             for j in range(link_count):
                 links.append(self._read_int())
 
-            e = Entity((x, y, z), EntType(ord(etype)), attrs, links, reserved)
+            e = Entity(FineVector(x, y, z) / 4, EntType(ord(etype)), attrs, links, reserved)
             ents.append(e)
         return ents
 

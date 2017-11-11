@@ -20,11 +20,14 @@ class UnusedPositionManager:
         # Disable occupation tests.
         self.noclip = noclip
         # Set of occupied positions
-        self.occupied = set()
+        self.occupied = {}
         # Set of doors that we can connect to
         self.unoccupied = []
         # Set of all rooms rendered to the map
         self.rooms = []
+        # Set of linked rooms by doorway.
+        self.links = []
+
         self.world_size = world_size
         # Mirror mode, only defined for values 1, 2, 4
         self.mirror = mirror
@@ -57,6 +60,13 @@ class UnusedPositionManager:
             room_copy.orientation = room_copy.orientation.rotate(orientation)
             yield room_copy
 
+    def _yield_mirrored_positions(self, room):
+        for orientation in self.mirror_rotations:
+            yield (
+                room.pos.offset_rotate(orientation, offset=CoarseVector(-16, -16, 0)),
+                room.orientation.rotate(orientation)
+            )
+
     def preregister_room(self, room):
         """
         Register positions occupied by this room, but don't *actually*
@@ -81,7 +91,7 @@ class UnusedPositionManager:
             # First, we need to check that ALL of those positions are
             # unoccupied.
             for position in used:
-                if position in self.occupied or position in added_occupied:
+                if position in self.occupied.keys() or position in added_occupied:
                     return False
             added_occupied = added_occupied.union(set(used))
             # Don't add the room if the door is off the edge.
@@ -89,6 +99,13 @@ class UnusedPositionManager:
                 if not self.is_legal(door['offset']):
                     return False
         return True
+
+    def register_link(self, room_a, room_b):
+        for ((pos_a, ori_a), (pos_b, ori_b)) in zip(
+            self._yield_mirrored_positions(room_a),
+            self._yield_mirrored_positions(room_b)
+        ):
+            self.links.append((pos_a, pos_b))
 
     def register_room(self, room):
         """
@@ -108,11 +125,11 @@ class UnusedPositionManager:
         # First, we need to check that ALL of those positions are
         # unoccupied.
         for position in used:
-            if position in self.occupied and not self.noclip:
+            if position in self.occupied.keys() and not self.noclip:
                 raise Exception("Occupado %s" % position)
         # Otherwise, all positions are fine to use.
 
-        self.occupied = self.occupied.union(used)
+        self.occupied.update({pos: room for pos in used})
         # Remove occupied positions from possibilities
         self.unoccupied = [(p, r, o) for (p, r, o) in self.unoccupied if p not in used]
 
@@ -125,7 +142,7 @@ class UnusedPositionManager:
         for position in doors:
             # logging.info("  pos: %s => leg:%s occ:%s", position['offset'], self.is_legal(position['offset']), position['offset'] in self.occupied)
             # If that door position is not occupied by something else
-            if self.is_legal(position['offset']) and not position['offset'] in self.occupied:
+            if self.is_legal(position['offset']) and not position['offset'] in self.occupied.keys():
                 # and cache in our doorway list
                 self.unoccupied.append((position['offset'], room, position['orientation']))
 
@@ -135,7 +152,7 @@ class UnusedPositionManager:
         :returns: a doorway from the set of unoccupied doorways.
         :rtype: tuple of (position, room, orientation), whatever the heck those are.
         """
-        if len(self.occupied) > 0:
+        if len(self.occupied.keys()) > 0:
             return random.choice(self.unoccupied)
         else:
             raise Exception("No more space!")
@@ -326,7 +343,7 @@ class UnusedPositionManager:
                     continue
 
                 # Ensure all room positions are not occupied
-                if not all([pos not in self.occupied for pos in r.get_positions()]):
+                if not all([pos not in self.occupied.keys() for pos in r.get_positions()]):
                     continue
 
                 return r
@@ -363,9 +380,11 @@ class UnusedPositionManager:
                     self.register_room(r)
 
                     pbar.update(self.mirror)
-                    pbar.set_description('u:%d o:%d r:%d' % (len(self.unoccupied), len(self.occupied), len(self.rooms)))
+                    pbar.set_description('u:%d o:%d r:%d' % (len(self.unoccupied), len(self.occupied.keys()), len(self.rooms)))
                     # If we get here, we've placed successfully so bump count + render
                     room_count += self.mirror
+                    # Also register a link for the graph type output.
+                    self.register_link(prev_room, r)
                     # After we place the first one, break out of this
                     # for loop since the rest of the options are just
                     # different orientations of the same thing.

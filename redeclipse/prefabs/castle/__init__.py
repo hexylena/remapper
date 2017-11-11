@@ -1,8 +1,64 @@
 import os
 
+from redeclipse.prefabs import TEXMAN
 from redeclipse.prefabs.magica import MagicaRoom
-from redeclipse.vector.orientations import EAST, SOUTH, ABOVE, WEST, NORTH, NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST
+from redeclipse.vector.orientations import EAST, SOUTH, ABOVE, WEST, NORTH, NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST, TILE_CENTER, ABOVE_FINE
 from redeclipse.prefabs import LIGHTMAN
+from redeclipse.entities import TeamFlag
+
+
+class castle_flag_room(MagicaRoom):
+    name = 'castle_flag_room'
+    vox_file = os.path.abspath(__file__).replace('__init__.py', 'castle_flag_room.vox')
+    room_type = 'flagroom'
+
+    doors = [
+        {'orientation': WEST, 'offset': WEST + NORTH + ABOVE},
+        {'orientation': EAST, 'offset': (EAST * 3) + NORTH + ABOVE},
+        {'orientation': NORTH, 'offset': (NORTH * 3) + ABOVE + EAST},
+        {'orientation': SOUTH, 'offset': SOUTH + ABOVE + EAST},
+    ]
+
+    def colour_to_texture(self, r, g, b):
+        if (r, g, b) == (1, 0, 0):
+            if self.orientation == NORTH:
+                r = 0
+                g = 0
+                b = 1
+            elif self.orientation == SOUTH:
+                # Red
+                pass
+            elif self.orientation == EAST:
+                r = 1
+                g = 1
+                b = 0
+            elif self.orientation == WEST:
+                r = 0
+                g = 1
+                b = 0
+
+        return TEXMAN.get_colour(r, g, b)
+
+    def render_extra(self, world, xmap):
+        center = EAST + NORTH
+
+        LIGHTMAN.light(xmap, self.pos + (center + NORTHWEST + ABOVE).rotate(self.orientation), size_factor=1.5)
+        LIGHTMAN.light(xmap, self.pos + (center + SOUTHWEST + ABOVE).rotate(self.orientation), size_factor=1.5)
+        LIGHTMAN.light(xmap, self.pos + (center + NORTHEAST + ABOVE).rotate(self.orientation), size_factor=1.5)
+        LIGHTMAN.light(xmap, self.pos + (center + SOUTHEAST + ABOVE).rotate(self.orientation), size_factor=1.5)
+
+        flag = None
+        offset = self.pos + TILE_CENTER + (center + ABOVE + (ABOVE_FINE * 4)).rotate(self.orientation)
+
+        if self.orientation == NORTH:
+            flag = TeamFlag(xyz=offset, team=1)
+        elif self.orientation == SOUTH:
+            flag = TeamFlag(xyz=offset, team=2)
+        elif self.orientation == EAST:
+            flag = TeamFlag(xyz=offset, team=3)
+        elif self.orientation == WEST:
+            flag = TeamFlag(xyz=offset, team=4)
+        xmap.ents.append(flag)
 
 
 class castle_gate(MagicaRoom):
@@ -192,6 +248,23 @@ class castle_wall_section_tjoint(MagicaRoom):
         {'orientation': WEST, 'offset': WEST + ABOVE},
         {'orientation': EAST, 'offset': EAST * 3 + ABOVE},
         {'orientation': NORTH, 'offset': EAST + NORTH + NORTH + ABOVE},
+    ]
+
+    def render_extra(self, world, xmap):
+        LIGHTMAN.light(xmap, self.pos + ABOVE)
+        LIGHTMAN.light(xmap, self.pos + (EAST + EAST + ABOVE).rotate(self.orientation))
+
+
+class castle_wall_section_x(MagicaRoom):
+    name = 'castle_wall_section_x'
+    room_type = 'hallway'
+    vox_file = os.path.abspath(__file__).replace('__init__.py', 'castle_wall_section_x.vox')
+
+    doors = [
+        {'orientation': WEST, 'offset': WEST + NORTH + ABOVE},
+        {'orientation': EAST, 'offset': EAST * 3 + NORTH + ABOVE},
+        {'orientation': NORTH, 'offset': EAST + NORTH + NORTH + NORTH + ABOVE},
+        {'orientation': SOUTH, 'offset': EAST + SOUTH + ABOVE},
     ]
 
     def render_extra(self, world, xmap):
