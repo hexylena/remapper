@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
-def main(mpz_in, size=2**8, seed=42, rooms=200, debug=False, **kwargs):
+def main(mpz_in, size=2**8, seed=42, rooms=200, debug=False, ctf=False, mirror=2, **kwargs):
     random.seed(seed)
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
@@ -31,33 +31,52 @@ def main(mpz_in, size=2**8, seed=42, rooms=200, debug=False, **kwargs):
         # # Castle
         # castle.castle_gate, castle.castle_gate_simple,
         # castle.castle_large,
-        castle.castle_wall_corner,
-        castle.castle_wall_end_cliff, castle.castle_wall_entry,
-        castle.castle_wall_section, castle.castle_wall_section_long,
-        castle.castle_wall_section_long_damaged,
-        castle.castle_wall_section_tjoint,
-        castle.castle_wall_section_x,
-        castle.castle_wall_tower,
-        castle.wooden_bridge,
+
+        # castle.castle_wall_corner,
+        # castle.castle_wall_end_cliff, castle.castle_wall_entry,
+        # castle.castle_wall_section, castle.castle_wall_section_long,
+        # castle.castle_wall_section_long_damaged,
+        # castle.castle_wall_section_tjoint,
+        # castle.castle_wall_section_x,
+        # castle.castle_wall_tower,
+        # castle.wooden_bridge,
+
         # # Dungeon
         # dungeon.dungeon_2x2, dungeon.dungeon_junction, dungeon.dungeon_stair2,
         # dungeon.dungeon_walkway, dungeon.dungeon_walkway3,
+
         # # Space
-        # spacestation.station_tube1, spacestation.station_tube3, spacestation.station_tube_jumpx,
-        # spacestation.station_tubeX, spacestation.station_endcap, spacestation.station_right, spacestation.station_ring,
-        # spacestation.station_ring_vertical, spacestation.station_sphere, spacestation.station_sphere_slice,
-        # spacestation.station_stair2,
+        spacestation.station_right,
+        spacestation.station_ring,
+        # spacestation.station_ring_vertical,
+        spacestation.station_sbend,
+        spacestation.station_sphere,
+        spacestation.station_sphere_slice,
+        spacestation.station_stair2,
+        spacestation.station_tube1,
+        spacestation.station_tube3,
+        spacestation.station_tube3layered,
+        spacestation.station_tube_jumpx,
+        spacestation.station_tubeX,
+        spacestation.station_tubeX_variant,
+        spacestation.station_uturn,
     ]
 
-    possible_endcaps = [castle.castle_wall_end_cliff, castle.castle_wall_section_endcap]
+    # possible_endcaps = [castle.castle_wall_end_cliff, castle.castle_wall_section_endcap]
+    possible_endcaps = [spacestation.station_endcap]
 
     # Initialize
-    upm = UnusedPositionManager(size, mirror=2)
+    upm = UnusedPositionManager(size, mirror=mirror)
 
     # Insert a starting room. We move it vertically downward from center since
     # we have no way to build stairs downwards yet.
     # We use the spawn room as our base starting room
-    Room = castle.castle_flag_room
+    if ctf:
+        # Room = castle.castle_flag_room
+        Room = spacestation.station_flagroom
+    else:
+        Room = spacestation.station_tubeX
+
     b = Room(pos=STARTING_POSITION, orientation=EAST)
     upm.register_room(b)
 
@@ -99,6 +118,8 @@ if __name__ == '__main__':
     parser.add_argument('--seed', default=42, type=int, help="Random seed")
     parser.add_argument('--rooms', default=200, type=int, help="Number of rooms to place")
     parser.add_argument('--debug', action='store_true', help="Debugging")
+    parser.add_argument('--ctf', action='store_true', help="Include flags for CTFs")
+    parser.add_argument('--mirror', type=int, choices=[1, 2, 4], help="Mirror mode (1 = unmirrored, 2 = 2-way mirroring, 4 = 4-way mirroring)")
     args = parser.parse_args()
     # Build our map
     v, mymap, upm = main(**vars(args))

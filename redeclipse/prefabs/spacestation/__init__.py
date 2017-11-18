@@ -1,8 +1,11 @@
 import os
+from redeclipse.prefabs import TEXMAN
 from redeclipse.prefabs.magica import MagicaRoom
 from redeclipse.entities import Pusher
 from redeclipse.vector import FineVector
 from redeclipse.vector.orientations import EAST, SOUTH, ABOVE, WEST, NORTH
+from redeclipse.vector.orientations import EAST, SOUTH, ABOVE, WEST, NORTH, NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST, TILE_CENTER, ABOVE_FINE
+from redeclipse.entities import TeamFlag
 from redeclipse.vector.orientations import rotate_yaw
 from redeclipse.prefabs import LIGHTMAN
 
@@ -15,6 +18,60 @@ class station_endcap(MagicaRoom):
     doors = [
         {'orientation': WEST, 'offset': WEST},
     ]
+
+
+class station_flagroom(MagicaRoom):
+    name = 'station_flagroom'
+    vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_flagroom.vox')
+    room_type = 'setpiece_large'
+
+    doors = [
+        {'orientation': WEST, 'offset': WEST + NORTH + NORTH},
+        {'orientation': EAST, 'offset': (EAST * 5) + NORTH + NORTH},
+        {'orientation': SOUTH, 'offset': (EAST * 2) + SOUTH},
+        {'orientation': NORTH, 'offset': (EAST * 2) + (NORTH * 5)},
+    ]
+
+    def colour_to_texture(self, r, g, b):
+        if (r, g, b) == (1, 0, 0):
+            if self.orientation == NORTH:
+                r = 0
+                g = 0
+                b = 1
+            elif self.orientation == SOUTH:
+                # Red
+                pass
+            elif self.orientation == EAST:
+                r = 1
+                g = 1
+                b = 0
+            elif self.orientation == WEST:
+                r = 0
+                g = 1
+                b = 0
+
+        return TEXMAN.get_colour(r, g, b)
+
+    def render_extra(self, world, xmap):
+        center = EAST + EAST + NORTH + NORTH
+
+        LIGHTMAN.light(xmap, self.pos + (center + NORTHWEST).rotate(self.orientation), size_factor=1.5)
+        LIGHTMAN.light(xmap, self.pos + (center + SOUTHWEST).rotate(self.orientation), size_factor=1.5)
+        LIGHTMAN.light(xmap, self.pos + (center + NORTHEAST).rotate(self.orientation), size_factor=1.5)
+        LIGHTMAN.light(xmap, self.pos + (center + SOUTHEAST).rotate(self.orientation), size_factor=1.5)
+
+        flag = None
+        offset = self.pos + TILE_CENTER + (center + (ABOVE_FINE * 4)).rotate(self.orientation)
+
+        if self.orientation == NORTH:
+            flag = TeamFlag(xyz=offset, team=1)
+        elif self.orientation == SOUTH:
+            flag = TeamFlag(xyz=offset, team=2)
+        elif self.orientation == EAST:
+            flag = TeamFlag(xyz=offset, team=3)
+        elif self.orientation == WEST:
+            flag = TeamFlag(xyz=offset, team=4)
+        xmap.ents.append(flag)
 
 
 class station_right(MagicaRoom):
@@ -74,9 +131,7 @@ class station_sbend(MagicaRoom):
     ]
 
     def render_extra(self, world, xmap):
-        LIGHTMAN.light(xmap, self.pos + ((EAST * 0.5) + (ABOVE * 3)).rotate(self.orientation))
-        LIGHTMAN.light(xmap, self.pos + ((EAST * 3.5) + (ABOVE * 3)).rotate(self.orientation))
-        LIGHTMAN.light(xmap, self.pos + ((EAST * 2) + (ABOVE * 4)).rotate(self.orientation))
+        LIGHTMAN.light(xmap, self.pos + ((EAST * 0.5) + (WEST * 0.5)).rotate(self.orientation))
 
 
 class station_sphere(MagicaRoom):

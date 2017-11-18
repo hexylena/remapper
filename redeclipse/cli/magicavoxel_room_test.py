@@ -46,6 +46,7 @@ def main(magica=False, redeclipse=False):
         spacestation.station_tubeX_variant,
         spacestation.station_tube3layered,
         spacestation.station_sbend,
+        spacestation.station_flagroom,
     ]
 
     for idx, Room in enumerate(magica_classes):
