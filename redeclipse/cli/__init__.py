@@ -17,6 +17,7 @@ def output_args(parser):
     parser.add_argument('--magica', type=argparse.FileType('wb'), help='Output .vox file')
     parser.add_argument('--graph', type=argparse.FileType('w'), help='Output .json file')
 
+
 def output(v, mymap, upm, prefabs, args):
     if args.magica:
         to_magicavoxel(v, args.magica, prefabs.TEXMAN)
@@ -24,6 +25,11 @@ def output(v, mymap, upm, prefabs, args):
     if args.mpz_out:
         prefabs.TEXMAN.emit_conf(args.mpz_out)
         prefabs.TEXMAN.copy_data()
+
+        filename = args.mpz_out.name.replace('.mpz', '.cfg')
+        with open(filename, 'a') as handle:
+            for line in mymap.cfg_extra:
+                handle.write(line + '\n')
 
         mymap.world = v.to_octree()
         mymap.world[0].octsav = 0

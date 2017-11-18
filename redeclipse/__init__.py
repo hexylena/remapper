@@ -80,6 +80,7 @@ class Map:
         self.vslots = vslots
         self.chg = chg
         self.world = worldroot
+        self.cfg_extra = []
 
     def write(self, path):
         """

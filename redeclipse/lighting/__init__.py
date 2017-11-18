@@ -8,6 +8,7 @@ from redeclipse.vector.orientations import TILE_CENTER, HALF_HEIGHT
 
 SIZE = 8
 SIZE_OFFSET = 1
+GLOBAL_BRIGHTNESS_SCALING = 1.0
 
 
 class LightManager:
@@ -37,9 +38,6 @@ class LightManager:
 
         :param boolean autocenter: Automatically add FineVector(4, 4, 4) to the position
         """
-        if random.random() > self.brightness:
-            return
-
         if autocenter:
             pos = position + TILE_CENTER + HALF_HEIGHT
 
@@ -123,7 +121,10 @@ class PositionBasedLightManager(LightManager):
         # RGB isn't great, because it means low values of RGB are
         # low luminance. So we convert to HSV to get pure hue
         (hue, _, _) = colorsys.rgb_to_hsv(red, grn, blu)
+
+        (red1, grn1, blu1) = colorsys.hsv_to_rgb(hue, self.saturation, 255)
         # We then peg S and V to high and only retain hue
-        (red, grn, blu) = colorsys.hsv_to_rgb(hue, self.saturation, 255)
+        (red, grn, blu) = colorsys.hsv_to_rgb(hue, self.saturation, int(255 * min(self.brightness, 1.0)))
+        print(red, grn, blu, red1, grn1, blu1)
         # This should give us a bright colour on a continuous range
         return (int(red), int(grn), int(blu))

@@ -1,10 +1,15 @@
 import os
+import random
 from redeclipse.prefabs import TEXMAN
 from redeclipse.prefabs.magica import MagicaRoom
 from redeclipse.entities import Pusher
+from redeclipse.entities import PlayerSpawn
+from redeclipse.entities.weapon import Grenade, Shotgun
 from redeclipse.vector import FineVector
 from redeclipse.vector.orientations import EAST, SOUTH, ABOVE, WEST, NORTH
-from redeclipse.vector.orientations import EAST, SOUTH, ABOVE, WEST, NORTH, NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST, TILE_CENTER, ABOVE_FINE
+from redeclipse.vector.orientations import NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST
+from redeclipse.vector.orientations import TILE_CENTER, ABOVE_FINE
+from redeclipse.vector.orientations import rotate_yaw
 from redeclipse.entities import TeamFlag
 from redeclipse.vector.orientations import rotate_yaw
 from redeclipse.prefabs import LIGHTMAN
@@ -18,6 +23,27 @@ class station_endcap(MagicaRoom):
     doors = [
         {'orientation': WEST, 'offset': WEST},
     ]
+
+    def render_extra(self, world, xmap):
+        LIGHTMAN.light(xmap, self.pos)
+
+        ent = random.choice(['spawn', 'shotty', 'grenade'])
+        weap_pos = self.pos + TILE_CENTER + ABOVE_FINE + ABOVE_FINE + ABOVE_FINE
+        if ent == 'spawn':
+            e = PlayerSpawn(
+                xyz=self.pos + TILE_CENTER + FineVector(0, 0, 1),
+                yaw=rotate_yaw(90, self.orientation)
+            )
+        elif ent == 'shotty':
+            e = Shotgun(
+                xyz=weap_pos
+            )
+        elif ent == 'grenade':
+            e = Grenade(
+                xyz=weap_pos
+            )
+
+        xmap.ents.append(e)
 
 
 class station_flagroom(MagicaRoom):
@@ -131,7 +157,7 @@ class station_sbend(MagicaRoom):
     ]
 
     def render_extra(self, world, xmap):
-        LIGHTMAN.light(xmap, self.pos + ((EAST * 0.5) + (WEST * 0.5)).rotate(self.orientation))
+        LIGHTMAN.light(xmap, self.pos + (EAST * 0.5).rotate(self.orientation))
 
 
 class station_sphere(MagicaRoom):

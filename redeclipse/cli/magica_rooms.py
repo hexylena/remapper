@@ -8,6 +8,7 @@ from redeclipse import prefabs
 # from redeclipse.textures import DefaultThemedTextureManager, PrimaryThemedTextureManager, RainbowPukeTextureManager
 # prefabs.TEXMAN = RainbowPukeTextureManager()
 # Back to our normally scheduled imports.
+prefabs.LIGHTMAN.brightness = 0.3
 from redeclipse.cli import parse, output, output_args
 from redeclipse.entities import Sunlight
 from redeclipse.prefabs import STARTING_POSITION
@@ -15,19 +16,22 @@ from redeclipse.prefabs import castle, dungeon, spacestation, original  # noqa
 from redeclipse.upm import UnusedPositionManager
 from redeclipse.vector.orientations import EAST
 from redeclipse.voxel import VoxelWorld
+import redeclipse.worldflavors
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
-def main(mpz_in, size=2**8, seed=42, rooms=200, debug=False, ctf=False, mirror=2, **kwargs):
+def main(mpz_in, size=2**8, seed=42, rooms=200, debug=False, ctf=False, mirror=2, flavor=None, **kwargs):
     random.seed(seed)
     mymap = parse(mpz_in.name)
     v = VoxelWorld(size=size)
+    # Update with chosen world flavouring
+    mymap = redeclipse.worldflavors.update(mymap, flavor)
 
     possible_rooms = [
         # # Original
-        original.spawn_room,
+        # original.spawn_room,
         # # Castle
         # castle.castle_gate, castle.castle_gate_simple,
         # castle.castle_large,
@@ -120,6 +124,7 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_true', help="Debugging")
     parser.add_argument('--ctf', action='store_true', help="Include flags for CTFs")
     parser.add_argument('--mirror', type=int, choices=[1, 2, 4], help="Mirror mode (1 = unmirrored, 2 = 2-way mirroring, 4 = 4-way mirroring)")
+    parser.add_argument('--flavor', nargs='*', choices=redeclipse.worldflavors.choices)
     args = parser.parse_args()
     # Build our map
     v, mymap, upm = main(**vars(args))
