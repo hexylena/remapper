@@ -7,77 +7,6 @@ from redeclipse.vector.orientations import rotate_yaw
 from redeclipse.prefabs import LIGHTMAN
 
 
-class station_tube1(MagicaRoom):
-    name = 'station_tube1'
-    vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_tube1.vox')
-    room_type = 'hallway_setpiece'
-
-    doors = [
-        {'orientation': WEST, 'offset': WEST},
-        {'orientation': EAST, 'offset': EAST},
-    ]
-
-
-class station_tube3(MagicaRoom):
-    name = 'station_tube3'
-    vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_tube3.vox')
-    room_type = 'hallway_setpiece'
-
-    doors = [
-        {'orientation': WEST, 'offset': WEST},
-        {'orientation': EAST, 'offset': EAST + EAST + EAST},
-    ]
-
-    def render_extra(self, world, xmap):
-        LIGHTMAN.light(xmap, self.pos + (ABOVE + EAST).rotate(self.orientation), size_factor=2)
-
-
-class station_tube_jumpx(MagicaRoom):
-    name = 'station_tube_jumpx'
-    vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_tube_jumpx.vox')
-    room_type = 'hallway_setpiece'
-
-    doors = [
-        {'orientation': WEST, 'offset': WEST + NORTH},
-        {'orientation': EAST, 'offset': EAST + EAST + EAST + NORTH},
-        {'orientation': NORTH, 'offset': EAST + NORTH + NORTH + NORTH},
-        {'orientation': SOUTH, 'offset': EAST + SOUTH},
-
-        {'orientation': WEST, 'offset': WEST + ABOVE + ABOVE + NORTH},
-        {'orientation': EAST, 'offset': EAST + EAST + EAST + ABOVE + ABOVE + NORTH},
-        {'orientation': NORTH, 'offset': EAST + NORTH + NORTH + ABOVE + ABOVE + NORTH},
-        {'orientation': SOUTH, 'offset': EAST + SOUTH + ABOVE + ABOVE},
-    ]
-
-    def render_extra(self, world, xmap):
-        LIGHTMAN.light(xmap, self.pos + (EAST + NORTH + ABOVE).rotate(self.orientation), size_factor=2)
-
-        pusher_a = Pusher(
-            xyz=self.pos + (EAST + NORTH + FineVector(4, 5, 12)).rotate(self.orientation),
-            pitch=90,
-            maxrad=1,
-            yaw=rotate_yaw(0, self.orientation),
-            force=230,
-        )
-        xmap.ents.append(pusher_a)
-
-
-class station_tubeX(MagicaRoom):
-    name = 'station_tubeX'
-    vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_tubeX.vox')
-    room_type = 'hallway_setpiece'
-
-    doors = [
-        {'orientation': WEST, 'offset': WEST + NORTH},
-        {'orientation': EAST, 'offset': EAST + EAST + EAST + NORTH},
-        {'orientation': NORTH, 'offset': EAST + NORTH + NORTH + NORTH},
-        {'orientation': SOUTH, 'offset': EAST + SOUTH},
-    ]
-
-    def render_extra(self, world, xmap):
-        LIGHTMAN.light(xmap, self.pos + (EAST + NORTH).rotate(self.orientation))
-
-
 class station_endcap(MagicaRoom):
     name = 'station_endcap'
     vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_endcap.vox')
@@ -134,6 +63,22 @@ class station_ring_vertical(MagicaRoom):
         LIGHTMAN.light(xmap, self.pos + ((EAST * 2) + (ABOVE * 4)).rotate(self.orientation))
 
 
+class station_sbend(MagicaRoom):
+    name = 'station_sbend'
+    vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_sbend.vox')
+    room_type = 'hallway'
+
+    doors = [
+        {'orientation': WEST, 'offset': WEST + NORTH},
+        {'orientation': EAST, 'offset': EAST + EAST + NORTH},
+    ]
+
+    def render_extra(self, world, xmap):
+        LIGHTMAN.light(xmap, self.pos + ((EAST * 0.5) + (ABOVE * 3)).rotate(self.orientation))
+        LIGHTMAN.light(xmap, self.pos + ((EAST * 3.5) + (ABOVE * 3)).rotate(self.orientation))
+        LIGHTMAN.light(xmap, self.pos + ((EAST * 2) + (ABOVE * 4)).rotate(self.orientation))
+
+
 class station_sphere(MagicaRoom):
     name = 'station_sphere'
     vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_sphere.vox')
@@ -174,4 +119,118 @@ class station_stair2(MagicaRoom):
     doors = [
         {'orientation': WEST, 'offset': WEST},
         {'orientation': EAST, 'offset': EAST * 2 + ABOVE},
+    ]
+
+
+class station_tube1(MagicaRoom):
+    name = 'station_tube1'
+    vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_tube1.vox')
+    room_type = 'hallway_setpiece'
+
+    doors = [
+        {'orientation': WEST, 'offset': WEST},
+        {'orientation': EAST, 'offset': EAST},
+    ]
+
+
+class station_tube3(MagicaRoom):
+    name = 'station_tube3'
+    vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_tube3.vox')
+    room_type = 'hallway'
+
+    doors = [
+        {'orientation': WEST, 'offset': WEST},
+        {'orientation': EAST, 'offset': EAST + EAST + EAST},
+    ]
+
+    def render_extra(self, world, xmap):
+        LIGHTMAN.light(xmap, self.pos + (ABOVE + EAST).rotate(self.orientation), size_factor=2)
+
+
+class station_tube3layered(MagicaRoom):
+    name = 'station_tube3layered'
+    vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_tube3layered.vox')
+    room_type = 'hallway_setpiece'
+
+    doors = [
+        {'orientation': WEST, 'offset': WEST},
+        {'orientation': EAST, 'offset': EAST + EAST + EAST},
+        {'orientation': WEST, 'offset': WEST + ABOVE + ABOVE},
+        {'orientation': EAST, 'offset': EAST + EAST + EAST + ABOVE + ABOVE},
+    ]
+
+    def render_extra(self, world, xmap):
+        LIGHTMAN.light(xmap, self.pos + (ABOVE + EAST).rotate(self.orientation), size_factor=2)
+
+
+class station_tube_jumpx(MagicaRoom):
+    name = 'station_tube_jumpx'
+    vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_tube_jumpx.vox')
+    room_type = 'hallway_setpiece'
+
+    doors = [
+        {'orientation': WEST, 'offset': WEST + NORTH},
+        {'orientation': EAST, 'offset': EAST + EAST + EAST + NORTH},
+        {'orientation': NORTH, 'offset': EAST + NORTH + NORTH + NORTH},
+        {'orientation': SOUTH, 'offset': EAST + SOUTH},
+
+        {'orientation': WEST, 'offset': WEST + ABOVE + ABOVE + NORTH},
+        {'orientation': EAST, 'offset': EAST + EAST + EAST + ABOVE + ABOVE + NORTH},
+        {'orientation': NORTH, 'offset': EAST + NORTH + NORTH + ABOVE + ABOVE + NORTH},
+        {'orientation': SOUTH, 'offset': EAST + SOUTH + ABOVE + ABOVE},
+    ]
+
+    def render_extra(self, world, xmap):
+        LIGHTMAN.light(xmap, self.pos + (EAST + NORTH + ABOVE).rotate(self.orientation), size_factor=2)
+
+        pusher_a = Pusher(
+            xyz=self.pos + (EAST + NORTH + FineVector(4, 5, 12)).rotate(self.orientation),
+            pitch=90,
+            maxrad=1,
+            yaw=rotate_yaw(0, self.orientation),
+            force=230,
+        )
+        xmap.ents.append(pusher_a)
+
+
+class station_tubeX(MagicaRoom):
+    name = 'station_tubeX'
+    vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_tubeX.vox')
+    room_type = 'hallway_setpiece'
+
+    doors = [
+        {'orientation': WEST, 'offset': WEST + NORTH},
+        {'orientation': EAST, 'offset': EAST + EAST + EAST + NORTH},
+        {'orientation': NORTH, 'offset': EAST + NORTH + NORTH + NORTH},
+        {'orientation': SOUTH, 'offset': EAST + SOUTH},
+    ]
+
+    def render_extra(self, world, xmap):
+        LIGHTMAN.light(xmap, self.pos + (EAST + NORTH).rotate(self.orientation))
+
+
+class station_tubeX_variant(MagicaRoom):
+    name = 'station_tubeX_variant'
+    vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_tubeX_variant.vox')
+    room_type = 'hallway_setpiece'
+
+    doors = [
+        {'orientation': WEST, 'offset': WEST + NORTH},
+        {'orientation': EAST, 'offset': EAST + EAST + EAST + NORTH},
+        {'orientation': NORTH, 'offset': EAST + NORTH + NORTH + NORTH},
+        {'orientation': SOUTH, 'offset': EAST + SOUTH},
+    ]
+
+    def render_extra(self, world, xmap):
+        LIGHTMAN.light(xmap, self.pos + (EAST + NORTH).rotate(self.orientation))
+
+
+class station_uturn(MagicaRoom):
+    name = 'station_uturn'
+    vox_file = os.path.abspath(__file__).replace('__init__.py', 'station_uturn.vox')
+    room_type = 'hallway'
+
+    doors = [
+        {'orientation': WEST, 'offset': WEST},
+        {'orientation': WEST, 'offset': WEST + NORTH},
     ]

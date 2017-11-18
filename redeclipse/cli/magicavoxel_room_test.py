@@ -33,7 +33,7 @@ def main(magica=False, redeclipse=False):
         # castle.castle_wall_section_tjoint, castle.castle_wall_tower,
         # castle.wooden_bridge,
         # castle.castle_wall_section_x
-        castle.castle_flag_room,
+        # castle.castle_flag_room,
         # # Dungeon
         # dungeon.dungeon_2x2, dungeon.dungeon_junction, dungeon.dungeon_stair2,
         # dungeon.dungeon_walkway, dungeon.dungeon_walkway3,
@@ -42,6 +42,10 @@ def main(magica=False, redeclipse=False):
         # spacestation.station_tubeX, spacestation.station_endcap, spacestation.station_right, spacestation.station_ring,
         # spacestation.station_ring_vertical, spacestation.station_sphere, spacestation.station_sphere_slice,
         # spacestation.station_stair2,
+        spacestation.station_uturn,
+        spacestation.station_tubeX_variant,
+        spacestation.station_tube3layered,
+        spacestation.station_sbend,
     ]
 
     for idx, Room in enumerate(magica_classes):
