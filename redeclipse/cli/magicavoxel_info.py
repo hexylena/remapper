@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 def main(mv_in):
     try:
         model = Magicavoxel.from_file(mv_in)
-    except:
+    except Exception:
         Magicavoxel.SIZE = 255
         model = Magicavoxel.from_file(mv_in)
         log.error("Odd: colours were shorter than expected.")
