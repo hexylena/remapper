@@ -11,7 +11,6 @@ from redeclipse.vector.orientations import NORTHWEST, NORTHEAST, SOUTHWEST, SOUT
 from redeclipse.vector.orientations import TILE_CENTER, ABOVE_FINE
 from redeclipse.vector.orientations import rotate_yaw
 from redeclipse.entities import TeamFlag
-from redeclipse.vector.orientations import rotate_yaw
 from redeclipse.prefabs import LIGHTMAN
 
 

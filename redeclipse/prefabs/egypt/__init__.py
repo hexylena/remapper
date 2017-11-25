@@ -1,18 +1,17 @@
 import os
-import random
-from redeclipse.prefabs import TEXMAN
+# from redeclipse.prefabs import TEXMAN
 from redeclipse.prefabs.magica import MagicaRoom
-from redeclipse.entities import Pusher
-from redeclipse.entities import PlayerSpawn
-from redeclipse.entities.weapon import Grenade, Shotgun
-from redeclipse.vector import FineVector
+# from redeclipse.entities import Pusher
+# from redeclipse.entities import PlayerSpawn
+# from redeclipse.entities.weapon import Grenade, Shotgun
+# from redeclipse.vector import FineVector
 from redeclipse.vector.orientations import EAST, SOUTH, ABOVE, WEST, NORTH
-from redeclipse.vector.orientations import NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST
-from redeclipse.vector.orientations import TILE_CENTER, ABOVE_FINE
-from redeclipse.vector.orientations import rotate_yaw
-from redeclipse.entities import TeamFlag
-from redeclipse.vector.orientations import rotate_yaw
-from redeclipse.prefabs import LIGHTMAN
+# from redeclipse.vector.orientations import NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST
+# from redeclipse.vector.orientations import TILE_CENTER, ABOVE_FINE
+# from redeclipse.vector.orientations import rotate_yaw
+# from redeclipse.entities import TeamFlag
+# from redeclipse.vector.orientations import rotate_yaw
+# from redeclipse.prefabs import LIGHTMAN
 
 
 class stair(MagicaRoom):
@@ -23,19 +22,6 @@ class stair(MagicaRoom):
     doors = [
         {'orientation': WEST, 'offset': WEST},
         {'orientation': EAST, 'offset': EAST + ABOVE},
-    ]
-
-
-class stair_toplatform(MagicaRoom):
-    name = 'stair_toplatform'
-    room_type = 'stair'
-    vox_file = os.path.abspath(__file__).replace('__init__.py', 'stair_toplatform.vox')
-
-    doors = [
-        {'orientation': WEST, 'offset': WEST},
-        {'orientation': EAST, 'offset': EAST + EAST + ABOVE},
-        {'orientation': NORTH, 'offset': EAST + NORTH + ABOVE},
-        {'orientation': SOUTH, 'offset': EAST + SOUTH + ABOVE},
     ]
 
 

@@ -397,4 +397,3 @@ class UnusedPositionManager:
                         if (d, r, o) != (prev_room_door, prev_room, prev_room_orientation)
                     ]
                     logging.info("No rooms fit here, removing")
-

@@ -12,7 +12,7 @@ prefabs.LIGHTMAN.brightness = 0.3
 from redeclipse.cli import parse, output, output_args
 from redeclipse.entities import Sunlight
 from redeclipse.prefabs import STARTING_POSITION
-from redeclipse.prefabs import castle, dungeon, spacestation, original  # noqa
+from redeclipse.prefabs import castle, dungeon, spacestation, original, egypt  # noqa
 from redeclipse.upm import UnusedPositionManager
 from redeclipse.vector.orientations import EAST
 from redeclipse.voxel import VoxelWorld
@@ -50,24 +50,32 @@ def main(mpz_in, size=2**8, seed=42, rooms=200, debug=False, ctf=False, mirror=2
         # dungeon.dungeon_walkway, dungeon.dungeon_walkway3,
 
         # # Space
-        spacestation.station_right,
-        spacestation.station_ring,
+        # spacestation.station_right,
+        # spacestation.station_ring,
         # spacestation.station_ring_vertical,
-        spacestation.station_sbend,
-        spacestation.station_sphere,
-        spacestation.station_sphere_slice,
-        spacestation.station_stair2,
-        spacestation.station_tube1,
-        spacestation.station_tube3,
-        spacestation.station_tube3layered,
-        spacestation.station_tube_jumpx,
-        spacestation.station_tubeX,
-        spacestation.station_tubeX_variant,
-        spacestation.station_uturn,
+        # spacestation.station_sbend,
+        # spacestation.station_sphere,
+        # spacestation.station_sphere_slice,
+        # spacestation.station_stair2,
+        # spacestation.station_tube1,
+        # spacestation.station_tube3,
+        # spacestation.station_tube3layered,
+        # spacestation.station_tube_jumpx,
+        # spacestation.station_tubeX,
+        # spacestation.station_tubeX_variant,
+        # spacestation.station_uturn,
+        egypt.house_2x2,
+        egypt.house_2x2x3,
+        egypt.stair,
+        egypt.stair_toplatform,
+        egypt.gate,
+        egypt.statue,
+        egypt.statue_cat,
     ]
 
     # possible_endcaps = [castle.castle_wall_end_cliff, castle.castle_wall_section_endcap]
-    possible_endcaps = [spacestation.station_endcap]
+    # possible_endcaps = [spacestation.station_endcap]
+    possible_endcaps = [egypt.statue_cat]
 
     # Initialize
     upm = UnusedPositionManager(size, mirror=mirror)

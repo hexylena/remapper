@@ -1,6 +1,5 @@
 """Light manager"""
 import colorsys
-import random
 import noise
 
 from redeclipse.entities import Light
