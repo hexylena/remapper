@@ -8,7 +8,7 @@ from redeclipse import prefabs
 from redeclipse.cli import parse
 from redeclipse.entities import Sunlight
 from redeclipse.magicavoxel.writer import to_magicavoxel
-from redeclipse.prefabs import castle, dungeon, spacestation, original  # noqa
+from redeclipse.prefabs import castle, dungeon, spacestation, original, egypt  # noqa
 from redeclipse.upm import UnusedPositionManager
 from redeclipse.vector import CoarseVector
 from redeclipse.vector.orientations import EAST
@@ -42,11 +42,19 @@ def main(magica=False, redeclipse=False):
         # spacestation.station_tubeX, spacestation.station_endcap, spacestation.station_right, spacestation.station_ring,
         # spacestation.station_ring_vertical, spacestation.station_sphere, spacestation.station_sphere_slice,
         # spacestation.station_stair2,
-        spacestation.station_uturn,
-        spacestation.station_tubeX_variant,
-        spacestation.station_tube3layered,
-        spacestation.station_sbend,
-        spacestation.station_flagroom,
+        # spacestation.station_uturn,
+        # spacestation.station_tubeX_variant,
+        # spacestation.station_tube3layered,
+        # spacestation.station_sbend,
+        # spacestation.station_flagroom,
+        # # Egypt
+        egypt.house_2x2,
+        egypt.house_2x2x3,
+        egypt.stair,
+        egypt.stair_toplatform,
+        egypt.gate,
+        egypt.statue,
+        egypt.statue_cat,
     ]
 
     for idx, Room in enumerate(magica_classes):
