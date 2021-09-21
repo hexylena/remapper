@@ -65,6 +65,12 @@ class VoxelWorld:
         else:
             return None
 
+    def to_magicavoxel(self, path):
+        import redeclipse.magicavoxel.writer
+        from redeclipse.prefabs import TEXMAN
+        with open(path, 'wb') as handle:
+            redeclipse.magicavoxel.writer.to_magicavoxel(self, handle, TEXMAN)
+
     def to_octree(self, x_bounds=None, y_bounds=None, z_bounds=None, layers=False):
         if x_bounds is None:
             x_bounds = (

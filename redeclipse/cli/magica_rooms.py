@@ -30,11 +30,11 @@ def main(mpz_in, size=2**8, seed=42, rooms=200, debug=False, ctf=False, mirror=2
     mymap = redeclipse.worldflavors.update(mymap, flavor)
 
     possible_rooms = [
-        # # Original
-        # original.spawn_room,
-        # # Castle
-        # castle.castle_gate, castle.castle_gate_simple,
-        # castle.castle_large,
+        # Original
+        original.spawn_room,
+        # Castle
+        castle.castle_gate, castle.castle_gate_simple,
+        castle.castle_large,
 
         # castle.castle_wall_corner,
         # castle.castle_wall_end_cliff, castle.castle_wall_entry,
@@ -64,18 +64,18 @@ def main(mpz_in, size=2**8, seed=42, rooms=200, debug=False, ctf=False, mirror=2
         # spacestation.station_tubeX,
         # spacestation.station_tubeX_variant,
         # spacestation.station_uturn,
-        egypt.house_2x2,
-        egypt.house_2x2x3,
-        egypt.stair,
-        egypt.stair_toplatform,
-        egypt.gate,
-        egypt.statue,
-        egypt.statue_cat,
+        # egypt.house_2x2,
+        # egypt.house_2x2x3,
+        # egypt.stair,
+        # egypt.stair_toplatform,
+        # egypt.gate,
+        # egypt.statue,
+        # egypt.statue_cat,
     ]
 
-    # possible_endcaps = [castle.castle_wall_end_cliff, castle.castle_wall_section_endcap]
+    possible_endcaps = [castle.castle_wall_end_cliff, castle.castle_wall_section_endcap]
     # possible_endcaps = [spacestation.station_endcap]
-    possible_endcaps = [egypt.statue_cat]
+    # possible_endcaps = [egypt.statue_cat]
 
     # Initialize
     upm = UnusedPositionManager(size, mirror=mirror)
